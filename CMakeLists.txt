@@ -48,6 +48,11 @@ endif()
 # Set the project root directory.
 set(MBEDTLS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_COLOR_MAKEFILE OFF)
+set(CMAKE_INSTALL_MESSAGE NEVER)
+
 option(UNSAFE_BUILD "Allow unsafe builds. These builds ARE NOT SECURE." OFF)
 option(GEN_FILES "Generate the auto-generated files as needed" OFF)
 
@@ -119,11 +124,6 @@ include(CheckCCompilerFlag)
 
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_COLOR_MAKEFILE OFF)
-set(CMAKE_INSTALL_MESSAGE NEVER)
 
 if(CMAKE_COMPILER_IS_GNU)
     # some warnings we want are not available with old GCC versions
