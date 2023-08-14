@@ -87,7 +87,6 @@ set(src_x509
 )
 
 set(src_tls
-    debug.c
     mps_reader.c
     mps_trace.c
     net_sockets.c
@@ -95,7 +94,6 @@ set(src_tls
     ssl_ciphersuites.c
     ssl_client.c
     ssl_cookie.c
-    ssl_debug_helpers_generated.c
     ssl_msg.c
     ssl_ticket.c
     ssl_tls.c
