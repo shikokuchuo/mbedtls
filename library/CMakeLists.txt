@@ -85,8 +85,6 @@ set(src_x509
 )
 
 set(src_tls
-    mps_reader.c
-    mps_trace.c
     net_sockets.c
     ssl_cache.c
     ssl_ciphersuites.c
