@@ -49,7 +49,6 @@ set(src_crypto
     lms.c
     md.c
     md5.c
-    memory_buffer_alloc.c
     nist_kw.c
     oid.c
     padlock.c
@@ -72,7 +71,6 @@ set(src_crypto
     threading.c
     timing.c
     version.c
-    version_features.c
 )
 
 set(src_x509
@@ -99,14 +97,9 @@ set(src_tls
     ssl_tls.c
     ssl_tls12_client.c
     ssl_tls12_server.c
-    ssl_tls13_keys.c
-    ssl_tls13_server.c
-    ssl_tls13_client.c
-    ssl_tls13_generic.c
 )
 
 link_to_source(error.c)
-link_to_source(version_features.c)
 link_to_source(ssl_debug_helpers_generated.c)
 
 if(CMAKE_COMPILER_IS_GNUCC)
