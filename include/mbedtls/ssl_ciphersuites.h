@@ -33,9 +33,6 @@
 extern "C" {
 #endif
 
-/*
- * Supported ciphersuites (Official IANA names)
- */
 #define MBEDTLS_TLS_RSA_WITH_NULL_MD5                    0x01   /**< Weak! */
 #define MBEDTLS_TLS_RSA_WITH_NULL_SHA                    0x02   /**< Weak! */
 
@@ -247,7 +244,6 @@ extern "C" {
 
 #define MBEDTLS_TLS_ECJPAKE_WITH_AES_128_CCM_8          0xC0FF  /**< experimental */
 
-/* RFC 7905 */
 #define MBEDTLS_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256   0xCCA8 /**< TLS 1.2 */
 #define MBEDTLS_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 0xCCA9 /**< TLS 1.2 */
 #define MBEDTLS_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256     0xCCAA /**< TLS 1.2 */
@@ -256,16 +252,12 @@ extern "C" {
 #define MBEDTLS_TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256     0xCCAD /**< TLS 1.2 */
 #define MBEDTLS_TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256     0xCCAE /**< TLS 1.2 */
 
-/* RFC 8446, Appendix B.4 */
 #define MBEDTLS_TLS1_3_AES_128_GCM_SHA256                     0x1301 /**< TLS 1.3 */
 #define MBEDTLS_TLS1_3_AES_256_GCM_SHA384                     0x1302 /**< TLS 1.3 */
 #define MBEDTLS_TLS1_3_CHACHA20_POLY1305_SHA256               0x1303 /**< TLS 1.3 */
 #define MBEDTLS_TLS1_3_AES_128_CCM_SHA256                     0x1304 /**< TLS 1.3 */
 #define MBEDTLS_TLS1_3_AES_128_CCM_8_SHA256                   0x1305 /**< TLS 1.3 */
 
-/* Reminder: update mbedtls_ssl_premaster_secret when adding a new key exchange.
- * Reminder: update MBEDTLS_KEY_EXCHANGE__xxx below
- */
 typedef enum {
     MBEDTLS_KEY_EXCHANGE_NONE = 0,
     MBEDTLS_KEY_EXCHANGE_RSA,
@@ -281,7 +273,6 @@ typedef enum {
     MBEDTLS_KEY_EXCHANGE_ECJPAKE,
 } mbedtls_key_exchange_type_t;
 
-/* Key exchanges using a certificate */
 #if defined(MBEDTLS_KEY_EXCHANGE_RSA_ENABLED)           || \
     defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)     || \
@@ -297,7 +288,6 @@ typedef enum {
 #define MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED
 #endif
 
-/* Key exchanges allowing client certificate requests */
 #if defined(MBEDTLS_KEY_EXCHANGE_RSA_ENABLED)           ||       \
     defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED)       ||       \
     defined(MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED)      ||       \
@@ -307,20 +297,17 @@ typedef enum {
 #define MBEDTLS_KEY_EXCHANGE_CERT_REQ_ALLOWED_ENABLED
 #endif
 
-/* Key exchanges involving server signature in ServerKeyExchange */
 #if defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)     || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED)
 #define MBEDTLS_KEY_EXCHANGE_WITH_SERVER_SIGNATURE_ENABLED
 #endif
 
-/* Key exchanges using ECDH */
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED)      || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED)
 #define MBEDTLS_KEY_EXCHANGE_SOME_ECDH_ENABLED
 #endif
 
-/* Key exchanges that don't involve ephemeral keys */
 #if defined(MBEDTLS_KEY_EXCHANGE_RSA_ENABLED)           || \
     defined(MBEDTLS_KEY_EXCHANGE_PSK_ENABLED)           || \
     defined(MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED)       || \
@@ -328,7 +315,6 @@ typedef enum {
 #define MBEDTLS_KEY_EXCHANGE_SOME_NON_PFS_ENABLED
 #endif
 
-/* Key exchanges that involve ephemeral keys */
 #if defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)     || \
@@ -338,7 +324,6 @@ typedef enum {
 #define MBEDTLS_KEY_EXCHANGE_SOME_PFS_ENABLED
 #endif
 
-/* Key exchanges using a PSK */
 #if defined(MBEDTLS_KEY_EXCHANGE_PSK_ENABLED)           || \
     defined(MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED)       || \
@@ -351,13 +336,11 @@ typedef enum {
 #define MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED
 #endif
 
-/* Key exchanges using DHE */
 #if defined(MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED)       || \
     defined(MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED)
 #define MBEDTLS_KEY_EXCHANGE_SOME_DHE_ENABLED
 #endif
 
-/* Key exchanges using ECDHE */
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED)     || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED)   || \
     defined(MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED)
@@ -366,18 +349,10 @@ typedef enum {
 
 typedef struct mbedtls_ssl_ciphersuite_t mbedtls_ssl_ciphersuite_t;
 
-#define MBEDTLS_CIPHERSUITE_WEAK       0x01    /**< Weak ciphersuite flag  */
-#define MBEDTLS_CIPHERSUITE_SHORT_TAG  0x02    /**< Short authentication tag,
-                                                     eg for CCM_8 */
-#define MBEDTLS_CIPHERSUITE_NODTLS     0x04    /**< Can't be used with DTLS */
+#define MBEDTLS_CIPHERSUITE_WEAK       0x01
+#define MBEDTLS_CIPHERSUITE_SHORT_TAG  0x02
+#define MBEDTLS_CIPHERSUITE_NODTLS     0x04
 
-/**
- * \brief   This structure is used for storing ciphersuite information
- *
- * \note    members are defined using integral types instead of enums
- *          in order to pack structure and reduce memory usage by internal
- *          \c ciphersuite_definitions[]
- */
 struct mbedtls_ssl_ciphersuite_t {
     int MBEDTLS_PRIVATE(id);
     const char *MBEDTLS_PRIVATE(name);
