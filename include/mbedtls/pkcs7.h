@@ -32,18 +32,18 @@
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crt.h"
 
-#define MBEDTLS_ERR_PKCS7_INVALID_FORMAT                   -0x5300  /**< The format is invalid, e.g. different type expected. */
-#define MBEDTLS_ERR_PKCS7_FEATURE_UNAVAILABLE              -0x5380  /**< Unavailable feature, e.g. anything other than signed data. */
-#define MBEDTLS_ERR_PKCS7_INVALID_VERSION                  -0x5400  /**< The PKCS #7 version element is invalid or cannot be parsed. */
-#define MBEDTLS_ERR_PKCS7_INVALID_CONTENT_INFO             -0x5480  /**< The PKCS #7 content info is invalid or cannot be parsed. */
-#define MBEDTLS_ERR_PKCS7_INVALID_ALG                      -0x5500  /**< The algorithm tag or value is invalid or cannot be parsed. */
-#define MBEDTLS_ERR_PKCS7_INVALID_CERT                     -0x5580  /**< The certificate tag or value is invalid or cannot be parsed. */
-#define MBEDTLS_ERR_PKCS7_INVALID_SIGNATURE                -0x5600  /**< Error parsing the signature */
-#define MBEDTLS_ERR_PKCS7_INVALID_SIGNER_INFO              -0x5680  /**< Error parsing the signer's info */
-#define MBEDTLS_ERR_PKCS7_BAD_INPUT_DATA                   -0x5700  /**< Input invalid. */
-#define MBEDTLS_ERR_PKCS7_ALLOC_FAILED                     -0x5780  /**< Allocation of memory failed. */
-#define MBEDTLS_ERR_PKCS7_VERIFY_FAIL                      -0x5800  /**< Verification Failed */
-#define MBEDTLS_ERR_PKCS7_CERT_DATE_INVALID                -0x5880  /**< The PKCS #7 date issued/expired dates are invalid */
+#define MBEDTLS_ERR_PKCS7_INVALID_FORMAT                   -0x5300
+#define MBEDTLS_ERR_PKCS7_FEATURE_UNAVAILABLE              -0x5380
+#define MBEDTLS_ERR_PKCS7_INVALID_VERSION                  -0x5400
+#define MBEDTLS_ERR_PKCS7_INVALID_CONTENT_INFO             -0x5480
+#define MBEDTLS_ERR_PKCS7_INVALID_ALG                      -0x5500
+#define MBEDTLS_ERR_PKCS7_INVALID_CERT                     -0x5580
+#define MBEDTLS_ERR_PKCS7_INVALID_SIGNATURE                -0x5600
+#define MBEDTLS_ERR_PKCS7_INVALID_SIGNER_INFO              -0x5680
+#define MBEDTLS_ERR_PKCS7_BAD_INPUT_DATA                   -0x5700
+#define MBEDTLS_ERR_PKCS7_ALLOC_FAILED                     -0x5780
+#define MBEDTLS_ERR_PKCS7_VERIFY_FAIL                      -0x5800
+#define MBEDTLS_ERR_PKCS7_CERT_DATE_INVALID                -0x5880
 
 #define MBEDTLS_PKCS7_SUPPORTED_VERSION                           0x01
 

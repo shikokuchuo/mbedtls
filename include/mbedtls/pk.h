@@ -44,35 +44,34 @@
 #include "psa/crypto.h"
 #endif
 
-/** Memory allocation failed. */
 #define MBEDTLS_ERR_PK_ALLOC_FAILED        -0x3F80
-/** Type mismatch, eg attempt to encrypt with an ECDSA key */
+
 #define MBEDTLS_ERR_PK_TYPE_MISMATCH       -0x3F00
-/** Bad input parameters to function. */
+
 #define MBEDTLS_ERR_PK_BAD_INPUT_DATA      -0x3E80
-/** Read/write of file failed. */
+
 #define MBEDTLS_ERR_PK_FILE_IO_ERROR       -0x3E00
-/** Unsupported key version */
+
 #define MBEDTLS_ERR_PK_KEY_INVALID_VERSION -0x3D80
-/** Invalid key tag or value. */
+
 #define MBEDTLS_ERR_PK_KEY_INVALID_FORMAT  -0x3D00
-/** Key algorithm is unsupported (only RSA and EC are supported). */
+
 #define MBEDTLS_ERR_PK_UNKNOWN_PK_ALG      -0x3C80
-/** Private key password can't be empty. */
+
 #define MBEDTLS_ERR_PK_PASSWORD_REQUIRED   -0x3C00
-/** Given private key password does not allow for correct decryption. */
+
 #define MBEDTLS_ERR_PK_PASSWORD_MISMATCH   -0x3B80
-/** The pubkey tag or value is invalid (only RSA and EC are supported). */
+
 #define MBEDTLS_ERR_PK_INVALID_PUBKEY      -0x3B00
-/** The algorithm tag or value is invalid. */
+
 #define MBEDTLS_ERR_PK_INVALID_ALG         -0x3A80
-/** Elliptic curve is unsupported (only NIST curves are supported). */
+
 #define MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE -0x3A00
-/** Unavailable feature, e.g. RSA disabled for RSA key. */
+
 #define MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE -0x3980
-/** The buffer contains a valid signature followed by more data. */
+
 #define MBEDTLS_ERR_PK_SIG_LEN_MISMATCH    -0x3900
-/** The output buffer is too small. */
+
 #define MBEDTLS_ERR_PK_BUFFER_TOO_SMALL    -0x3880
 
 #ifdef __cplusplus
@@ -165,18 +164,18 @@ typedef struct mbedtls_pk_debug_item {
 typedef struct mbedtls_pk_info_t mbedtls_pk_info_t;
 
 typedef struct mbedtls_pk_context {
-    const mbedtls_pk_info_t *MBEDTLS_PRIVATE(pk_info);    /**< Public key information         */
-    void *MBEDTLS_PRIVATE(pk_ctx);                        /**< Underlying public key context  */
+    const mbedtls_pk_info_t *MBEDTLS_PRIVATE(pk_info);
+    void *MBEDTLS_PRIVATE(pk_ctx);
 } mbedtls_pk_context;
 
 #if defined(MBEDTLS_ECDSA_C) && defined(MBEDTLS_ECP_RESTARTABLE)
 
 typedef struct {
-    const mbedtls_pk_info_t *MBEDTLS_PRIVATE(pk_info);    /**< Public key information         */
-    void *MBEDTLS_PRIVATE(rs_ctx);                        /**< Underlying restart context     */
+    const mbedtls_pk_info_t *MBEDTLS_PRIVATE(pk_info);
+    void *MBEDTLS_PRIVATE(rs_ctx);
 } mbedtls_pk_restart_ctx;
 #else /* MBEDTLS_ECDSA_C && MBEDTLS_ECP_RESTARTABLE */
-/* Now we can declare functions that take a pointer to that */
+
 typedef void mbedtls_pk_restart_ctx;
 #endif /* MBEDTLS_ECDSA_C && MBEDTLS_ECP_RESTARTABLE */
 

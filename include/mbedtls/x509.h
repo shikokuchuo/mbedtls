@@ -108,24 +108,24 @@
 #define MBEDTLS_X509_SAN_IP_ADDRESS                      7
 #define MBEDTLS_X509_SAN_REGISTERED_ID                   8
 
-#define MBEDTLS_X509_KU_DIGITAL_SIGNATURE            (0x80)  /* bit 0 */
-#define MBEDTLS_X509_KU_NON_REPUDIATION              (0x40)  /* bit 1 */
-#define MBEDTLS_X509_KU_KEY_ENCIPHERMENT             (0x20)  /* bit 2 */
-#define MBEDTLS_X509_KU_DATA_ENCIPHERMENT            (0x10)  /* bit 3 */
-#define MBEDTLS_X509_KU_KEY_AGREEMENT                (0x08)  /* bit 4 */
-#define MBEDTLS_X509_KU_KEY_CERT_SIGN                (0x04)  /* bit 5 */
-#define MBEDTLS_X509_KU_CRL_SIGN                     (0x02)  /* bit 6 */
-#define MBEDTLS_X509_KU_ENCIPHER_ONLY                (0x01)  /* bit 7 */
-#define MBEDTLS_X509_KU_DECIPHER_ONLY              (0x8000)  /* bit 8 */
+#define MBEDTLS_X509_KU_DIGITAL_SIGNATURE            (0x80)
+#define MBEDTLS_X509_KU_NON_REPUDIATION              (0x40)
+#define MBEDTLS_X509_KU_KEY_ENCIPHERMENT             (0x20)
+#define MBEDTLS_X509_KU_DATA_ENCIPHERMENT            (0x10)
+#define MBEDTLS_X509_KU_KEY_AGREEMENT                (0x08)
+#define MBEDTLS_X509_KU_KEY_CERT_SIGN                (0x04)
+#define MBEDTLS_X509_KU_CRL_SIGN                     (0x02)
+#define MBEDTLS_X509_KU_ENCIPHER_ONLY                (0x01)
+#define MBEDTLS_X509_KU_DECIPHER_ONLY              (0x8000)
 
-#define MBEDTLS_X509_NS_CERT_TYPE_SSL_CLIENT         (0x80)  /* bit 0 */
-#define MBEDTLS_X509_NS_CERT_TYPE_SSL_SERVER         (0x40)  /* bit 1 */
-#define MBEDTLS_X509_NS_CERT_TYPE_EMAIL              (0x20)  /* bit 2 */
-#define MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING     (0x10)  /* bit 3 */
-#define MBEDTLS_X509_NS_CERT_TYPE_RESERVED           (0x08)  /* bit 4 */
-#define MBEDTLS_X509_NS_CERT_TYPE_SSL_CA             (0x04)  /* bit 5 */
-#define MBEDTLS_X509_NS_CERT_TYPE_EMAIL_CA           (0x02)  /* bit 6 */
-#define MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING_CA  (0x01)  /* bit 7 */
+#define MBEDTLS_X509_NS_CERT_TYPE_SSL_CLIENT         (0x80)
+#define MBEDTLS_X509_NS_CERT_TYPE_SSL_SERVER         (0x40)
+#define MBEDTLS_X509_NS_CERT_TYPE_EMAIL              (0x20)
+#define MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING     (0x10)
+#define MBEDTLS_X509_NS_CERT_TYPE_RESERVED           (0x08)
+#define MBEDTLS_X509_NS_CERT_TYPE_SSL_CA             (0x04)
+#define MBEDTLS_X509_NS_CERT_TYPE_EMAIL_CA           (0x02)
+#define MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING_CA  (0x01)
 
 #define MBEDTLS_X509_EXT_AUTHORITY_KEY_IDENTIFIER MBEDTLS_OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER
 #define MBEDTLS_X509_EXT_SUBJECT_KEY_IDENTIFIER   MBEDTLS_OID_X509_EXT_SUBJECT_KEY_IDENTIFIER

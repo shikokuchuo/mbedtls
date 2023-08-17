@@ -60,9 +60,6 @@ struct mbedtls_ssl_cache_entry {
     mbedtls_ssl_cache_entry *MBEDTLS_PRIVATE(next);
 };
 
-/**
- * \brief Cache context
- */
 struct mbedtls_ssl_cache_context {
     mbedtls_ssl_cache_entry *MBEDTLS_PRIVATE(chain);
     int MBEDTLS_PRIVATE(timeout);

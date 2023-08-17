@@ -32,27 +32,27 @@ extern "C" {
 #endif
 
 typedef struct mbedtls_x509_csr {
-    mbedtls_x509_buf raw;           /**< The raw CSR data (DER). */
-    mbedtls_x509_buf cri;           /**< The raw CertificateRequestInfo body (DER). */
+    mbedtls_x509_buf raw;
+    mbedtls_x509_buf cri;
 
-    int version;            /**< CSR version (1=v1). */
+    int version;
 
-    mbedtls_x509_buf  subject_raw;  /**< The raw subject data (DER). */
-    mbedtls_x509_name subject;      /**< The parsed subject data (named information object). */
+    mbedtls_x509_buf  subject_raw;
+    mbedtls_x509_name subject;
 
-    mbedtls_pk_context pk;          /**< Container for the public key context. */
+    mbedtls_pk_context pk;
 
-    unsigned int key_usage;     /**< Optional key usage extension value: See the values in x509.h */
-    unsigned char ns_cert_type; /**< Optional Netscape certificate type extension value: See the values in x509.h */
-    mbedtls_x509_sequence subject_alt_names;    /**< Optional list of raw entries of Subject Alternative Names extension (currently only dNSName and OtherName are listed). */
+    unsigned int key_usage;
+    unsigned char ns_cert_type;
+    mbedtls_x509_sequence subject_alt_names;
 
-    int MBEDTLS_PRIVATE(ext_types);              /**< Bit string containing detected and parsed extensions */
+    int MBEDTLS_PRIVATE(ext_types);
 
     mbedtls_x509_buf sig_oid;
     mbedtls_x509_buf MBEDTLS_PRIVATE(sig);
-    mbedtls_md_type_t MBEDTLS_PRIVATE(sig_md);       /**< Internal representation of the MD algorithm of the signature algorithm, e.g. MBEDTLS_MD_SHA256 */
-    mbedtls_pk_type_t MBEDTLS_PRIVATE(sig_pk);       /**< Internal representation of the Public Key algorithm of the signature algorithm, e.g. MBEDTLS_PK_RSA */
-    void *MBEDTLS_PRIVATE(sig_opts);         /**< Signature options to be passed to mbedtls_pk_verify_ext(), e.g. for RSASSA-PSS */
+    mbedtls_md_type_t MBEDTLS_PRIVATE(sig_md);
+    mbedtls_pk_type_t MBEDTLS_PRIVATE(sig_pk);
+    void *MBEDTLS_PRIVATE(sig_opts);
 }
 mbedtls_x509_csr;
 
