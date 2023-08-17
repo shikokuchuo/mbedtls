@@ -110,11 +110,6 @@ int mbedtls_chachapoly_auth_decrypt(mbedtls_chachapoly_context *ctx,
                                     const unsigned char *input,
                                     unsigned char *output);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_chachapoly_self_test(int verbose);
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

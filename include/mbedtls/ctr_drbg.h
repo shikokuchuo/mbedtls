@@ -179,12 +179,6 @@ int mbedtls_ctr_drbg_write_seed_file(mbedtls_ctr_drbg_context *ctx, const char *
 int mbedtls_ctr_drbg_update_seed_file(mbedtls_ctr_drbg_context *ctx, const char *path);
 #endif /* MBEDTLS_FS_IO */
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_ctr_drbg_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

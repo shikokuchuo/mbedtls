@@ -52,24 +52,24 @@
 #define MBEDTLS_ERR_ENTROPY_FILE_IO_ERROR                 -0x003F
 
 #if !defined(MBEDTLS_ENTROPY_MAX_SOURCES)
-#define MBEDTLS_ENTROPY_MAX_SOURCES     20      /**< Maximum number of sources supported */
+#define MBEDTLS_ENTROPY_MAX_SOURCES     20
 #endif
 
 #if !defined(MBEDTLS_ENTROPY_MAX_GATHER)
-#define MBEDTLS_ENTROPY_MAX_GATHER      128     /**< Maximum amount requested from entropy sources */
+#define MBEDTLS_ENTROPY_MAX_GATHER      128
 #endif
 
 #if defined(MBEDTLS_ENTROPY_SHA512_ACCUMULATOR)
-#define MBEDTLS_ENTROPY_BLOCK_SIZE      64      /**< Block size of entropy accumulator (SHA-512) */
+#define MBEDTLS_ENTROPY_BLOCK_SIZE      64
 #else
-#define MBEDTLS_ENTROPY_BLOCK_SIZE      32      /**< Block size of entropy accumulator (SHA-256) */
+#define MBEDTLS_ENTROPY_BLOCK_SIZE      32
 #endif
 
-#define MBEDTLS_ENTROPY_MAX_SEED_SIZE   1024    /**< Maximum size of seed we read from seed file */
+#define MBEDTLS_ENTROPY_MAX_SEED_SIZE   1024
 #define MBEDTLS_ENTROPY_SOURCE_MANUAL   MBEDTLS_ENTROPY_MAX_SOURCES
 
-#define MBEDTLS_ENTROPY_SOURCE_STRONG   1       /**< Entropy source is strong   */
-#define MBEDTLS_ENTROPY_SOURCE_WEAK     0       /**< Entropy source is weak     */
+#define MBEDTLS_ENTROPY_SOURCE_STRONG   1
+#define MBEDTLS_ENTROPY_SOURCE_WEAK     0
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,27 +79,25 @@ typedef int (*mbedtls_entropy_f_source_ptr)(void *data, unsigned char *output, s
                                             size_t *olen);
 
 typedef struct mbedtls_entropy_source_state {
-    mbedtls_entropy_f_source_ptr    MBEDTLS_PRIVATE(f_source);   /**< The entropy source callback */
-    void *MBEDTLS_PRIVATE(p_source);             /**< The callback data pointer */
-    size_t          MBEDTLS_PRIVATE(size);       /**< Amount received in bytes */
-    size_t          MBEDTLS_PRIVATE(threshold);  /**< Minimum bytes required before release */
-    int             MBEDTLS_PRIVATE(strong);     /**< Is the source strong? */
+    mbedtls_entropy_f_source_ptr    MBEDTLS_PRIVATE(f_source);
+    void *MBEDTLS_PRIVATE(p_source);
+    size_t          MBEDTLS_PRIVATE(size);
+    size_t          MBEDTLS_PRIVATE(threshold);
+    int             MBEDTLS_PRIVATE(strong);
 }
 mbedtls_entropy_source_state;
 
 typedef struct mbedtls_entropy_context {
-    int MBEDTLS_PRIVATE(accumulator_started); /* 0 after init.
-                                               * 1 after the first update.
-                                               * -1 after free. */
+    int MBEDTLS_PRIVATE(accumulator_started);
 #if defined(MBEDTLS_ENTROPY_SHA512_ACCUMULATOR)
     mbedtls_sha512_context  MBEDTLS_PRIVATE(accumulator);
 #elif defined(MBEDTLS_ENTROPY_SHA256_ACCUMULATOR)
     mbedtls_sha256_context  MBEDTLS_PRIVATE(accumulator);
 #endif
-    int             MBEDTLS_PRIVATE(source_count); /* Number of entries used in source. */
+    int             MBEDTLS_PRIVATE(source_count);
     mbedtls_entropy_source_state    MBEDTLS_PRIVATE(source)[MBEDTLS_ENTROPY_MAX_SOURCES];
 #if defined(MBEDTLS_THREADING_C)
-    mbedtls_threading_mutex_t MBEDTLS_PRIVATE(mutex);    /*!< mutex                  */
+    mbedtls_threading_mutex_t MBEDTLS_PRIVATE(mutex);
 #endif
 #if defined(MBEDTLS_ENTROPY_NV_SEED)
     int MBEDTLS_PRIVATE(initial_entropy_run);
@@ -139,16 +137,6 @@ int mbedtls_entropy_write_seed_file(mbedtls_entropy_context *ctx, const char *pa
 
 int mbedtls_entropy_update_seed_file(mbedtls_entropy_context *ctx, const char *path);
 #endif /* MBEDTLS_FS_IO */
-
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_entropy_self_test(int verbose);
-
-#if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
-
-int mbedtls_entropy_source_self_test(int verbose);
-#endif /* MBEDTLS_ENTROPY_HARDWARE_ALT */
-#endif /* MBEDTLS_SELF_TEST */
 
 #ifdef __cplusplus
 }

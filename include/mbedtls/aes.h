@@ -195,13 +195,6 @@ int mbedtls_internal_aes_decrypt(mbedtls_aes_context *ctx,
                                  const unsigned char input[16],
                                  unsigned char output[16]);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-MBEDTLS_CHECK_RETURN_CRITICAL
-int mbedtls_aes_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

@@ -112,11 +112,6 @@ int mbedtls_aria_crypt_ctr(mbedtls_aria_context *ctx,
                            unsigned char *output);
 #endif /* MBEDTLS_CIPHER_MODE_CTR */
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_aria_self_test(int verbose);
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

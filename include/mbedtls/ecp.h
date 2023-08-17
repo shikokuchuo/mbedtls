@@ -80,28 +80,28 @@ extern "C" {
 #endif
 
 typedef enum {
-    MBEDTLS_ECP_DP_NONE = 0,       /*!< Curve not defined. */
-    MBEDTLS_ECP_DP_SECP192R1,      /*!< Domain parameters for the 192-bit curve defined by FIPS 186-4 and SEC1. */
-    MBEDTLS_ECP_DP_SECP224R1,      /*!< Domain parameters for the 224-bit curve defined by FIPS 186-4 and SEC1. */
-    MBEDTLS_ECP_DP_SECP256R1,      /*!< Domain parameters for the 256-bit curve defined by FIPS 186-4 and SEC1. */
-    MBEDTLS_ECP_DP_SECP384R1,      /*!< Domain parameters for the 384-bit curve defined by FIPS 186-4 and SEC1. */
-    MBEDTLS_ECP_DP_SECP521R1,      /*!< Domain parameters for the 521-bit curve defined by FIPS 186-4 and SEC1. */
-    MBEDTLS_ECP_DP_BP256R1,        /*!< Domain parameters for 256-bit Brainpool curve. */
-    MBEDTLS_ECP_DP_BP384R1,        /*!< Domain parameters for 384-bit Brainpool curve. */
-    MBEDTLS_ECP_DP_BP512R1,        /*!< Domain parameters for 512-bit Brainpool curve. */
-    MBEDTLS_ECP_DP_CURVE25519,     /*!< Domain parameters for Curve25519. */
-    MBEDTLS_ECP_DP_SECP192K1,      /*!< Domain parameters for 192-bit "Koblitz" curve. */
-    MBEDTLS_ECP_DP_SECP224K1,      /*!< Domain parameters for 224-bit "Koblitz" curve. */
-    MBEDTLS_ECP_DP_SECP256K1,      /*!< Domain parameters for 256-bit "Koblitz" curve. */
-    MBEDTLS_ECP_DP_CURVE448,       /*!< Domain parameters for Curve448. */
+    MBEDTLS_ECP_DP_NONE = 0,
+    MBEDTLS_ECP_DP_SECP192R1,
+    MBEDTLS_ECP_DP_SECP224R1,
+    MBEDTLS_ECP_DP_SECP256R1,
+    MBEDTLS_ECP_DP_SECP384R1,
+    MBEDTLS_ECP_DP_SECP521R1,
+    MBEDTLS_ECP_DP_BP256R1,
+    MBEDTLS_ECP_DP_BP384R1,
+    MBEDTLS_ECP_DP_BP512R1,
+    MBEDTLS_ECP_DP_CURVE25519,
+    MBEDTLS_ECP_DP_SECP192K1,
+    MBEDTLS_ECP_DP_SECP224K1,
+    MBEDTLS_ECP_DP_SECP256K1,
+    MBEDTLS_ECP_DP_CURVE448,
 } mbedtls_ecp_group_id;
 
 #define MBEDTLS_ECP_DP_MAX     14
 
 typedef enum {
     MBEDTLS_ECP_TYPE_NONE = 0,
-    MBEDTLS_ECP_TYPE_SHORT_WEIERSTRASS,    /* y^2 = x^3 + a x + b      */
-    MBEDTLS_ECP_TYPE_MONTGOMERY,           /* y^2 = x^3 + a x^2 + x    */
+    MBEDTLS_ECP_TYPE_SHORT_WEIERSTRASS,
+    MBEDTLS_ECP_TYPE_MONTGOMERY,
 } mbedtls_ecp_curve_type;
 
 typedef enum {
@@ -111,55 +111,49 @@ typedef enum {
 } mbedtls_ecp_modulus_type;
 
 typedef struct mbedtls_ecp_curve_info {
-    mbedtls_ecp_group_id grp_id;    /*!< An internal identifier. */
-    uint16_t tls_id;                /*!< The TLS NamedCurve identifier. */
-    uint16_t bit_size;              /*!< The curve size in bits. */
-    const char *name;               /*!< A human-friendly name. */
+    mbedtls_ecp_group_id grp_id;
+    uint16_t tls_id;
+    uint16_t bit_size;
+    const char *name;
 } mbedtls_ecp_curve_info;
 
 typedef struct mbedtls_ecp_point {
-    mbedtls_mpi MBEDTLS_PRIVATE(X);          /*!< The X coordinate of the ECP point. */
-    mbedtls_mpi MBEDTLS_PRIVATE(Y);          /*!< The Y coordinate of the ECP point. */
-    mbedtls_mpi MBEDTLS_PRIVATE(Z);          /*!< The Z coordinate of the ECP point. */
+    mbedtls_mpi MBEDTLS_PRIVATE(X);
+    mbedtls_mpi MBEDTLS_PRIVATE(Y);
+    mbedtls_mpi MBEDTLS_PRIVATE(Z);
 }
 mbedtls_ecp_point;
 
 #if !defined(MBEDTLS_ECP_ALT)
 
 typedef struct mbedtls_ecp_group {
-    mbedtls_ecp_group_id id;    /*!< An internal group identifier. */
-    mbedtls_mpi P;              /*!< The prime modulus of the base field. */
-    mbedtls_mpi A;              /*!< For Short Weierstrass: \p A in the equation. For
-                                     Montgomery curves: <code>(A + 2) / 4</code>. */
-    mbedtls_mpi B;              /*!< For Short Weierstrass: \p B in the equation.
-                                     For Montgomery curves: unused. */
-    mbedtls_ecp_point G;        /*!< The generator of the subgroup used. */
-    mbedtls_mpi N;              /*!< The order of \p G. */
-    size_t pbits;               /*!< The number of bits in \p P.*/
-    size_t nbits;               /*!< For Short Weierstrass: The number of bits in \p P.
-                                     For Montgomery curves: the number of bits in the
-                                     private keys. */
-    /* End of public fields */
+    mbedtls_ecp_group_id id;
+    mbedtls_mpi P;
+    mbedtls_mpi A;
+    mbedtls_mpi B;
+    mbedtls_ecp_point G;
+    mbedtls_mpi N;
+    size_t pbits;
+    size_t nbits;
 
-    unsigned int MBEDTLS_PRIVATE(h);             /*!< \internal 1 if the constants are static. */
-    int(*MBEDTLS_PRIVATE(modp))(mbedtls_mpi *);  /*!< The function for fast pseudo-reduction
-                                                    mod \p P (see above).*/
-    int(*MBEDTLS_PRIVATE(t_pre))(mbedtls_ecp_point *, void *);   /*!< Unused. */
-    int(*MBEDTLS_PRIVATE(t_post))(mbedtls_ecp_point *, void *);  /*!< Unused. */
-    void *MBEDTLS_PRIVATE(t_data);               /*!< Unused. */
-    mbedtls_ecp_point *MBEDTLS_PRIVATE(T);       /*!< Pre-computed points for ecp_mul_comb(). */
-    size_t MBEDTLS_PRIVATE(T_size);              /*!< The number of dynamic allocated pre-computed points. */
+    unsigned int MBEDTLS_PRIVATE(h);
+    int(*MBEDTLS_PRIVATE(modp))(mbedtls_mpi *);
+    int(*MBEDTLS_PRIVATE(t_pre))(mbedtls_ecp_point *, void *);
+    int(*MBEDTLS_PRIVATE(t_post))(mbedtls_ecp_point *, void *);
+    void *MBEDTLS_PRIVATE(t_data);
+    mbedtls_ecp_point *MBEDTLS_PRIVATE(T);
+    size_t MBEDTLS_PRIVATE(T_size);
 }
 mbedtls_ecp_group;
 
 #if !defined(MBEDTLS_ECP_WINDOW_SIZE)
 
-#define MBEDTLS_ECP_WINDOW_SIZE    4   /**< The maximum window size used. */
+#define MBEDTLS_ECP_WINDOW_SIZE    4
 #endif /* MBEDTLS_ECP_WINDOW_SIZE */
 
 #if !defined(MBEDTLS_ECP_FIXED_POINT_OPTIM)
 
-#define MBEDTLS_ECP_FIXED_POINT_OPTIM  1   /**< Enable fixed-point speed-up. */
+#define MBEDTLS_ECP_FIXED_POINT_OPTIM  1
 #endif /* MBEDTLS_ECP_FIXED_POINT_OPTIM */
 
 #else  /* MBEDTLS_ECP_ALT */
@@ -188,7 +182,7 @@ mbedtls_ecp_group;
 #elif defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
 #define MBEDTLS_ECP_MAX_BITS 255
 #elif defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED)
-#define MBEDTLS_ECP_MAX_BITS 225 // n is slightly above 2^224
+#define MBEDTLS_ECP_MAX_BITS 225
 #elif defined(MBEDTLS_ECP_DP_SECP224R1_ENABLED)
 #define MBEDTLS_ECP_MAX_BITS 224
 #elif defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED)
@@ -209,16 +203,16 @@ typedef struct mbedtls_ecp_restart_mul mbedtls_ecp_restart_mul_ctx;
 typedef struct mbedtls_ecp_restart_muladd mbedtls_ecp_restart_muladd_ctx;
 
 typedef struct {
-    unsigned MBEDTLS_PRIVATE(ops_done);                  /*!<  current ops count             */
-    unsigned MBEDTLS_PRIVATE(depth);                     /*!<  call depth (0 = top-level)    */
-    mbedtls_ecp_restart_mul_ctx *MBEDTLS_PRIVATE(rsm);   /*!<  ecp_mul_comb() sub-context    */
-    mbedtls_ecp_restart_muladd_ctx *MBEDTLS_PRIVATE(ma); /*!<  ecp_muladd() sub-context      */
+    unsigned MBEDTLS_PRIVATE(ops_done);
+    unsigned MBEDTLS_PRIVATE(depth);
+    mbedtls_ecp_restart_mul_ctx *MBEDTLS_PRIVATE(rsm);
+    mbedtls_ecp_restart_muladd_ctx *MBEDTLS_PRIVATE(ma);
 } mbedtls_ecp_restart_ctx;
 
-#define MBEDTLS_ECP_OPS_CHK   3 /*!< basic ops count for ecp_check_pubkey()  */
-#define MBEDTLS_ECP_OPS_DBL   8 /*!< basic ops count for ecp_double_jac()    */
-#define MBEDTLS_ECP_OPS_ADD  11 /*!< basic ops count for see ecp_add_mixed() */
-#define MBEDTLS_ECP_OPS_INV 120 /*!< empirical equivalent for mpi_mod_inv()  */
+#define MBEDTLS_ECP_OPS_CHK   3
+#define MBEDTLS_ECP_OPS_DBL   8
+#define MBEDTLS_ECP_OPS_ADD  11
+#define MBEDTLS_ECP_OPS_INV 120
 
 int mbedtls_ecp_check_budget(const mbedtls_ecp_group *grp,
                              mbedtls_ecp_restart_ctx *rs_ctx,
@@ -230,16 +224,16 @@ int mbedtls_ecp_check_budget(const mbedtls_ecp_group *grp,
 
 #else /* MBEDTLS_ECP_RESTARTABLE */
 
-#define MBEDTLS_ECP_BUDGET(ops)     /* no-op; for compatibility */
+#define MBEDTLS_ECP_BUDGET(ops)
 
 typedef void mbedtls_ecp_restart_ctx;
 
 #endif /* MBEDTLS_ECP_RESTARTABLE */
 
 typedef struct mbedtls_ecp_keypair {
-    mbedtls_ecp_group MBEDTLS_PRIVATE(grp);      /*!<  Elliptic curve and base point     */
-    mbedtls_mpi MBEDTLS_PRIVATE(d);              /*!<  our secret value                  */
-    mbedtls_ecp_point MBEDTLS_PRIVATE(Q);        /*!<  our public value                  */
+    mbedtls_ecp_group MBEDTLS_PRIVATE(grp);
+    mbedtls_mpi MBEDTLS_PRIVATE(d);
+    mbedtls_ecp_point MBEDTLS_PRIVATE(Q);
 }
 mbedtls_ecp_keypair;
 
@@ -247,7 +241,7 @@ mbedtls_ecp_keypair;
 
 #define MBEDTLS_ECP_PF_COMPRESSED      1
 
-#define MBEDTLS_ECP_TLS_NAMED_CURVE    3   /**< The named_curve of ECCurveType. */
+#define MBEDTLS_ECP_TLS_NAMED_CURVE    3
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
 
@@ -393,12 +387,6 @@ int mbedtls_ecp_check_pub_priv(
 
 int mbedtls_ecp_export(const mbedtls_ecp_keypair *key, mbedtls_ecp_group *grp,
                        mbedtls_mpi *d, mbedtls_ecp_point *Q);
-
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_ecp_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #ifdef __cplusplus
 }

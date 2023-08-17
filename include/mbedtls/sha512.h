@@ -76,20 +76,6 @@ int mbedtls_sha512(const unsigned char *input,
                    unsigned char *output,
                    int is384);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-#if defined(MBEDTLS_SHA384_C)
-
-int mbedtls_sha384_self_test(int verbose);
-#endif /* MBEDTLS_SHA384_C */
-
-#if defined(MBEDTLS_SHA512_C)
-
-int mbedtls_sha512_self_test(int verbose);
-#endif /* MBEDTLS_SHA512_C */
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

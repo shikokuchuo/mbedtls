@@ -40,12 +40,6 @@ int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
 int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
                           const unsigned char *src, size_t slen);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_base64_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

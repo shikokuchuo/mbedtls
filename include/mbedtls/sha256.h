@@ -75,20 +75,6 @@ int mbedtls_sha256(const unsigned char *input,
                    unsigned char *output,
                    int is224);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-#if defined(MBEDTLS_SHA224_C)
-
-int mbedtls_sha224_self_test(int verbose);
-#endif /* MBEDTLS_SHA224_C */
-
-#if defined(MBEDTLS_SHA256_C)
-
-int mbedtls_sha256_self_test(int verbose);
-#endif /* MBEDTLS_SHA256_C */
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

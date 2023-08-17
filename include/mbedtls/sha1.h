@@ -77,12 +77,6 @@ int mbedtls_sha1(const unsigned char *input,
                  size_t ilen,
                  unsigned char output[20]);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_sha1_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

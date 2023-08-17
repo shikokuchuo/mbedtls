@@ -105,12 +105,6 @@ int mbedtls_ecjpake_write_shared_key(mbedtls_ecjpake_context *ctx,
 
 void mbedtls_ecjpake_free(mbedtls_ecjpake_context *ctx);
 
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_ecjpake_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
-
 #ifdef __cplusplus
 }
 #endif

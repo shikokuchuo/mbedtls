@@ -71,38 +71,30 @@ extern "C" {
 #if !defined(MBEDTLS_RSA_ALT)
 
 typedef struct mbedtls_rsa_context {
-    int MBEDTLS_PRIVATE(ver);                    /*!<  Reserved for internal purposes.
-                                                  *    Do not set this field in application
-                                                  *    code. Its meaning might change without
-                                                  *    notice. */
-    size_t MBEDTLS_PRIVATE(len);                 /*!<  The size of \p N in Bytes. */
+    int MBEDTLS_PRIVATE(ver);
+    size_t MBEDTLS_PRIVATE(len);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(N);              /*!<  The public modulus. */
-    mbedtls_mpi MBEDTLS_PRIVATE(E);              /*!<  The public exponent. */
+    mbedtls_mpi MBEDTLS_PRIVATE(N);
+    mbedtls_mpi MBEDTLS_PRIVATE(E);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(D);              /*!<  The private exponent. */
-    mbedtls_mpi MBEDTLS_PRIVATE(P);              /*!<  The first prime factor. */
-    mbedtls_mpi MBEDTLS_PRIVATE(Q);              /*!<  The second prime factor. */
+    mbedtls_mpi MBEDTLS_PRIVATE(D);
+    mbedtls_mpi MBEDTLS_PRIVATE(P);
+    mbedtls_mpi MBEDTLS_PRIVATE(Q);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(DP);             /*!<  <code>D % (P - 1)</code>. */
-    mbedtls_mpi MBEDTLS_PRIVATE(DQ);             /*!<  <code>D % (Q - 1)</code>. */
-    mbedtls_mpi MBEDTLS_PRIVATE(QP);             /*!<  <code>1 / (Q % P)</code>. */
+    mbedtls_mpi MBEDTLS_PRIVATE(DP);
+    mbedtls_mpi MBEDTLS_PRIVATE(DQ);
+    mbedtls_mpi MBEDTLS_PRIVATE(QP);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(RN);             /*!<  cached <code>R^2 mod N</code>. */
+    mbedtls_mpi MBEDTLS_PRIVATE(RN);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(RP);             /*!<  cached <code>R^2 mod P</code>. */
-    mbedtls_mpi MBEDTLS_PRIVATE(RQ);             /*!<  cached <code>R^2 mod Q</code>. */
+    mbedtls_mpi MBEDTLS_PRIVATE(RP);
+    mbedtls_mpi MBEDTLS_PRIVATE(RQ);
 
-    mbedtls_mpi MBEDTLS_PRIVATE(Vi);             /*!<  The cached blinding value. */
-    mbedtls_mpi MBEDTLS_PRIVATE(Vf);             /*!<  The cached un-blinding value. */
+    mbedtls_mpi MBEDTLS_PRIVATE(Vi);
+    mbedtls_mpi MBEDTLS_PRIVATE(Vf);
 
-    int MBEDTLS_PRIVATE(padding);                /*!< Selects padding mode:
-                                                  #MBEDTLS_RSA_PKCS_V15 for 1.5 padding and
-                                                  #MBEDTLS_RSA_PKCS_V21 for OAEP or PSS. */
-    int MBEDTLS_PRIVATE(hash_id);                /*!< Hash identifier of mbedtls_md_type_t type,
-                                                    as specified in md.h for use in the MGF
-                                                    mask generating function used in the
-                                                    EME-OAEP and EMSA-PSS encodings. */
+    int MBEDTLS_PRIVATE(padding);
+    int MBEDTLS_PRIVATE(hash_id);
 #if defined(MBEDTLS_THREADING_C)
     mbedtls_threading_mutex_t MBEDTLS_PRIVATE(mutex);
 #endif
@@ -283,12 +275,6 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
 int mbedtls_rsa_copy(mbedtls_rsa_context *dst, const mbedtls_rsa_context *src);
 
 void mbedtls_rsa_free(mbedtls_rsa_context *ctx);
-
-#if defined(MBEDTLS_SELF_TEST)
-
-int mbedtls_rsa_self_test(int verbose);
-
-#endif /* MBEDTLS_SELF_TEST */
 
 #ifdef __cplusplus
 }
