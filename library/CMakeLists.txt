@@ -20,8 +20,6 @@ set(src_crypto
     base64.c
     bignum.c
     bignum_core.c
-    bignum_mod.c
-    bignum_mod_raw.c
     camellia.c
     ccm.c
     chacha20.c
@@ -38,18 +36,14 @@ set(src_crypto
     ecjpake.c
     ecp.c
     ecp_curves.c
-    ecp_curves_new.c
     entropy.c
     entropy_poll.c
     error.c
     gcm.c
     hkdf.c
     hmac_drbg.c
-    lmots.c
-    lms.c
     md.c
     md5.c
-    memory_buffer_alloc.c
     nist_kw.c
     oid.c
     padlock.c
@@ -63,23 +57,6 @@ set(src_crypto
     platform.c
     platform_util.c
     poly1305.c
-    psa_crypto.c
-    psa_crypto_aead.c
-    psa_crypto_cipher.c
-    psa_crypto_client.c
-    psa_crypto_driver_wrappers_no_static.c
-    psa_crypto_ecp.c
-    psa_crypto_ffdh.c
-    psa_crypto_hash.c
-    psa_crypto_mac.c
-    psa_crypto_pake.c
-    psa_crypto_rsa.c
-    psa_crypto_se.c
-    psa_crypto_slot_management.c
-    psa_crypto_storage.c
-    psa_its_file.c
-    psa_util.c
-    ripemd160.c
     rsa.c
     rsa_alt_helpers.c
     sha1.c
@@ -89,7 +66,6 @@ set(src_crypto
     threading.c
     timing.c
     version.c
-    version_features.c
 )
 
 set(src_x509
@@ -105,94 +81,19 @@ set(src_x509
 )
 
 set(src_tls
-    debug.c
-    mps_reader.c
-    mps_trace.c
     net_sockets.c
     ssl_cache.c
     ssl_ciphersuites.c
     ssl_client.c
     ssl_cookie.c
-    ssl_debug_helpers_generated.c
     ssl_msg.c
     ssl_ticket.c
     ssl_tls.c
     ssl_tls12_client.c
     ssl_tls12_server.c
-    ssl_tls13_keys.c
-    ssl_tls13_server.c
-    ssl_tls13_client.c
-    ssl_tls13_generic.c
 )
 
-if(GEN_FILES)
-    find_package(Perl REQUIRED)
-
-    file(GLOB error_headers ${CMAKE_CURRENT_SOURCE_DIR}/../include/mbedtls/*.h)
-    add_custom_command(
-        OUTPUT
-            ${CMAKE_CURRENT_BINARY_DIR}/error.c
-        COMMAND
-            ${PERL_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_errors.pl
-                ${CMAKE_CURRENT_SOURCE_DIR}/../include/mbedtls
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files
-                ${CMAKE_CURRENT_BINARY_DIR}/error.c
-        DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_errors.pl
-            ${error_headers}
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files/error.fmt
-    )
-
-    add_custom_command(
-        OUTPUT
-            ${CMAKE_CURRENT_BINARY_DIR}/version_features.c
-        COMMAND
-            ${PERL_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_features.pl
-                ${CMAKE_CURRENT_SOURCE_DIR}/../include/mbedtls
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files
-                ${CMAKE_CURRENT_BINARY_DIR}/version_features.c
-        DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_features.pl
-            ${CMAKE_CURRENT_SOURCE_DIR}/../include/mbedtls/mbedtls_config.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files/version_features.fmt
-    )
-
-    add_custom_command(
-        OUTPUT
-            ${CMAKE_CURRENT_BINARY_DIR}/ssl_debug_helpers_generated.c
-        COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_ssl_debug_helpers.py
-                --mbedtls-root ${CMAKE_CURRENT_SOURCE_DIR}/..
-                ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_ssl_debug_helpers.py
-            ${error_headers}
-    )
-
-    add_custom_command(
-        OUTPUT
-            ${CMAKE_CURRENT_BINARY_DIR}/psa_crypto_driver_wrappers.h
-            ${CMAKE_CURRENT_BINARY_DIR}/psa_crypto_driver_wrappers_no_static.c
-        COMMAND
-            ${MBEDTLS_PYTHON_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_driver_wrappers.py
-                ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_driver_wrappers.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files/driver_templates/psa_crypto_driver_wrappers.h.jinja
-            ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/data_files/driver_templates/psa_crypto_driver_wrappers_no_static.c.jinja
-    )
-
-
-else()
-    link_to_source(error.c)
-    link_to_source(version_features.c)
-    link_to_source(ssl_debug_helpers_generated.c)
-    link_to_source(psa_crypto_driver_wrappers_no_static.c)
-endif()
+link_to_source(error.c)
 
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-declarations -Wmissing-prototypes")
