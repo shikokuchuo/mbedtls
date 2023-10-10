@@ -28,7 +28,6 @@
 
 #include "common.h"
 #include "mbedtls/bignum.h"
-#include "bignum_mod.h"
 #include "mbedtls/ecp.h"
 
 /*
