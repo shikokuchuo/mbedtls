@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Random seed file created by test scripts and sample programs
 seedfile
 # MBEDTLS_PSA_INJECT_ENTROPY seed file created by the test framework
@@ -67,3 +68,10 @@ massif-*
 compile_commands.json
 # clangd index files
 /.cache/clangd/index/
+=======
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rproj
+>>>>>>> 7d6639cfb (nanonext edit)

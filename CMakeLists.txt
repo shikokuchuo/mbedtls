@@ -33,6 +33,7 @@ cmake_policy(SET CMP0011 NEW)
 # is deprecated and will be removed in future versions.
 cmake_policy(SET CMP0012 NEW)
 
+<<<<<<< HEAD
 if(TEST_CPP)
     project("Mbed TLS"
         LANGUAGES C CXX
@@ -44,6 +45,9 @@ else()
         VERSION 3.6.0
     )
 endif()
+=======
+project("Mbed TLS" LANGUAGES C)
+>>>>>>> 7d6639cfb (nanonext edit)
 
 include(GNUInstallDirs)
 
@@ -58,18 +62,13 @@ endif()
 # Set the project root directory.
 set(MBEDTLS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-option(ENABLE_PROGRAMS "Build Mbed TLS programs." ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_COLOR_MAKEFILE OFF)
+set(CMAKE_INSTALL_MESSAGE NEVER)
 
 option(UNSAFE_BUILD "Allow unsafe builds. These builds ARE NOT SECURE." OFF)
-option(MBEDTLS_FATAL_WARNINGS "Compiler warnings treated as errors" ON)
-if(CMAKE_HOST_WIN32)
-    # N.B. The comment on the next line is significant! If you change it,
-    # edit the sed command in prepare_release.sh that modifies
-    # CMakeLists.txt.
-    option(GEN_FILES "Generate the auto-generated files as needed" OFF) # off in development
-else()
-    option(GEN_FILES "Generate the auto-generated files as needed" OFF)
-endif()
+option(GEN_FILES "Generate the auto-generated files as needed" OFF)
 
 option(DISABLE_PACKAGE_CONFIG_AND_INSTALL "Disable package configuration, target export and installation" ${MBEDTLS_AS_SUBPROJECT})
 
@@ -77,13 +76,6 @@ string(REGEX MATCH "Clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER_ID}")
 string(REGEX MATCH "GNU" CMAKE_COMPILER_IS_GNU "${CMAKE_C_COMPILER_ID}")
 string(REGEX MATCH "IAR" CMAKE_COMPILER_IS_IAR "${CMAKE_C_COMPILER_ID}")
 string(REGEX MATCH "MSVC" CMAKE_COMPILER_IS_MSVC "${CMAKE_C_COMPILER_ID}")
-
-# the test suites currently have compile errors with MSVC
-if(CMAKE_COMPILER_IS_MSVC)
-    option(ENABLE_TESTING "Build Mbed TLS tests." OFF)
-else()
-    option(ENABLE_TESTING "Build Mbed TLS tests." ON)
-endif()
 
 # Warning string - created as a list for compatibility with CMake 2.8
 set(CTR_DRBG_128_BIT_KEY_WARN_L1 "****  WARNING!  MBEDTLS_CTR_DRBG_USE_128_BIT_KEY defined!\n")
@@ -96,6 +88,7 @@ set(CTR_DRBG_128_BIT_KEY_WARNING "${WARNING_BORDER}"
                          "${CTR_DRBG_128_BIT_KEY_WARN_L3}"
                          "${WARNING_BORDER}")
 
+<<<<<<< HEAD
 # Python 3 is only needed here to check for configuration warnings.
 if(NOT CMAKE_VERSION VERSION_LESS 3.15.0)
     set(Python3_FIND_STRATEGY LOCATION)
@@ -125,6 +118,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 
+=======
+>>>>>>> 7d6639cfb (nanonext edit)
 # If this is the root project add longer list of available CMAKE_BUILD_TYPE values
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
@@ -196,28 +191,7 @@ if(CMAKE_COMPILER_IS_GNU)
     # note: starting with CMake 2.8 we could use CMAKE_C_COMPILER_VERSION
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                     OUTPUT_VARIABLE GCC_VERSION)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wwrite-strings")
-    if (GCC_VERSION VERSION_GREATER 3.0 OR GCC_VERSION VERSION_EQUAL 3.0)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat=2 -Wno-format-nonliteral")
-    endif()
-    if (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wvla")
-    endif()
-    if (GCC_VERSION VERSION_GREATER 4.5 OR GCC_VERSION VERSION_EQUAL 4.5)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wlogical-op")
-    endif()
-    if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow")
-    endif()
-    if (GCC_VERSION VERSION_GREATER 5.0)
-        CHECK_C_COMPILER_FLAG("-Wformat-signedness" C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS)
-        if(C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat-signedness")
-        endif()
-    endif()
-    if (GCC_VERSION VERSION_GREATER 7.0 OR GCC_VERSION VERSION_EQUAL 7.0)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat-overflow=2 -Wformat-truncation")
-    endif()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     set(CMAKE_C_FLAGS_RELEASE     "-O2")
     set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
     set(CMAKE_C_FLAGS_COVERAGE    "-O0 -g3 --coverage")
@@ -230,7 +204,7 @@ if(CMAKE_COMPILER_IS_GNU)
 endif(CMAKE_COMPILER_IS_GNU)
 
 if(CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wwrite-strings -Wpointer-arith -Wimplicit-fallthrough -Wshadow -Wvla -Wformat=2 -Wno-format-nonliteral")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     set(CMAKE_C_FLAGS_RELEASE     "-O2")
     set(CMAKE_C_FLAGS_DEBUG       "-O0 -g3")
     set(CMAKE_C_FLAGS_COVERAGE    "-O0 -g3 --coverage")
@@ -251,33 +225,8 @@ endif(CMAKE_COMPILER_IS_IAR)
 
 if(CMAKE_COMPILER_IS_MSVC)
     # Strictest warnings, UTF-8 source and execution charset
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /utf-8")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 endif(CMAKE_COMPILER_IS_MSVC)
-
-if(MBEDTLS_FATAL_WARNINGS)
-    if(CMAKE_COMPILER_IS_MSVC)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
-    endif(CMAKE_COMPILER_IS_MSVC)
-
-    if(CMAKE_COMPILER_IS_CLANG OR CMAKE_COMPILER_IS_GNU)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-        if(UNSAFE_BUILD)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=cpp")
-            set(CMAKE_C_FLAGS_ASAN "${CMAKE_C_FLAGS_ASAN} -Wno-error=cpp")
-            set(CMAKE_C_FLAGS_ASANDBG "${CMAKE_C_FLAGS_ASANDBG} -Wno-error=cpp")
-        endif(UNSAFE_BUILD)
-    endif(CMAKE_COMPILER_IS_CLANG OR CMAKE_COMPILER_IS_GNU)
-
-    if (CMAKE_COMPILER_IS_IAR)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --warnings_are_errors")
-    endif(CMAKE_COMPILER_IS_IAR)
-endif(MBEDTLS_FATAL_WARNINGS)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-    if(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
-        set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
-    endif(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
-endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
 
 if(LIB_INSTALL_DIR)
     set(CMAKE_INSTALL_LIBDIR "${LIB_INSTALL_DIR}")
@@ -290,10 +239,9 @@ add_subdirectory(framework)
 
 add_subdirectory(include)
 
-add_subdirectory(3rdparty)
-
 add_subdirectory(library)
 
+<<<<<<< HEAD
 add_subdirectory(pkgconfig)
 
 #
@@ -392,6 +340,8 @@ if(ENABLE_TESTING)
     endif()
 endif()
 
+=======
+>>>>>>> 7d6639cfb (nanonext edit)
 if(NOT DISABLE_PACKAGE_CONFIG_AND_INSTALL)
     configure_package_config_file(
         "cmake/MbedTLSConfig.cmake.in"
