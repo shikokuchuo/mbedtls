@@ -22,15 +22,10 @@
 #define PSA_CRYPTO_DRIVER_CONTEXTS_KEY_DERIVATION_H
 
 #include "psa/crypto_driver_common.h"
-
-/* Include the context structure definitions for the Mbed TLS software drivers */
 #include "psa/crypto_builtin_key_derivation.h"
 
-/* Include the context structure definitions for those drivers that were
- * declared during the autogeneration process. */
-
 typedef union {
-    unsigned dummy; /* Make sure this union is always non-empty */
+    unsigned dummy;
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXTRACT) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXPAND)
