@@ -30,11 +30,6 @@
 #ifndef MBEDTLS_CONFIG_ADJUST_PSA_FROM_LEGACY_H
 #define MBEDTLS_CONFIG_ADJUST_PSA_FROM_LEGACY_H
 
-/*
- * Ensure PSA_WANT_* defines are setup properly if MBEDTLS_PSA_CRYPTO_CONFIG
- * is not defined
- */
-
 #if defined(MBEDTLS_CCM_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_CCM 1
 #define MBEDTLS_PSA_BUILTIN_ALG_CCM_STAR_NO_TAG 1
@@ -57,7 +52,6 @@
 #define PSA_WANT_ALG_ECDSA 1
 #define PSA_WANT_ALG_ECDSA_ANY 1
 
-// Only add in DETERMINISTIC support if ECDSA is also enabled
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
 #define MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA 1
 #define PSA_WANT_ALG_DETERMINISTIC_ECDSA 1
@@ -70,15 +64,11 @@
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT 1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT 1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE 1
-/* Normally we wouldn't enable this because it's not implemented in ecp.c,
- * but since it used to be available any time ECP_C was enabled, let's enable
- * it anyway for the sake of backwards compatibility */
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_BASIC 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE 1
-/* See comment for PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE above. */
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_DERIVE 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY 1
 #define PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY 1
@@ -105,10 +95,6 @@
 #define PSA_WANT_ALG_GCM 1
 #endif /* MBEDTLS_GCM_C */
 
-/* Enable PSA HKDF algorithm if mbedtls HKDF is supported.
- * PSA HKDF EXTRACT and PSA HKDF EXPAND have minimal cost when
- * PSA HKDF is enabled, so enable both algorithms together
- * with PSA HKDF. */
 #if defined(MBEDTLS_HKDF_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define PSA_WANT_ALG_HMAC 1
@@ -332,7 +318,6 @@
 #define PSA_WANT_ECC_SECP_K1_192 1
 #endif
 
-/* SECP224K1 is buggy via the PSA API (https://github.com/Mbed-TLS/mbedtls/issues/3541) */
 #if 0 && defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_K1_224 1
 #define PSA_WANT_ECC_SECP_K1_224 1

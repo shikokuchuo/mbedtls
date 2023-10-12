@@ -28,9 +28,6 @@
 #ifndef MBEDTLS_CONFIG_ADJUST_LEGACY_FROM_PSA_H
 #define MBEDTLS_CONFIG_ADJUST_LEGACY_FROM_PSA_H
 
-/* Define appropriate ACCEL macros for the p256-m driver.
- * In the future, those should be generated from the drivers JSON description.
- */
 #if defined(MBEDTLS_PSA_P256M_DRIVER_ENABLED)
 #define MBEDTLS_PSA_ACCEL_ECC_SECP_R1_256
 #define MBEDTLS_PSA_ACCEL_ALG_ECDSA
@@ -42,23 +39,6 @@
 #define MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_GENERATE
 #endif
 
-/*
- * ECC: support for a feature is controlled by a triplet or a pair:
- * (curve, key_type public/basic, alg) or (curve, key_type_<action>).
- *
- * A triplet/pair is accelerated if all of is components are accelerated;
- * otherwise each component needs to be built in.
- *
- * We proceed in two passes:
- * 1. Check if acceleration is complete for curves, key types, algs.
- * 2. Then enable built-ins for each thing that's either not accelerated of
- * doesn't have complete acceleration of the other triplet/pair components.
- *
- * Note: this needs psa/crypto_adjust_keypair_types.h to have been included
- * already, so that we know the full set of key types that are requested.
- */
-
-/* ECC: curves: is acceleration complete? */
 #if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256) && \
     !defined(MBEDTLS_PSA_ACCEL_ECC_BRAINPOOL_P_R1_256)
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_CURVES
@@ -135,7 +115,6 @@
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_WEIERSTRASS_CURVES
 #endif
 
-/* ECC: algs: is acceleration complete? */
 #if defined(PSA_WANT_ALG_DETERMINISTIC_ECDSA) && \
     !defined(MBEDTLS_PSA_ACCEL_ALG_DETERMINISTIC_ECDSA)
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS
@@ -156,7 +135,6 @@
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS
 #endif
 
-/* ECC: key types: is acceleration complete? */
 #if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY) && \
     !defined(MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_PUBLIC_KEY)
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_KEY_TYPES
@@ -184,31 +162,22 @@
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_KEY_TYPES
 #endif
 
-/* Special case: we don't support cooked key derivation in drivers yet */
 #if defined(MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_DERIVE)
 #undef MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_DERIVE
 #endif
 
-/* Note: the condition is always true as DERIVE can't be accelerated yet */
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE) && \
     !defined(MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_DERIVE)
 #define MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_KEY_TYPES
 #endif
 
-/* ECC: curves: enable built-ins as needed.
- *
- * We need the curve built-in:
- * - if it's not accelerated, or
- * - if there's a key type with missing acceleration, or
- * - if there's a alg with missing acceleration.
- */
 #if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
 #if !defined(MBEDTLS_PSA_ACCEL_ECC_BRAINPOOL_P_R1_256) || \
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_KEY_TYPES) || \
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_BRAINPOOL_P_R1_256 1
 #define MBEDTLS_ECP_DP_BP256R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_BRAINPOOL_P_R1_256 */
 
 #if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_384)
@@ -217,7 +186,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_BRAINPOOL_P_R1_384 1
 #define MBEDTLS_ECP_DP_BP384R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_BRAINPOOL_P_R1_384 */
 
 #if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_512)
@@ -226,7 +195,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_BRAINPOOL_P_R1_512 1
 #define MBEDTLS_ECP_DP_BP512R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_BRAINPOOL_P_R1_512 */
 
 #if defined(PSA_WANT_ECC_MONTGOMERY_255)
@@ -235,7 +204,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_MONTGOMERY_255 1
 #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_MONTGOMERY_255 */
 
 #if defined(PSA_WANT_ECC_MONTGOMERY_448)
@@ -244,7 +213,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_MONTGOMERY_448 1
 #define MBEDTLS_ECP_DP_CURVE448_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_MONTGOMERY_448 */
 
 #if defined(PSA_WANT_ECC_SECP_R1_192)
@@ -253,7 +222,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_R1_192 1
 #define MBEDTLS_ECP_DP_SECP192R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_R1_192 */
 
 #if defined(PSA_WANT_ECC_SECP_R1_224)
@@ -262,7 +231,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_R1_224 1
 #define MBEDTLS_ECP_DP_SECP224R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_R1_224 */
 
 #if defined(PSA_WANT_ECC_SECP_R1_256)
@@ -271,7 +240,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_R1_256 1
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_R1_256 */
 
 #if defined(PSA_WANT_ECC_SECP_R1_384)
@@ -280,7 +249,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_R1_384 1
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_R1_384 */
 
 #if defined(PSA_WANT_ECC_SECP_R1_521)
@@ -289,7 +258,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_R1_521 1
 #define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_R1_521 */
 
 #if defined(PSA_WANT_ECC_SECP_K1_192)
@@ -298,7 +267,7 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_K1_192 1
 #define MBEDTLS_ECP_DP_SECP192K1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_K1_192 */
 
 #if defined(PSA_WANT_ECC_SECP_K1_224)
@@ -307,9 +276,8 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_K1_224 1
 #define MBEDTLS_ECP_DP_SECP224K1_ENABLED
-/* https://github.com/Mbed-TLS/mbedtls/issues/3541 */
 #error "SECP224K1 is buggy via the PSA API in Mbed TLS."
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_K1_224 */
 
 #if defined(PSA_WANT_ECC_SECP_K1_256)
@@ -318,21 +286,9 @@
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_ALGS)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_K1_256 1
 #define MBEDTLS_ECP_DP_SECP256K1_ENABLED
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ECC_SECP_K1_256 */
 
-/* ECC: algs: enable built-ins as needed.
- *
- * We need the alg built-in:
- * - if it's not accelerated, or
- * - if there's a relevant curve (see below) with missing acceleration, or
- * - if there's a key type among (public, basic) with missing acceleration.
- *
- * Relevant curves are:
- * - all curves for ECDH
- * - Weierstrass curves for (deterministic) ECDSA
- * - secp256r1 for EC J-PAKE
- */
 #if defined(PSA_WANT_ALG_DETERMINISTIC_ECDSA)
 #if !defined(MBEDTLS_PSA_ACCEL_ALG_DETERMINISTIC_ECDSA) || \
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_WEIERSTRASS_CURVES) || \
@@ -346,7 +302,7 @@
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ALG_DETERMINISTIC_ECDSA */
 
 #if defined(PSA_WANT_ALG_ECDH)
@@ -357,7 +313,7 @@
 #define MBEDTLS_ECDH_C
 #define MBEDTLS_ECP_C
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ALG_ECDH */
 
 #if defined(PSA_WANT_ALG_ECDSA)
@@ -370,7 +326,7 @@
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ALG_ECDSA */
 
 #if defined(PSA_WANT_ALG_JPAKE)
@@ -383,16 +339,9 @@
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ECP_C
 #define MBEDTLS_ECJPAKE_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_ALG_JPAKE */
 
-/* ECC: key types: enable built-ins as needed.
- *
- * We need the key type built-in:
- * - if it's not accelerated, or
- * - if there's a curve with missing acceleration, or
- * - only for public/basic: if there's an alg with missing acceleration.
- */
 #if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY)
 #if !defined(MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_PUBLIC_KEY) || \
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_CURVES) || \
@@ -400,7 +349,7 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY 1
 #define MBEDTLS_ECP_LIGHT
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
 
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_BASIC)
@@ -410,7 +359,7 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_BASIC 1
 #define MBEDTLS_ECP_LIGHT
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_BASIC */
 
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT)
@@ -419,7 +368,7 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT 1
 #define MBEDTLS_ECP_LIGHT
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT */
 
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT)
@@ -428,7 +377,7 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT 1
 #define MBEDTLS_ECP_C
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT */
 
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE)
@@ -437,20 +386,17 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE 1
 #define MBEDTLS_ECP_C
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE */
 
-/* Note: the condition is always true as DERIVE can't be accelerated yet */
 #if defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE)
 #if !defined(MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_DERIVE) || \
     defined(MBEDTLS_PSA_ECC_ACCEL_INCOMPLETE_CURVES)
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_DERIVE 1
 #define MBEDTLS_ECP_LIGHT
 #define MBEDTLS_BIGNUM_C
-#endif /* missing accel */
+#endif
 #endif /* !MBEDTLS_PSA_ACCEL_KEY_TYPE_ECC_KEY_PAIR_DERIVE */
-
-/* End of ECC section */
 
 #if defined(PSA_WANT_ALG_FFDH)
 #if !defined(MBEDTLS_PSA_ACCEL_ALG_FFDH)
@@ -461,10 +407,7 @@
 
 #if defined(PSA_WANT_ALG_HKDF)
 #if !defined(MBEDTLS_PSA_ACCEL_ALG_HKDF)
-/*
- * The PSA implementation has its own implementation of HKDF, separate from
- * hkdf.c. No need to enable MBEDTLS_HKDF_C here.
- */
+
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define MBEDTLS_PSA_BUILTIN_ALG_HKDF 1
 #endif /* !MBEDTLS_PSA_ACCEL_ALG_HKDF */
@@ -472,10 +415,7 @@
 
 #if defined(PSA_WANT_ALG_HKDF_EXTRACT)
 #if !defined(MBEDTLS_PSA_ACCEL_ALG_HKDF_EXTRACT)
-/*
- * The PSA implementation has its own implementation of HKDF, separate from
- * hkdf.c. No need to enable MBEDTLS_HKDF_C here.
- */
+
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXTRACT 1
 #endif /* !MBEDTLS_PSA_ACCEL_ALG_HKDF_EXTRACT */
@@ -483,10 +423,7 @@
 
 #if defined(PSA_WANT_ALG_HKDF_EXPAND)
 #if !defined(MBEDTLS_PSA_ACCEL_ALG_HKDF_EXPAND)
-/*
- * The PSA implementation has its own implementation of HKDF, separate from
- * hkdf.c. No need to enable MBEDTLS_HKDF_C here.
- */
+
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXPAND 1
 #endif /* !MBEDTLS_PSA_ACCEL_ALG_HKDF_EXPAND */
@@ -691,9 +628,6 @@
 #endif /* !MBEDTLS_PSA_ACCEL_KEY_TYPE_RSA_PUBLIC_KEY */
 #endif /* PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
 
-/* If any of the block modes are requested that don't have an
- * associated HW assist, define PSA_HAVE_SOFT_BLOCK_MODE for checking
- * in the block cipher key types. */
 #if (defined(PSA_WANT_ALG_CTR) && !defined(MBEDTLS_PSA_ACCEL_ALG_CTR)) || \
     (defined(PSA_WANT_ALG_CFB) && !defined(MBEDTLS_PSA_ACCEL_ALG_CFB)) || \
     (defined(PSA_WANT_ALG_OFB) && !defined(MBEDTLS_PSA_ACCEL_ALG_OFB)) || \
@@ -773,9 +707,6 @@
 #endif /*!MBEDTLS_PSA_ACCEL_KEY_TYPE_CHACHA20 */
 #endif /* PSA_WANT_KEY_TYPE_CHACHA20 */
 
-/* If any of the software block ciphers are selected, define
- * PSA_HAVE_SOFT_BLOCK_CIPHER, which can be used in any of these
- * situations. */
 #if defined(PSA_HAVE_SOFT_KEY_TYPE_AES) || \
     defined(PSA_HAVE_SOFT_KEY_TYPE_ARIA) || \
     defined(PSA_HAVE_SOFT_KEY_TYPE_DES) || \

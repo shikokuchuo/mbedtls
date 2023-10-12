@@ -26,30 +26,13 @@
 #ifndef MBEDTLS_BUILD_INFO_H
 #define MBEDTLS_BUILD_INFO_H
 
-/*
- * This set of compile-time defines can be used to determine the version number
- * of the Mbed TLS library used. Run-time variables for the same can be found in
- * version.h
- */
-
-/**
- * The version number x.y.z is split into three parts.
- * Major, Minor, Patchlevel
- */
 #define MBEDTLS_VERSION_MAJOR  3
 #define MBEDTLS_VERSION_MINOR  5
 #define MBEDTLS_VERSION_PATCH  0
 
-/**
- * The single version number has the following structure:
- *    MMNNPP00
- *    Major version | Minor version | Patch version
- */
 #define MBEDTLS_VERSION_NUMBER         0x03050000
 #define MBEDTLS_VERSION_STRING         "3.5.0"
 #define MBEDTLS_VERSION_STRING_FULL    "Mbed TLS 3.5.0"
-
-/* Macros for build-time platform detection */
 
 #if !defined(MBEDTLS_ARCH_IS_ARM64) && \
     (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC))
@@ -78,13 +61,11 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
-/* Define `inline` on some non-C99-compliant compilers. */
 #if (defined(__ARMCC_VERSION) || defined(_MSC_VER)) && \
     !defined(inline) && !defined(__cplusplus)
 #define inline __inline
 #endif
 
-/* X.509, TLS and non-PSA crypto configuration */
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/mbedtls_config.h"
 #else
@@ -97,11 +78,6 @@
 #error "Invalid config version, defined value of MBEDTLS_CONFIG_VERSION is unsupported"
 #endif
 
-/* Target and application specific configurations
- *
- * Allow user to override any previous default.
- *
- */
 #if defined(MBEDTLS_USER_CONFIG_FILE)
 #include MBEDTLS_USER_CONFIG_FILE
 #endif
@@ -151,8 +127,6 @@
 
 #include "mbedtls/config_adjust_ssl.h"
 
-/* Make sure all configuration symbols are set before including check_config.h,
- * even the ones that are calculated programmatically. */
 #include "mbedtls/check_config.h"
 
 #endif /* MBEDTLS_BUILD_INFO_H */

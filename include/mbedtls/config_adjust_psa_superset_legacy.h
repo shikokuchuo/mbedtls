@@ -29,12 +29,6 @@
 #ifndef MBEDTLS_CONFIG_ADJUST_PSA_SUPERSET_LEGACY_H
 #define MBEDTLS_CONFIG_ADJUST_PSA_SUPERSET_LEGACY_H
 
-/****************************************************************/
-/* Hashes that are built in are also enabled in PSA.
- * This simplifies dependency declarations especially
- * for modules that obey MBEDTLS_USE_PSA_CRYPTO. */
-/****************************************************************/
-
 #if defined(MBEDTLS_MD5_C)
 #define PSA_WANT_ALG_MD5 1
 #endif
@@ -70,8 +64,6 @@
 #define PSA_WANT_ALG_SHA3_512 1
 #endif
 
-/* Ensure that the PSA's supported curves (PSA_WANT_ECC_xxx) are always a
- * superset of the builtin ones (MBEDTLS_ECP_DP_xxx). */
 #if defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)
 #if !defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
 #define PSA_WANT_ECC_BRAINPOOL_P_R1_256 1
@@ -138,7 +130,6 @@
 #endif /* PSA_WANT_ECC_SECP_K1_192 */
 #endif /* MBEDTLS_ECP_DP_SECP192K1_ENABLED */
 
-/* SECP224K1 is buggy via the PSA API (https://github.com/Mbed-TLS/mbedtls/issues/3541) */
 #if 0 && defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED)
 #if !defined(PSA_WANT_ECC_SECP_K1_224)
 #define PSA_WANT_ECC_SECP_K1_224 1

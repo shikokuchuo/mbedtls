@@ -34,10 +34,6 @@
 #ifndef MBEDTLS_CONFIG_ADJUST_SSL_H
 #define MBEDTLS_CONFIG_ADJUST_SSL_H
 
-/* The following blocks make it easier to disable all of TLS,
- * or of TLS 1.2 or 1.3 or DTLS, without having to manually disable all
- * key exchanges, options and extensions related to them. */
-
 #if !defined(MBEDTLS_SSL_TLS_C)
 #undef MBEDTLS_SSL_CLI_C
 #undef MBEDTLS_SSL_SRV_C
