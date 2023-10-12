@@ -22,11 +22,6 @@
 #ifndef MBEDTLS_CONFIG_ADJUST_LEGACY_CRYPTO_H
 #define MBEDTLS_CONFIG_ADJUST_LEGACY_CRYPTO_H
 
-/* Ideally, we'd set those as defaults in mbedtls_config.h, but
- * putting an #ifdef _WIN32 in mbedtls_config.h would confuse config.py.
- *
- * So, adjust it here.
- * Not related to crypto, but this is the bottom of the stack. */
 #if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER <= 1900)
 #if !defined(MBEDTLS_PLATFORM_SNPRINTF_ALT) && \
     !defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO)
@@ -38,8 +33,6 @@
 #endif
 #endif /* _MINGW32__ || (_MSC_VER && (_MSC_VER <= 1900)) */
 
-/* Auto-enable CIPHER_C when any of the unauthenticated ciphers is builtin
- * in PSA. */
 #if defined(MBEDTLS_PSA_CRYPTO_C) && \
     (defined(MBEDTLS_PSA_BUILTIN_ALG_STREAM_CIPHER) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_CTR) || \
@@ -52,16 +45,10 @@
 #define MBEDTLS_CIPHER_C
 #endif
 
-/* Auto-enable MBEDTLS_MD_LIGHT based on MBEDTLS_MD_C.
- * This allows checking for MD_LIGHT rather than MD_LIGHT || MD_C.
- */
 #if defined(MBEDTLS_MD_C)
 #define MBEDTLS_MD_LIGHT
 #endif
 
-/* Auto-enable MBEDTLS_MD_LIGHT if needed by a module that didn't require it
- * in a previous release, to ensure backwards compatibility.
- */
 #if defined(MBEDTLS_ECJPAKE_C) || \
     defined(MBEDTLS_PEM_PARSE_C) || \
     defined(MBEDTLS_ENTROPY_C) || \
@@ -75,21 +62,7 @@
 #endif
 
 #if defined(MBEDTLS_MD_LIGHT)
-/*
- * - MBEDTLS_MD_CAN_xxx is defined if the md module can perform xxx.
- * - MBEDTLS_MD_xxx_VIA_PSA is defined if the md module may perform xxx via PSA
- *   (see below).
- * - MBEDTLS_MD_SOME_PSA is defined if at least one algorithm may be performed
- *   via PSA (see below).
- * - MBEDTLS_MD_SOME_LEGACY is defined if at least one algorithm may be performed
- *   via a direct legacy call (see below).
- *
- * The md module performs an algorithm via PSA if there is a PSA hash
- * accelerator and the PSA driver subsytem is initialized at the time the
- * operation is started, and makes a direct legacy call otherwise.
- */
 
-/* PSA accelerated implementations */
 #if defined(MBEDTLS_PSA_CRYPTO_C)
 
 #if defined(MBEDTLS_PSA_ACCEL_ALG_MD5)
@@ -286,6 +259,8 @@
  * - PK_C + USE_PSA + PSA_WANT_ALG_ECDSA is a temporary dependency which will
  *   be fixed by #7453.
  */
+=======
+>>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_ECP_C) || \
     defined(MBEDTLS_PK_PARSE_EC_EXTENDED) || \
     defined(MBEDTLS_PK_PARSE_EC_COMPRESSED) || \
@@ -293,26 +268,23 @@
 #define MBEDTLS_ECP_LIGHT
 #endif
 
+<<<<<<< HEAD
 /* MBEDTLS_PK_PARSE_EC_COMPRESSED is introduced in Mbed TLS version 3.5, while
  * in previous version compressed points were automatically supported as long
  * as PK_PARSE_C and ECP_C were enabled. As a consequence, for backward
  * compatibility, we auto-enable PK_PARSE_EC_COMPRESSED when these conditions
  * are met. */
+=======
+>>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_PK_PARSE_C) && defined(MBEDTLS_ECP_C)
 #define MBEDTLS_PK_PARSE_EC_COMPRESSED
 #endif
 
-/* Helper symbol to state that there is support for ECDH, either through
- * library implementation (ECDH_C) or through PSA. */
 #if (defined(MBEDTLS_USE_PSA_CRYPTO) && defined(PSA_WANT_ALG_ECDH)) || \
     (!defined(MBEDTLS_USE_PSA_CRYPTO) && defined(MBEDTLS_ECDH_C))
 #define MBEDTLS_CAN_ECDH
 #endif
 
-/* PK module can achieve ECDSA functionalities by means of either software
- * implementations (ECDSA_C) or through a PSA driver. The following defines
- * are meant to list these capabilities in a general way which abstracts how
- * they are implemented under the hood. */
 #if !defined(MBEDTLS_USE_PSA_CRYPTO)
 #if defined(MBEDTLS_ECDSA_C)
 #define MBEDTLS_PK_CAN_ECDSA_SIGN
@@ -333,14 +305,20 @@
 #define MBEDTLS_PK_CAN_ECDSA_SOME
 #endif
 
-/* If MBEDTLS_PSA_CRYPTO_C is defined, make sure MBEDTLS_PSA_CRYPTO_CLIENT
- * is defined as well to include all PSA code.
- */
 #if defined(MBEDTLS_PSA_CRYPTO_C)
 #define MBEDTLS_PSA_CRYPTO_CLIENT
 #endif /* MBEDTLS_PSA_CRYPTO_C */
 
+<<<<<<< HEAD
 /* Helpers to state that each key is supported either on the builtin or PSA side. */
+=======
+#if defined(MBEDTLS_PSA_CRYPTO_C) && defined(MBEDTLS_RSA_C)
+#define MBEDTLS_PK_C
+#define MBEDTLS_PK_WRITE_C
+#define MBEDTLS_PK_PARSE_C
+#endif
+
+>>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED) || defined(PSA_WANT_ECC_SECP_R1_521)
 #define MBEDTLS_ECP_HAVE_SECP521R1
 #endif
@@ -381,18 +359,11 @@
 #define MBEDTLS_ECP_HAVE_SECP192R1
 #endif
 
-/* Helper symbol to state that the PK module has support for EC keys. This
- * can either be provided through the legacy ECP solution or through the
- * PSA friendly MBEDTLS_PK_USE_PSA_EC_DATA (see pk.h for its description). */
 #if defined(MBEDTLS_ECP_C) || \
     (defined(MBEDTLS_USE_PSA_CRYPTO) && defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY))
 #define MBEDTLS_PK_HAVE_ECC_KEYS
 #endif /* MBEDTLS_PK_USE_PSA_EC_DATA || MBEDTLS_ECP_C */
 
-/* Historically pkparse did not check the CBC padding when decrypting
- * a key. This was a bug, which is now fixed. As a consequence, pkparse
- * now needs PKCS7 padding support, but existing configurations might not
- * enable it, so we enable it here. */
 #if defined(MBEDTLS_PK_PARSE_C) && defined(MBEDTLS_PKCS5_C) && defined(MBEDTLS_CIPHER_MODE_CBC)
 #define MBEDTLS_CIPHER_PADDING_PKCS7
 #endif

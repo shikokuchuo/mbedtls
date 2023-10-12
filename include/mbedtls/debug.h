@@ -68,18 +68,6 @@
 
 #endif /* MBEDTLS_DEBUG_C */
 
-/**
- * \def MBEDTLS_PRINTF_ATTRIBUTE
- *
- * Mark a function as having printf attributes, and thus enable checking
- * via -wFormat and other flags. This does nothing on builds with compilers
- * that do not support the format attribute
- *
- * Module:  library/debug.c
- * Caller:
- *
- * This module provides debugging functions.
- */
 #if defined(__has_attribute)
 #if __has_attribute(format)
 #if defined(__MINGW32__) && __USE_MINGW_ANSI_STDIO == 1
@@ -96,18 +84,6 @@
 #define MBEDTLS_PRINTF_ATTRIBUTE(string_index, first_to_check)
 #endif
 
-/**
- * \def MBEDTLS_PRINTF_SIZET
- *
- * MBEDTLS_PRINTF_xxx: Due to issues with older window compilers
- * and MinGW we need to define the printf specifier for size_t
- * and long long per platform.
- *
- * Module:  library/debug.c
- * Caller:
- *
- * This module provides debugging functions.
- */
 #if (defined(__MINGW32__) && __USE_MINGW_ANSI_STDIO == 0) || (defined(_MSC_VER) && _MSC_VER < 1800)
    #include <inttypes.h>
    #define MBEDTLS_PRINTF_SIZET     PRIuPTR
@@ -132,21 +108,6 @@
 extern "C" {
 #endif
 
-/**
- * \brief   Set the threshold error level to handle globally all debug output.
- *          Debug messages that have a level over the threshold value are
- *          discarded.
- *          (Default value: 0 = No debug )
- *
- * \param threshold     threshold level of messages to filter on. Messages at a
- *                      higher level will be discarded.
- *                          - Debug levels
- *                              - 0 No debug
- *                              - 1 Error
- *                              - 2 State change
- *                              - 3 Informational
- *                              - 4 Verbose
- */
 void mbedtls_debug_set_threshold(int threshold);
 
 #ifdef __cplusplus

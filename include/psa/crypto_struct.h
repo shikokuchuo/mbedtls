@@ -54,29 +54,13 @@
 extern "C" {
 #endif
 
-/*
- * Include the build-time configuration information header. Here, we do not
- * include `"mbedtls/build_info.h"` directly but `"psa/build_info.h"`, which
- * is basically just an alias to it. This is to ease the maintenance of the
- * TF-PSA-Crypto repository which has a different build system and
- * configuration.
- */
 #include "psa/build_info.h"
-
-/* Include the context definition for the compiled-in drivers for the primitive
- * algorithms. */
 #include "psa/crypto_driver_contexts_primitives.h"
 
 struct psa_hash_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_driver_wrappers.h.
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. the driver context is not active, in use). */
     unsigned int MBEDTLS_PRIVATE(id);
     psa_driver_hash_context_t MBEDTLS_PRIVATE(ctx);
 #endif
@@ -96,12 +80,6 @@ struct psa_cipher_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_crypto_driver_wrappers.h
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. none of the driver contexts are active). */
     unsigned int MBEDTLS_PRIVATE(id);
 
     unsigned int MBEDTLS_PRIVATE(iv_required) : 1;
@@ -124,20 +102,12 @@ static inline struct psa_cipher_operation_s psa_cipher_operation_init(void)
     return v;
 }
 
-/* Include the context definition for the compiled-in drivers for the composite
- * algorithms. */
 #include "psa/crypto_driver_contexts_composites.h"
 
 struct psa_mac_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_driver_wrappers.h
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. none of the driver contexts are active). */
     unsigned int MBEDTLS_PRIVATE(id);
     uint8_t MBEDTLS_PRIVATE(mac_size);
     unsigned int MBEDTLS_PRIVATE(is_sign) : 1;
@@ -160,12 +130,6 @@ struct psa_aead_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_crypto_driver_wrappers.h
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. none of the driver contexts are active). */
     unsigned int MBEDTLS_PRIVATE(id);
 
     psa_algorithm_t MBEDTLS_PRIVATE(alg);
@@ -195,8 +159,6 @@ static inline struct psa_aead_operation_s psa_aead_operation_init(void)
     return v;
 }
 
-/* Include the context definition for the compiled-in drivers for the key
- * derivation algorithms. */
 #include "psa/crypto_driver_contexts_key_derivation.h"
 
 struct psa_key_derivation_s {
@@ -213,7 +175,6 @@ struct psa_key_derivation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
 #define PSA_KEY_DERIVATION_OPERATION_INIT { 0 }
 #else
-/* This only zeroes out the first byte in the union, the rest is unspecified. */
 #define PSA_KEY_DERIVATION_OPERATION_INIT { 0, 0, 0, { 0 } }
 #endif
 static inline struct psa_key_derivation_s psa_key_derivation_operation_init(
@@ -224,19 +185,10 @@ static inline struct psa_key_derivation_s psa_key_derivation_operation_init(
 }
 
 struct psa_key_production_parameters_s {
-    /* Future versions may add other fields in this structure. */
     uint32_t flags;
     uint8_t data[];
 };
 
-/** The default production parameters for key generation or key derivation.
- *
- * Calling psa_generate_key_ext() or psa_key_derivation_output_key_ext()
- * with `params=PSA_KEY_PRODUCTION_PARAMETERS_INIT` and
- * `params_data_length == 0` is equivalent to
- * calling psa_generate_key() or psa_key_derivation_output_key()
- * respectively.
- */
 #define PSA_KEY_PRODUCTION_PARAMETERS_INIT { 0 }
 
 struct psa_key_policy_s {
@@ -253,17 +205,10 @@ static inline struct psa_key_policy_s psa_key_policy_init(void)
     return v;
 }
 
-/* The type used internally for key sizes.
- * Public interfaces use size_t, but internally we use a smaller type. */
 typedef uint16_t psa_key_bits_t;
-/* The maximum value of the type used to represent bit-sizes.
- * This is used to mark an invalid key size. */
+
 #define PSA_KEY_BITS_TOO_LARGE          ((psa_key_bits_t) -1)
-/* The maximum size of a key in bits.
- * Currently defined as the maximum that can be represented, rounded down
- * to a whole number of bytes.
- * This is an uncast value so that it can be used in preprocessor
- * conditionals. */
+
 #define PSA_MAX_KEY_BITS 0xfff8
 
 struct psa_key_attributes_s {
@@ -275,17 +220,6 @@ struct psa_key_attributes_s {
     psa_key_bits_t MBEDTLS_PRIVATE(bits);
     psa_key_lifetime_t MBEDTLS_PRIVATE(lifetime);
     psa_key_policy_t MBEDTLS_PRIVATE(policy);
-    /* This type has a different layout in the client view wrt the
-     * service view of the key id, i.e. in service view usually is
-     * expected to have MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER defined
-     * thus adding an owner field to the standard psa_key_id_t. For
-     * implementations with client/service separation, this means the
-     * object will be marshalled through a transport channel and
-     * interpreted differently at each side of the transport. Placing
-     * it at the end of structures allows to interpret the structure
-     * at the client without reorganizing the memory layout of the
-     * struct
-     */
     mbedtls_svc_key_id_t MBEDTLS_PRIVATE(id);
 };
 
@@ -418,19 +352,10 @@ static inline size_t psa_get_key_bits(
     return attributes->MBEDTLS_PRIVATE(bits);
 }
 
-/**
- * \brief The context for PSA interruptible hash signing.
- */
 struct psa_sign_hash_interruptible_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_crypto_driver_wrappers.h
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. none of the driver contexts are active). */
     unsigned int MBEDTLS_PRIVATE(id);
 
     psa_driver_sign_hash_interruptible_context_t MBEDTLS_PRIVATE(ctx);
@@ -456,19 +381,10 @@ psa_sign_hash_interruptible_operation_init(void)
     return v;
 }
 
-/**
- * \brief The context for PSA interruptible hash verification.
- */
 struct psa_verify_hash_interruptible_operation_s {
 #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
     mbedtls_psa_client_handle_t handle;
 #else
-    /** Unique ID indicating which driver got assigned to do the
-     * operation. Since driver contexts are driver-specific, swapping
-     * drivers halfway through the operation is not supported.
-     * ID values are auto-generated in psa_crypto_driver_wrappers.h
-     * ID value zero means the context is not valid or not assigned to
-     * any driver (i.e. none of the driver contexts are active). */
     unsigned int MBEDTLS_PRIVATE(id);
 
     psa_driver_verify_hash_interruptible_context_t MBEDTLS_PRIVATE(ctx);
