@@ -53,12 +53,12 @@ typedef struct {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_TLS12_PRF) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_TLS12_PSK_TO_MS)
 typedef enum {
-    PSA_TLS12_PRF_STATE_INIT,             /* no input provided */
-    PSA_TLS12_PRF_STATE_SEED_SET,         /* seed has been set */
-    PSA_TLS12_PRF_STATE_OTHER_KEY_SET,    /* other key has been set - optional */
-    PSA_TLS12_PRF_STATE_KEY_SET,          /* key has been set */
-    PSA_TLS12_PRF_STATE_LABEL_SET,        /* label has been set */
-    PSA_TLS12_PRF_STATE_OUTPUT            /* output has been started */
+    PSA_TLS12_PRF_STATE_INIT,
+    PSA_TLS12_PRF_STATE_SEED_SET,
+    PSA_TLS12_PRF_STATE_OTHER_KEY_SET,
+    PSA_TLS12_PRF_STATE_KEY_SET,
+    PSA_TLS12_PRF_STATE_LABEL_SET,
+    PSA_TLS12_PRF_STATE_OUTPUT
 } psa_tls12_prf_key_derivation_state_t;
 
 typedef struct psa_tls12_prf_key_derivation_s {
@@ -66,15 +66,9 @@ typedef struct psa_tls12_prf_key_derivation_s {
 #error "PSA_HASH_MAX_SIZE does not fit in uint8_t"
 #endif
 
-    /* Indicates how many bytes in the current HMAC block have
-     * not yet been read by the user. */
     uint8_t MBEDTLS_PRIVATE(left_in_block);
-
-    /* The 1-based number of the block. */
     uint8_t MBEDTLS_PRIVATE(block_number);
-
     psa_tls12_prf_key_derivation_state_t MBEDTLS_PRIVATE(state);
-
     uint8_t *MBEDTLS_PRIVATE(secret);
     size_t MBEDTLS_PRIVATE(secret_length);
     uint8_t *MBEDTLS_PRIVATE(seed);
@@ -87,19 +81,17 @@ typedef struct psa_tls12_prf_key_derivation_s {
 #endif /* MBEDTLS_PSA_BUILTIN_ALG_TLS12_PSK_TO_MS */
 
     uint8_t MBEDTLS_PRIVATE(Ai)[PSA_HASH_MAX_SIZE];
-
-    /* `HMAC_hash( prk, A( i ) + seed )` in the notation of RFC 5246, Sect. 5. */
     uint8_t MBEDTLS_PRIVATE(output_block)[PSA_HASH_MAX_SIZE];
 } psa_tls12_prf_key_derivation_t;
 #endif /* MBEDTLS_PSA_BUILTIN_ALG_TLS12_PRF) ||
         * MBEDTLS_PSA_BUILTIN_ALG_TLS12_PSK_TO_MS */
 #if defined(PSA_HAVE_SOFT_PBKDF2)
 typedef enum {
-    PSA_PBKDF2_STATE_INIT,             /* no input provided */
-    PSA_PBKDF2_STATE_INPUT_COST_SET,   /* input cost has been set */
-    PSA_PBKDF2_STATE_SALT_SET,         /* salt has been set */
-    PSA_PBKDF2_STATE_PASSWORD_SET,     /* password has been set */
-    PSA_PBKDF2_STATE_OUTPUT            /* output has been started */
+    PSA_PBKDF2_STATE_INIT,
+    PSA_PBKDF2_STATE_INPUT_COST_SET,
+    PSA_PBKDF2_STATE_SALT_SET,
+    PSA_PBKDF2_STATE_PASSWORD_SET,
+    PSA_PBKDF2_STATE_OUTPUT
 } psa_pbkdf2_key_derivation_state_t;
 
 typedef struct {

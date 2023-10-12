@@ -35,7 +35,6 @@
 #include "mbedtls/error.h"
 
 #include "mbedtls/md5.h"
-#include "mbedtls/ripemd160.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
@@ -73,12 +72,6 @@
 #if defined(MBEDTLS_MD_CAN_MD5)
 static const mbedtls_md_info_t mbedtls_md5_info = {
     MD_INFO(MBEDTLS_MD_MD5, 16, 64)
-};
-#endif
-
-#if defined(MBEDTLS_MD_CAN_RIPEMD160)
-static const mbedtls_md_info_t mbedtls_ripemd160_info = {
-    MD_INFO(MBEDTLS_MD_RIPEMD160, 20, 64)
 };
 #endif
 
@@ -143,10 +136,6 @@ const mbedtls_md_info_t *mbedtls_md_info_from_type(mbedtls_md_type_t md_type)
         case MBEDTLS_MD_MD5:
             return &mbedtls_md5_info;
 #endif
-#if defined(MBEDTLS_MD_CAN_RIPEMD160)
-        case MBEDTLS_MD_RIPEMD160:
-            return &mbedtls_ripemd160_info;
-#endif
 #if defined(MBEDTLS_MD_CAN_SHA1)
         case MBEDTLS_MD_SHA1:
             return &mbedtls_sha1_info;
@@ -195,10 +184,6 @@ static psa_algorithm_t psa_alg_of_md(const mbedtls_md_info_t *info)
 #if defined(MBEDTLS_MD_MD5_VIA_PSA)
         case MBEDTLS_MD_MD5:
             return PSA_ALG_MD5;
-#endif
-#if defined(MBEDTLS_MD_RIPEMD160_VIA_PSA)
-        case MBEDTLS_MD_RIPEMD160:
-            return PSA_ALG_RIPEMD160;
 #endif
 #if defined(MBEDTLS_MD_SHA1_VIA_PSA)
         case MBEDTLS_MD_SHA1:
@@ -274,11 +259,6 @@ void mbedtls_md_free(mbedtls_md_context_t *ctx)
 #if defined(MBEDTLS_MD5_C)
             case MBEDTLS_MD_MD5:
                 mbedtls_md5_free(ctx->md_ctx);
-                break;
-#endif
-#if defined(MBEDTLS_RIPEMD160_C)
-            case MBEDTLS_MD_RIPEMD160:
-                mbedtls_ripemd160_free(ctx->md_ctx);
                 break;
 #endif
 #if defined(MBEDTLS_SHA1_C)
@@ -359,11 +339,6 @@ int mbedtls_md_clone(mbedtls_md_context_t *dst,
 #if defined(MBEDTLS_MD5_C)
         case MBEDTLS_MD_MD5:
             mbedtls_md5_clone(dst->md_ctx, src->md_ctx);
-            break;
-#endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            mbedtls_ripemd160_clone(dst->md_ctx, src->md_ctx);
             break;
 #endif
 #if defined(MBEDTLS_SHA1_C)
@@ -451,11 +426,6 @@ int mbedtls_md_setup(mbedtls_md_context_t *ctx, const mbedtls_md_info_t *md_info
             ALLOC(md5);
             break;
 #endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            ALLOC(ripemd160);
-            break;
-#endif
 #if defined(MBEDTLS_SHA1_C)
         case MBEDTLS_MD_SHA1:
             ALLOC(sha1);
@@ -529,10 +499,6 @@ int mbedtls_md_starts(mbedtls_md_context_t *ctx)
         case MBEDTLS_MD_MD5:
             return mbedtls_md5_starts(ctx->md_ctx);
 #endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            return mbedtls_ripemd160_starts(ctx->md_ctx);
-#endif
 #if defined(MBEDTLS_SHA1_C)
         case MBEDTLS_MD_SHA1:
             return mbedtls_sha1_starts(ctx->md_ctx);
@@ -588,10 +554,6 @@ int mbedtls_md_update(mbedtls_md_context_t *ctx, const unsigned char *input, siz
         case MBEDTLS_MD_MD5:
             return mbedtls_md5_update(ctx->md_ctx, input, ilen);
 #endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            return mbedtls_ripemd160_update(ctx->md_ctx, input, ilen);
-#endif
 #if defined(MBEDTLS_SHA1_C)
         case MBEDTLS_MD_SHA1:
             return mbedtls_sha1_update(ctx->md_ctx, input, ilen);
@@ -646,10 +608,6 @@ int mbedtls_md_finish(mbedtls_md_context_t *ctx, unsigned char *output)
         case MBEDTLS_MD_MD5:
             return mbedtls_md5_finish(ctx->md_ctx, output);
 #endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            return mbedtls_ripemd160_finish(ctx->md_ctx, output);
-#endif
 #if defined(MBEDTLS_SHA1_C)
         case MBEDTLS_MD_SHA1:
             return mbedtls_sha1_finish(ctx->md_ctx, output);
@@ -703,10 +661,6 @@ int mbedtls_md(const mbedtls_md_info_t *md_info, const unsigned char *input, siz
 #if defined(MBEDTLS_MD5_C)
         case MBEDTLS_MD_MD5:
             return mbedtls_md5(input, ilen, output);
-#endif
-#if defined(MBEDTLS_RIPEMD160_C)
-        case MBEDTLS_MD_RIPEMD160:
-            return mbedtls_ripemd160(input, ilen, output);
 #endif
 #if defined(MBEDTLS_SHA1_C)
         case MBEDTLS_MD_SHA1:
@@ -800,10 +754,6 @@ static const int supported_digests[] = {
     MBEDTLS_MD_SHA1,
 #endif
 
-#if defined(MBEDTLS_MD_CAN_RIPEMD160)
-    MBEDTLS_MD_RIPEMD160,
-#endif
-
 #if defined(MBEDTLS_MD_CAN_MD5)
     MBEDTLS_MD_MD5,
 #endif
@@ -840,9 +790,6 @@ typedef struct {
 static const md_name_entry md_names[] = {
 #if defined(MBEDTLS_MD_CAN_MD5)
     { "MD5", MBEDTLS_MD_MD5 },
-#endif
-#if defined(MBEDTLS_MD_CAN_RIPEMD160)
-    { "RIPEMD160", MBEDTLS_MD_RIPEMD160 },
 #endif
 #if defined(MBEDTLS_MD_CAN_SHA1)
     { "SHA1", MBEDTLS_MD_SHA1 },

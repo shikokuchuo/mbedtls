@@ -33,9 +33,6 @@
 #endif
 #include "mbedtls/chachapoly.h"
 
-/*
- * MAC multi-part operation definitions.
- */
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
 #define MBEDTLS_PSA_BUILTIN_MAC
@@ -43,11 +40,8 @@
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC) || defined(PSA_CRYPTO_DRIVER_TEST)
 typedef struct {
-    /** The HMAC algorithm in use */
     psa_algorithm_t MBEDTLS_PRIVATE(alg);
-    /** The hash context. */
     struct psa_hash_operation_s hash_ctx;
-    /** The HMAC part of the context. */
     uint8_t MBEDTLS_PRIVATE(opad)[PSA_HMAC_MAX_HASH_BLOCK_SIZE];
 } mbedtls_psa_hmac_operation_t;
 
@@ -57,7 +51,7 @@ typedef struct {
 typedef struct {
     psa_algorithm_t MBEDTLS_PRIVATE(alg);
     union {
-        unsigned MBEDTLS_PRIVATE(dummy); /* Make the union non-empty even with no supported algorithms. */
+        unsigned MBEDTLS_PRIVATE(dummy);
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC) || defined(PSA_CRYPTO_DRIVER_TEST)
         mbedtls_psa_hmac_operation_t MBEDTLS_PRIVATE(hmac);
 #endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
@@ -75,7 +69,6 @@ typedef struct {
 #define MBEDTLS_PSA_BUILTIN_AEAD  1
 #endif
 
-/* Context structure for the Mbed TLS AEAD implementation. */
 typedef struct {
     psa_algorithm_t MBEDTLS_PRIVATE(alg);
     psa_key_type_t MBEDTLS_PRIVATE(key_type);
@@ -85,7 +78,7 @@ typedef struct {
     uint8_t MBEDTLS_PRIVATE(tag_length);
 
     union {
-        unsigned dummy; /* Enable easier initializing of the union. */
+        unsigned dummy;
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
         mbedtls_ccm_context MBEDTLS_PRIVATE(ccm);
 #endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
@@ -104,7 +97,6 @@ typedef struct {
 
 #include "mbedtls/ecdsa.h"
 
-/* Context structure for the Mbed TLS interruptible sign hash implementation. */
 typedef struct {
 #if (defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA)) && \
@@ -121,7 +113,6 @@ typedef struct {
     size_t MBEDTLS_PRIVATE(hash_length);
 
 #else
-    /* Make the struct non-empty if algs not supported. */
     unsigned MBEDTLS_PRIVATE(dummy);
 
 #endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) ||
@@ -137,8 +128,6 @@ typedef struct {
 #define MBEDTLS_PSA_SIGN_HASH_INTERRUPTIBLE_OPERATION_INIT { 0 }
 #endif
 
-/* Context structure for the Mbed TLS interruptible verify hash
- * implementation.*/
 typedef struct {
 #if (defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA)) && \
@@ -156,7 +145,6 @@ typedef struct {
     mbedtls_mpi MBEDTLS_PRIVATE(s);
 
 #else
-    /* Make the struct non-empty if algs not supported. */
     unsigned MBEDTLS_PRIVATE(dummy);
 
 #endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) ||
@@ -174,18 +162,12 @@ typedef struct {
 #define MBEDTLS_VERIFY_SIGN_HASH_INTERRUPTIBLE_OPERATION_INIT { 0 }
 #endif
 
-
-/* EC-JPAKE operation definitions */
-
 #include "mbedtls/ecjpake.h"
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_JPAKE)
 #define MBEDTLS_PSA_BUILTIN_PAKE  1
 #endif
 
-/* Note: the format for mbedtls_ecjpake_read/write function has an extra
- * length byte for each step, plus an extra 3 bytes for ECParameters in the
- * server's 2nd round. */
 #define MBEDTLS_PSA_JPAKE_BUFFER_SIZE ((3 + 1 + 65 + 1 + 65 + 1 + 32) * 2)
 
 typedef struct {
@@ -199,7 +181,6 @@ typedef struct {
     size_t MBEDTLS_PRIVATE(buffer_length);
     size_t MBEDTLS_PRIVATE(buffer_offset);
 #endif
-    /* Context structure for the Mbed TLS EC-JPAKE implementation. */
     union {
         unsigned int MBEDTLS_PRIVATE(dummy);
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_JPAKE)
