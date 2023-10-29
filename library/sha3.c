@@ -4,26 +4,11 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The SHA-3 Secure Hash Standard was published by NIST in 2015.
- *
- *  https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf
- */
 
 #include "common.h"
 
 #if defined(MBEDTLS_SHA3_C)
 
-/*
- * These macros select manually unrolled implementations of parts of the main permutation function.
- *
- * Unrolling has a major impact on both performance and code size. gcc performance benefits a lot
- * from manually unrolling at higher optimisation levels.
- *
- * Depending on your size/perf priorities, compiler and target, it may be beneficial to adjust
- * these; the defaults here should give sensible trade-offs for gcc and clang on aarch64 and
- * x86-64.
- */
 #if !defined(MBEDTLS_SHA3_THETA_UNROLL)
     #define MBEDTLS_SHA3_THETA_UNROLL 0 //no-check-names
 #endif
@@ -53,25 +38,6 @@
 
 #define XOR_BYTE 0x6
 
-/* Precomputed masks for the iota transform.
- *
- * Each round uses a 64-bit mask value. In each mask values, only
- * bits whose position is of the form 2^k-1 can be set, thus only
- * 7 of 64 bits of the mask need to be known for each mask value.
- *
- * We use a compressed encoding of the mask where bits 63, 31 and 15
- * are moved to bits 4-6. This allows us to make each mask value
- * 1 byte rather than 8 bytes, saving 7*24 = 168 bytes of data (with
- * perhaps a little variation due to alignment). Decompressing this
- * requires a little code, but much less than the savings on the table.
- *
- * The impact on performance depends on the platform and compiler.
- * There's a bit more computation, but less memory bandwidth. A quick
- * benchmark on x86_64 shows a 7% speed improvement with GCC and a
- * 5% speed penalty with Clang, compared to the naive uint64_t[24] table.
- * YMMV.
- */
-/* Helper macro to set the values of the higher bits in unused low positions */
 #define H(b63, b31, b15) (b63 << 6 | b31 << 5 | b15 << 4)
 static const uint8_t iota_r_packed[24] = {
     H(0, 0, 0) | 0x01, H(0, 0, 1) | 0x82, H(1, 0, 1) | 0x8a, H(1, 1, 1) | 0x00,
@@ -97,7 +63,6 @@ static const uint32_t pi[6] = {
 #define SQUEEZE(ctx, idx) ((uint8_t) (ctx->state[(idx) >> 3] >> (((idx) & 0x7) << 3)))
 #define SWAP(x, y) do { uint64_t tmp = (x); (x) = (y); (y) = tmp; } while (0)
 
-/* The permutation function.  */
 static void keccak_f1600(mbedtls_sha3_context *ctx)
 {
     uint64_t lane[5];
@@ -235,8 +200,6 @@ static void keccak_f1600(mbedtls_sha3_context *ctx)
         s[24] ^= (~lane[0]) & lane[1];
 #endif
 
-        /* Iota */
-        /* Decompress the round masks (see definition of rc) */
         s[0] ^= ((iota_r_packed[round] & 0x40ull) << 57 |
                  (iota_r_packed[round] & 0x20ull) << 26 |
                  (iota_r_packed[round] & 0x10ull) << 11 |
@@ -264,9 +227,6 @@ void mbedtls_sha3_clone(mbedtls_sha3_context *dst,
     *dst = *src;
 }
 
-/*
- * SHA-3 context setup
- */
 int mbedtls_sha3_starts(mbedtls_sha3_context *ctx, mbedtls_sha3_id id)
 {
     switch (id) {
@@ -296,9 +256,6 @@ int mbedtls_sha3_starts(mbedtls_sha3_context *ctx, mbedtls_sha3_id id)
     return 0;
 }
 
-/*
- * SHA-3 process buffer
- */
 int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
                         const uint8_t *input,
                         size_t ilen)
@@ -317,7 +274,6 @@ int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
             }
         }
 
-        // process input in 8-byte chunks
         while (ilen >= 8) {
             ABSORB(ctx, ctx->index, MBEDTLS_GET_UINT64_LE(input, 0));
             input += 8;
@@ -328,7 +284,6 @@ int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
         }
     }
 
-    // handle remaining bytes
     while (ilen-- > 0) {
         ABSORB(ctx, ctx->index, *input++);
         if ((ctx->index = (ctx->index + 1) % ctx->max_block_size) == 0) {
@@ -344,7 +299,6 @@ int mbedtls_sha3_finish(mbedtls_sha3_context *ctx,
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
-    /* Catch SHA-3 families, with fixed output length */
     if (ctx->olen > 0) {
         if (ctx->olen > olen) {
             ret = MBEDTLS_ERR_SHA3_BAD_INPUT_DATA;
@@ -373,9 +327,6 @@ exit:
     return ret;
 }
 
-/*
- * output = SHA-3( input buffer )
- */
 int mbedtls_sha3(mbedtls_sha3_id id, const uint8_t *input,
                  size_t ilen, uint8_t *output, size_t olen)
 {
@@ -384,7 +335,6 @@ int mbedtls_sha3(mbedtls_sha3_id id, const uint8_t *input,
 
     mbedtls_sha3_init(&ctx);
 
-    /* Sanity checks are performed in every mbedtls_sha3_xxx() */
     if ((ret = mbedtls_sha3_starts(&ctx, id)) != 0) {
         goto exit;
     }
@@ -402,8 +352,6 @@ exit:
 
     return ret;
 }
-
-/**************** Self-tests ****************/
 
 #if defined(MBEDTLS_SELF_TEST)
 
@@ -609,7 +557,6 @@ static int mbedtls_sha3_long_kat_test(int verbose,
         }
     }
 
-    /* Process 1,000,000 (one million) 'a' characters */
     for (int i = 0; i < 1000; i++) {
         result = mbedtls_sha3_update(&ctx, buffer, 1000);
         if (result != 0) {
@@ -666,7 +613,6 @@ int mbedtls_sha3_self_test(int verbose)
 {
     int i;
 
-    /* SHA-3 Known Answer Tests (KAT) */
     for (i = 0; i < 2; i++) {
         if (0 != mbedtls_sha3_kat_test(verbose,
                                        "SHA3-224", MBEDTLS_SHA3_224, i)) {

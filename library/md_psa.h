@@ -15,12 +15,6 @@
 #include "mbedtls/md.h"
 #include "psa/crypto.h"
 
-/** Convert PSA status to MD error code.
- *
- * \param status    PSA status.
- *
- * \return          The corresponding MD error code,
- */
 int mbedtls_md_error_from_psa(psa_status_t status);
 
 #endif /* MBEDTLS_MD_PSA_H */

@@ -15,7 +15,6 @@
 #include "mbedtls/error.h"
 #include "mbedtls/psa_util.h"
 
-/* Even if RSA not activated, for the sake of RSA-alt */
 #include "mbedtls/rsa.h"
 
 #if defined(MBEDTLS_ECP_C)
@@ -151,11 +150,6 @@ static int rsa_verify_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
         return ret;
     }
 
-    /* The buffer contains a valid signature followed by extra data.
-     * We have a special error code for that so that so that callers can
-     * use mbedtls_pk_verify() to check "Does the buffer start with a
-     * valid signature?" and not just "Does the buffer contain a valid
-     * signature?". */
     if (sig_len > rsa_len) {
         return MBEDTLS_ERR_PK_SIG_LEN_MISMATCH;
     }
@@ -471,7 +465,6 @@ static void rsa_free_wrap(void *ctx)
 static void rsa_debug(mbedtls_pk_context *pk, mbedtls_pk_debug_item *items)
 {
 #if defined(MBEDTLS_RSA_ALT)
-    /* Not supported */
     (void) pk;
     (void) items;
 #else
@@ -512,9 +505,7 @@ const mbedtls_pk_info_t mbedtls_rsa_info = {
 #endif /* MBEDTLS_RSA_C */
 
 #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
-/*
- * Generic EC key
- */
+
 static int eckey_can_do(mbedtls_pk_type_t type)
 {
     return type == MBEDTLS_PK_ECKEY ||
@@ -534,7 +525,7 @@ static size_t eckey_get_bitlen(mbedtls_pk_context *pk)
 
 #if defined(MBEDTLS_PK_CAN_ECDSA_VERIFY)
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
-/* Common helper for ECDSA verify using PSA functions. */
+
 static int ecdsa_verify_psa(unsigned char *key, size_t key_len,
                             psa_ecc_family_t curve, size_t curve_bits,
                             const unsigned char *hash, size_t hash_len,
@@ -689,10 +680,7 @@ static int ecdsa_verify_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
 
 #if defined(MBEDTLS_PK_CAN_ECDSA_SIGN)
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
-/* Common helper for ECDSA sign using PSA functions.
- * Instead of extracting key's properties in order to check which kind of ECDSA
- * signature it supports, we try both deterministic and non-deterministic.
- */
+
 static int ecdsa_sign_psa(mbedtls_svc_key_id_t key_id, mbedtls_md_type_t md_alg,
                           const unsigned char *hash, size_t hash_len,
                           unsigned char *sig, size_t sig_size, size_t *sig_len)
@@ -747,8 +735,7 @@ static int ecdsa_opaque_sign_wrap(mbedtls_pk_context *pk,
 }
 
 #if defined(MBEDTLS_PK_USE_PSA_EC_DATA)
-/* When PK_USE_PSA_EC_DATA is defined opaque and non-opaque keys end up
- * using the same function. */
+
 #define ecdsa_sign_wrap     ecdsa_opaque_sign_wrap
 #else /* MBEDTLS_PK_USE_PSA_EC_DATA */
 static int ecdsa_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
@@ -820,7 +807,7 @@ static int ecdsa_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
 #endif /* MBEDTLS_PK_CAN_ECDSA_SIGN */
 
 #if defined(MBEDTLS_ECDSA_C) && defined(MBEDTLS_ECP_RESTARTABLE)
-/* Forward declarations */
+
 static int ecdsa_verify_rs_wrap(mbedtls_pk_context *ctx, mbedtls_md_type_t md_alg,
                                 const unsigned char *hash, size_t hash_len,
                                 const unsigned char *sig, size_t sig_len,
@@ -832,12 +819,6 @@ static int ecdsa_sign_rs_wrap(mbedtls_pk_context *ctx, mbedtls_md_type_t md_alg,
                               int (*f_rng)(void *, unsigned char *, size_t), void *p_rng,
                               void *rs_ctx);
 
-/*
- * Restart context for ECDSA operations with ECKEY context
- *
- * We need to store an actual ECDSA context, as we need to pass the same to
- * the underlying ecdsa function, so we can't create it on the fly every time.
- */
 typedef struct {
     mbedtls_ecdsa_restart_ctx ecdsa_rs;
     mbedtls_ecdsa_context ecdsa_ctx;
@@ -881,12 +862,10 @@ static int eckey_verify_rs_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     eckey_restart_ctx *rs = rs_ctx;
 
-    /* Should never happen */
     if (rs == NULL) {
         return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
     }
 
-    /* set up our own sub-context if needed (that is, on first run) */
     if (rs->ecdsa_ctx.grp.pbits == 0) {
         MBEDTLS_MPI_CHK(mbedtls_ecdsa_from_keypair(&rs->ecdsa_ctx, pk->pk_ctx));
     }
@@ -908,12 +887,10 @@ static int eckey_sign_rs_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     eckey_restart_ctx *rs = rs_ctx;
 
-    /* Should never happen */
     if (rs == NULL) {
         return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
     }
 
-    /* set up our own sub-context if needed (that is, on first run) */
     if (rs->ecdsa_ctx.grp.pbits == 0) {
         MBEDTLS_MPI_CHK(mbedtls_ecdsa_from_keypair(&rs->ecdsa_ctx, pk->pk_ctx));
     }
@@ -988,7 +965,6 @@ static int eckey_check_pair_psa(mbedtls_pk_context *pub, mbedtls_pk_context *prv
         return ret;
     }
 
-    // From now on prv_key_buf is used to store the public key of prv.
     status = psa_export_public_key(key_id, prv_key_buf, sizeof(prv_key_buf),
                                    &prv_key_len);
     ret = PSA_PK_TO_MBEDTLS_ERR(status);
@@ -1037,8 +1013,7 @@ static int eckey_check_pair_wrap(mbedtls_pk_context *pub, mbedtls_pk_context *pr
 
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
 #if defined(MBEDTLS_PK_USE_PSA_EC_DATA)
-/* When PK_USE_PSA_EC_DATA is defined opaque and non-opaque keys end up
- * using the same function. */
+
 #define ecdsa_opaque_check_pair_wrap    eckey_check_pair_wrap
 #else /* MBEDTLS_PK_USE_PSA_EC_DATA */
 static int ecdsa_opaque_check_pair_wrap(mbedtls_pk_context *pub,
@@ -1144,9 +1119,6 @@ const mbedtls_pk_info_t mbedtls_eckey_info = {
     .debug_func = eckey_debug,
 };
 
-/*
- * EC key restricted to ECDH
- */
 static int eckeydh_can_do(mbedtls_pk_type_t type)
 {
     return type == MBEDTLS_PK_ECKEY ||
@@ -1272,9 +1244,6 @@ const mbedtls_pk_info_t mbedtls_ecdsa_info = {
 #endif /* MBEDTLS_PK_HAVE_ECC_KEYS */
 
 #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
-/*
- * Support for alternative RSA-private implementations
- */
 
 static int rsa_alt_can_do(mbedtls_pk_type_t type)
 {
@@ -1474,7 +1443,6 @@ static int rsa_opaque_decrypt(mbedtls_pk_context *pk,
     psa_key_type_t type;
     psa_status_t status;
 
-    /* PSA has its own RNG */
     (void) f_rng;
     (void) p_rng;
 
@@ -1511,7 +1479,6 @@ static int rsa_opaque_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg
     psa_key_type_t type;
     psa_status_t status;
 
-    /* PSA has its own RNG */
     (void) f_rng;
     (void) p_rng;
 

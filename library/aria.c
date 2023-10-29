@@ -5,12 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * This implementation is based on the following standards:
- * [1] http://210.104.33.10/ARIA/doc/ARIA-specification-e.pdf
- * [2] https://tools.ietf.org/html/rfc5794
- */
-
 #include "common.h"
 
 #if defined(MBEDTLS_ARIA_C)
@@ -25,17 +19,9 @@
 
 #include "mbedtls/platform_util.h"
 
-/*
- * modify byte order: ( A B C D ) -> ( B A D C ), i.e. swap pairs of bytes
- *
- * This is submatrix P1 in [1] Appendix B.1
- *
- * Common compilers fail to translate this to minimal number of instructions,
- * so let's provide asm versions for common platforms with C fallback.
- */
 #if defined(MBEDTLS_HAVE_ASM)
-#if defined(__arm__) /* rev16 available from v6 up */
-/* armcc5 --gnu defines __GNUC__ but doesn't support GNU's extended asm */
+#if defined(__arm__)
+
 #if defined(__GNUC__) && \
     (!defined(__ARMCC_VERSION) || __ARMCC_VERSION >= 6000000) && \
     __ARM_ARCH >= 6
@@ -59,7 +45,7 @@ static inline uint32_t aria_p1(uint32_t x)
 #endif /* arm */
 #if defined(__GNUC__) && \
     defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-/* I couldn't find an Intel equivalent of rev16, so two instructions */
+
 #define ARIA_P1(x) ARIA_P2(ARIA_P3(x))
 #endif /* x86 gnuc */
 #endif /* MBEDTLS_HAVE_ASM && GNUC */
@@ -67,77 +53,34 @@ static inline uint32_t aria_p1(uint32_t x)
 #define ARIA_P1(x) ((((x) >> 8) & 0x00FF00FF) ^ (((x) & 0x00FF00FF) << 8))
 #endif
 
-/*
- * modify byte order: ( A B C D ) -> ( C D A B ), i.e. rotate by 16 bits
- *
- * This is submatrix P2 in [1] Appendix B.1
- *
- * Common compilers will translate this to a single instruction.
- */
 #define ARIA_P2(x) (((x) >> 16) ^ ((x) << 16))
 
-/*
- * modify byte order: ( A B C D ) -> ( D C B A ), i.e. change endianness
- *
- * This is submatrix P3 in [1] Appendix B.1
- */
 #define ARIA_P3(x) MBEDTLS_BSWAP32(x)
 
-/*
- * ARIA Affine Transform
- * (a, b, c, d) = state in/out
- *
- * If we denote the first byte of input by 0, ..., the last byte by f,
- * then inputs are: a = 0123, b = 4567, c = 89ab, d = cdef.
- *
- * Reading [1] 2.4 or [2] 2.4.3 in columns and performing simple
- * rearrangements on adjacent pairs, output is:
- *
- * a = 3210 + 4545 + 6767 + 88aa + 99bb + dccd + effe
- *   = 3210 + 4567 + 6745 + 89ab + 98ba + dcfe + efcd
- * b = 0101 + 2323 + 5476 + 8998 + baab + eecc + ffdd
- *   = 0123 + 2301 + 5476 + 89ab + ba98 + efcd + fedc
- * c = 0022 + 1133 + 4554 + 7667 + ab89 + dcdc + fefe
- *   = 0123 + 1032 + 4567 + 7654 + ab89 + dcfe + fedc
- * d = 1001 + 2332 + 6644 + 7755 + 9898 + baba + cdef
- *   = 1032 + 2301 + 6745 + 7654 + 98ba + ba98 + cdef
- *
- * Note: another presentation of the A transform can be found as the first
- * half of App. B.1 in [1] in terms of 4-byte operators P1, P2, P3 and P4.
- * The implementation below uses only P1 and P2 as they are sufficient.
- */
 static inline void aria_a(uint32_t *a, uint32_t *b,
                           uint32_t *c, uint32_t *d)
 {
     uint32_t ta, tb, tc;
-    ta  =  *b;                      // 4567
-    *b  =  *a;                      // 0123
-    *a  =  ARIA_P2(ta);             // 6745
-    tb  =  ARIA_P2(*d);             // efcd
-    *d  =  ARIA_P1(*c);             // 98ba
-    *c  =  ARIA_P1(tb);             // fedc
-    ta  ^= *d;                      // 4567+98ba
-    tc  =  ARIA_P2(*b);             // 2301
-    ta  =  ARIA_P1(ta) ^ tc ^ *c;   // 2301+5476+89ab+fedc
-    tb  ^= ARIA_P2(*d);             // ba98+efcd
-    tc  ^= ARIA_P1(*a);             // 2301+7654
-    *b  ^= ta ^ tb;                 // 0123+2301+5476+89ab+ba98+efcd+fedc OUT
-    tb  =  ARIA_P2(tb) ^ ta;        // 2301+5476+89ab+98ba+cdef+fedc
-    *a  ^= ARIA_P1(tb);             // 3210+4567+6745+89ab+98ba+dcfe+efcd OUT
-    ta  =  ARIA_P2(ta);             // 0123+7654+ab89+dcfe
-    *d  ^= ARIA_P1(ta) ^ tc;        // 1032+2301+6745+7654+98ba+ba98+cdef OUT
-    tc  =  ARIA_P2(tc);             // 0123+5476
-    *c  ^= ARIA_P1(tc) ^ ta;        // 0123+1032+4567+7654+ab89+dcfe+fedc OUT
+    ta  =  *b;
+    *b  =  *a;
+    *a  =  ARIA_P2(ta);
+    tb  =  ARIA_P2(*d);
+    *d  =  ARIA_P1(*c);
+    *c  =  ARIA_P1(tb);
+    ta  ^= *d;
+    tc  =  ARIA_P2(*b);
+    ta  =  ARIA_P1(ta) ^ tc ^ *c;
+    tb  ^= ARIA_P2(*d);
+    tc  ^= ARIA_P1(*a);
+    *b  ^= ta ^ tb;
+    tb  =  ARIA_P2(tb) ^ ta;
+    *a  ^= ARIA_P1(tb);
+    ta  =  ARIA_P2(ta);
+    *d  ^= ARIA_P1(ta) ^ tc;
+    tc  =  ARIA_P2(tc);
+    *c  ^= ARIA_P1(tc) ^ ta;
 }
 
-/*
- * ARIA Substitution Layer SL1 / SL2
- * (a, b, c, d) = state in/out
- * (sa, sb, sc, sd) = 256 8-bit S-Boxes (see below)
- *
- * By passing sb1, sb2, is1, is2 as S-Boxes you get SL1
- * By passing is1, is2, sb1, sb2 as S-Boxes you get SL2
- */
 static inline void aria_sl(uint32_t *a, uint32_t *b,
                            uint32_t *c, uint32_t *d,
                            const uint8_t sa[256], const uint8_t sb[256],
@@ -268,9 +211,6 @@ static const uint8_t aria_is2[256] =
     0x03, 0xA2, 0xAC, 0x60
 };
 
-/*
- * Helper for key schedule: r = FO( p, k ) ^ x
- */
 static void aria_fo_xor(uint32_t r[4], const uint32_t p[4],
                         const uint32_t k[4], const uint32_t x[4])
 {
@@ -290,9 +230,6 @@ static void aria_fo_xor(uint32_t r[4], const uint32_t p[4],
     r[3] = d ^ x[3];
 }
 
-/*
- * Helper for key schedule: r = FE( p, k ) ^ x
- */
 static void aria_fe_xor(uint32_t r[4], const uint32_t p[4],
                         const uint32_t k[4], const uint32_t x[4])
 {
@@ -312,42 +249,31 @@ static void aria_fe_xor(uint32_t r[4], const uint32_t p[4],
     r[3] = d ^ x[3];
 }
 
-/*
- * Big endian 128-bit rotation: r = a ^ (b <<< n), used only in key setup.
- *
- * We chose to store bytes into 32-bit words in little-endian format (see
- * MBEDTLS_GET_UINT32_LE / MBEDTLS_PUT_UINT32_LE ) so we need to reverse
- * bytes here.
- */
 static void aria_rot128(uint32_t r[4], const uint32_t a[4],
                         const uint32_t b[4], uint8_t n)
 {
     uint8_t i, j;
     uint32_t t, u;
 
-    const uint8_t n1 = n % 32;              // bit offset
-    const uint8_t n2 = n1 ? 32 - n1 : 0;    // reverse bit offset
+    const uint8_t n1 = n % 32;
+    const uint8_t n2 = n1 ? 32 - n1 : 0;
 
-    j = (n / 32) % 4;                       // initial word offset
-    t = ARIA_P3(b[j]);                      // big endian
+    j = (n / 32) % 4;
+    t = ARIA_P3(b[j]);
     for (i = 0; i < 4; i++) {
-        j = (j + 1) % 4;                    // get next word, big endian
+        j = (j + 1) % 4;
         u = ARIA_P3(b[j]);
-        t <<= n1;                           // rotate
+        t <<= n1;
         t |= u >> n2;
-        t = ARIA_P3(t);                     // back to little endian
-        r[i] = a[i] ^ t;                    // store
-        t = u;                              // move to next word
+        t = ARIA_P3(t);
+        r[i] = a[i] ^ t;
+        t = u;
     }
 }
 
-/*
- * Set encryption key
- */
 int mbedtls_aria_setkey_enc(mbedtls_aria_context *ctx,
                             const unsigned char *key, unsigned int keybits)
 {
-    /* round constant masks */
     const uint32_t rc[3][4] =
     {
         {   0xB7C17C51, 0x940A2227, 0xE8AB13FE, 0xE06E9AFA  },
@@ -362,7 +288,6 @@ int mbedtls_aria_setkey_enc(mbedtls_aria_context *ctx,
         return MBEDTLS_ERR_ARIA_BAD_INPUT_DATA;
     }
 
-    /* Copy key to W0 (and potential remainder to W1) */
     w[0][0] = MBEDTLS_GET_UINT32_LE(key,  0);
     w[0][1] = MBEDTLS_GET_UINT32_LE(key,  4);
     w[0][2] = MBEDTLS_GET_UINT32_LE(key,  8);
@@ -370,24 +295,24 @@ int mbedtls_aria_setkey_enc(mbedtls_aria_context *ctx,
 
     memset(w[1], 0, 16);
     if (keybits >= 192) {
-        w[1][0] = MBEDTLS_GET_UINT32_LE(key, 16);    // 192 bit key
+        w[1][0] = MBEDTLS_GET_UINT32_LE(key, 16);
         w[1][1] = MBEDTLS_GET_UINT32_LE(key, 20);
     }
     if (keybits == 256) {
-        w[1][2] = MBEDTLS_GET_UINT32_LE(key, 24);    // 256 bit key
+        w[1][2] = MBEDTLS_GET_UINT32_LE(key, 24);
         w[1][3] = MBEDTLS_GET_UINT32_LE(key, 28);
     }
 
-    i = (keybits - 128) >> 6;               // index: 0, 1, 2
-    ctx->nr = 12 + 2 * i;                   // no. rounds: 12, 14, 16
+    i = (keybits - 128) >> 6;
+    ctx->nr = 12 + 2 * i;
 
-    aria_fo_xor(w[1], w[0], rc[i], w[1]);   // W1 = FO(W0, CK1) ^ KR
+    aria_fo_xor(w[1], w[0], rc[i], w[1]);
     i = i < 2 ? i + 1 : 0;
-    aria_fe_xor(w[2], w[1], rc[i], w[0]);   // W2 = FE(W1, CK2) ^ W0
+    aria_fe_xor(w[2], w[1], rc[i], w[0]);
     i = i < 2 ? i + 1 : 0;
-    aria_fo_xor(w[3], w[2], rc[i], w[1]);   // W3 = FO(W2, CK3) ^ W1
+    aria_fo_xor(w[3], w[2], rc[i], w[1]);
 
-    for (i = 0; i < 4; i++) {               // create round keys
+    for (i = 0; i < 4; i++) {
         w2 = w[(i + 1) & 3];
         aria_rot128(ctx->rk[i], w[i], w2, 128 - 19);
         aria_rot128(ctx->rk[i +  4], w[i], w2, 128 - 31);
@@ -396,16 +321,13 @@ int mbedtls_aria_setkey_enc(mbedtls_aria_context *ctx,
     }
     aria_rot128(ctx->rk[16], w[0], w[1], 19);
 
-    /* w holds enough info to reconstruct the round keys */
     mbedtls_platform_zeroize(w, sizeof(w));
 
     return 0;
 }
 
-/*
- * Set decryption key
- */
 #if !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
+
 int mbedtls_aria_setkey_dec(mbedtls_aria_context *ctx,
                             const unsigned char *key, unsigned int keybits)
 {
@@ -416,7 +338,6 @@ int mbedtls_aria_setkey_dec(mbedtls_aria_context *ctx,
         return ret;
     }
 
-    /* flip the order of round keys */
     for (i = 0, j = ctx->nr; i < j; i++, j--) {
         for (k = 0; k < 4; k++) {
             uint32_t t = ctx->rk[i][k];
@@ -425,7 +346,6 @@ int mbedtls_aria_setkey_dec(mbedtls_aria_context *ctx,
         }
     }
 
-    /* apply affine transform to middle keys */
     for (i = 1; i < ctx->nr; i++) {
         aria_a(&ctx->rk[i][0], &ctx->rk[i][1],
                &ctx->rk[i][2], &ctx->rk[i][3]);
@@ -435,9 +355,6 @@ int mbedtls_aria_setkey_dec(mbedtls_aria_context *ctx,
 }
 #endif /* !MBEDTLS_BLOCK_CIPHER_NO_DECRYPT */
 
-/*
- * Encrypt a block
- */
 int mbedtls_aria_crypt_ecb(mbedtls_aria_context *ctx,
                            const unsigned char input[MBEDTLS_ARIA_BLOCKSIZE],
                            unsigned char output[MBEDTLS_ARIA_BLOCKSIZE])
@@ -475,7 +392,6 @@ int mbedtls_aria_crypt_ecb(mbedtls_aria_context *ctx,
         aria_a(&a, &b, &c, &d);
     }
 
-    /* final key mixing */
     a ^= ctx->rk[i][0];
     b ^= ctx->rk[i][1];
     c ^= ctx->rk[i][2];
@@ -489,13 +405,11 @@ int mbedtls_aria_crypt_ecb(mbedtls_aria_context *ctx,
     return 0;
 }
 
-/* Initialize context */
 void mbedtls_aria_init(mbedtls_aria_context *ctx)
 {
     memset(ctx, 0, sizeof(mbedtls_aria_context));
 }
 
-/* Clear context */
 void mbedtls_aria_free(mbedtls_aria_context *ctx)
 {
     if (ctx == NULL) {
@@ -506,9 +420,7 @@ void mbedtls_aria_free(mbedtls_aria_context *ctx)
 }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-/*
- * ARIA-CBC buffer encryption/decryption
- */
+
 int mbedtls_aria_crypt_cbc(mbedtls_aria_context *ctx,
                            int mode,
                            size_t length,
@@ -557,9 +469,7 @@ int mbedtls_aria_crypt_cbc(mbedtls_aria_context *ctx,
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-/*
- * ARIA-CFB128 buffer encryption/decryption
- */
+
 int mbedtls_aria_crypt_cfb128(mbedtls_aria_context *ctx,
                               int mode,
                               size_t length,
@@ -577,8 +487,6 @@ int mbedtls_aria_crypt_cfb128(mbedtls_aria_context *ctx,
 
     n = *iv_off;
 
-    /* An overly large value of n can lead to an unlimited
-     * buffer overflow. */
     if (n >= MBEDTLS_ARIA_BLOCKSIZE) {
         return MBEDTLS_ERR_ARIA_BAD_INPUT_DATA;
     }
@@ -614,9 +522,7 @@ int mbedtls_aria_crypt_cfb128(mbedtls_aria_context *ctx,
 #endif /* MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-/*
- * ARIA-CTR buffer encryption/decryption
- */
+
 int mbedtls_aria_crypt_ctr(mbedtls_aria_context *ctx,
                            size_t length,
                            size_t *nc_off,
@@ -629,8 +535,7 @@ int mbedtls_aria_crypt_ctr(mbedtls_aria_context *ctx,
     size_t n;
 
     n = *nc_off;
-    /* An overly large value of n can lead to an unlimited
-     * buffer overflow. */
+
     if (n >= MBEDTLS_ARIA_BLOCKSIZE) {
         return MBEDTLS_ERR_ARIA_BAD_INPUT_DATA;
     }
@@ -661,9 +566,6 @@ int mbedtls_aria_crypt_ctr(mbedtls_aria_context *ctx,
 
 #if defined(MBEDTLS_SELF_TEST)
 
-/*
- * Basic ARIA ECB test vectors from RFC 5794
- */
 static const uint8_t aria_test1_ecb_key[32] =           // test key
 {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,     // 128 bit
@@ -688,10 +590,6 @@ static const uint8_t aria_test1_ecb_ct[3][MBEDTLS_ARIA_BLOCKSIZE] =         // c
       0x2B, 0x8F, 0x80, 0xC1, 0x97, 0x2D, 0x24, 0xFC }
 };
 
-/*
- * Mode tests from "Test Vectors for ARIA"  Version 1.0
- * http://210.104.33.10/ARIA/doc/ARIA-testvector-e.pdf
- */
 #if (defined(MBEDTLS_CIPHER_MODE_CBC) || defined(MBEDTLS_CIPHER_MODE_CFB) || \
     defined(MBEDTLS_CIPHER_MODE_CTR))
 static const uint8_t aria_test2_key[32] =
@@ -805,9 +703,6 @@ static const uint8_t aria_test2_ctr_ct[3][48] =         // CTR ciphertext
         }                                           \
     } while (0)
 
-/*
- * Checkup routine
- */
 int mbedtls_aria_self_test(int verbose)
 {
     int i;
@@ -827,11 +722,7 @@ int mbedtls_aria_self_test(int verbose)
 
     mbedtls_aria_init(&ctx);
 
-    /*
-     * Test set 1
-     */
     for (i = 0; i < 3; i++) {
-        /* test ECB encryption */
         if (verbose) {
             mbedtls_printf("  ARIA-ECB-%d (enc): ", 128 + 64 * i);
         }
@@ -841,7 +732,6 @@ int mbedtls_aria_self_test(int verbose)
             memcmp(blk, aria_test1_ecb_ct[i], MBEDTLS_ARIA_BLOCKSIZE)
             != 0);
 
-        /* test ECB decryption */
         if (verbose) {
             mbedtls_printf("  ARIA-ECB-%d (dec): ", 128 + 64 * i);
 #if defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
@@ -861,12 +751,8 @@ int mbedtls_aria_self_test(int verbose)
         mbedtls_printf("\n");
     }
 
-    /*
-     * Test set 2
-     */
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
     for (i = 0; i < 3; i++) {
-        /* Test CBC encryption */
         if (verbose) {
             mbedtls_printf("  ARIA-CBC-%d (enc): ", 128 + 64 * i);
         }
@@ -878,7 +764,6 @@ int mbedtls_aria_self_test(int verbose)
         ARIA_SELF_TEST_ASSERT(memcmp(buf, aria_test2_cbc_ct[i], 48)
                               != 0);
 
-        /* Test CBC decryption */
         if (verbose) {
             mbedtls_printf("  ARIA-CBC-%d (dec): ", 128 + 64 * i);
         }
@@ -897,7 +782,6 @@ int mbedtls_aria_self_test(int verbose)
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
     for (i = 0; i < 3; i++) {
-        /* Test CFB encryption */
         if (verbose) {
             mbedtls_printf("  ARIA-CFB-%d (enc): ", 128 + 64 * i);
         }
@@ -909,7 +793,6 @@ int mbedtls_aria_self_test(int verbose)
                                   aria_test2_pt, buf);
         ARIA_SELF_TEST_ASSERT(memcmp(buf, aria_test2_cfb_ct[i], 48) != 0);
 
-        /* Test CFB decryption */
         if (verbose) {
             mbedtls_printf("  ARIA-CFB-%d (dec): ", 128 + 64 * i);
         }
@@ -940,7 +823,6 @@ int mbedtls_aria_self_test(int verbose)
                                aria_test2_pt, buf);
         ARIA_SELF_TEST_ASSERT(memcmp(buf, aria_test2_ctr_ct[i], 48) != 0);
 
-        /* Test CTR decryption */
         if (verbose) {
             mbedtls_printf("  ARIA-CTR-%d (dec): ", 128 + 64 * i);
         }

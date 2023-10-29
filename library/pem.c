@@ -41,9 +41,7 @@ void mbedtls_pem_init(mbedtls_pem_context *ctx)
 }
 
 #if defined(PEM_RFC1421)
-/*
- * Read a 16-byte hex string and convert it to binary
- */
+
 static int pem_get_iv(const unsigned char *s, unsigned char *iv,
                       size_t iv_len)
 {
@@ -84,15 +82,11 @@ static int pem_pbkdf1(unsigned char *key, size_t keylen,
 
     mbedtls_md_init(&md5_ctx);
 
-    /* Prepare the context. (setup() errors gracefully on NULL info.) */
     md5_info = mbedtls_md_info_from_type(MBEDTLS_MD_MD5);
     if ((ret = mbedtls_md_setup(&md5_ctx, md5_info, 0)) != 0) {
         goto exit;
     }
 
-    /*
-     * key[ 0..15] = MD5(pwd || IV)
-     */
     if ((ret = mbedtls_md_starts(&md5_ctx)) != 0) {
         goto exit;
     }
@@ -113,9 +107,6 @@ static int pem_pbkdf1(unsigned char *key, size_t keylen,
 
     memcpy(key, md5sum, 16);
 
-    /*
-     * key[16..23] = MD5(key[ 0..15] || pwd || IV])
-     */
     if ((ret = mbedtls_md_starts(&md5_ctx)) != 0) {
         goto exit;
     }
@@ -147,9 +138,7 @@ exit:
 }
 
 #if defined(MBEDTLS_DES_C)
-/*
- * Decrypt with DES-CBC, using PBKDF1 for key derivation
- */
+
 static int pem_des_decrypt(unsigned char des_iv[8],
                            unsigned char *buf, size_t buflen,
                            const unsigned char *pwd, size_t pwdlen)
@@ -177,9 +166,6 @@ exit:
     return ret;
 }
 
-/*
- * Decrypt with 3DES-CBC, using PBKDF1 for key derivation
- */
 static int pem_des3_decrypt(unsigned char des3_iv[8],
                             unsigned char *buf, size_t buflen,
                             const unsigned char *pwd, size_t pwdlen)
@@ -209,9 +195,7 @@ exit:
 #endif /* MBEDTLS_DES_C */
 
 #if defined(MBEDTLS_AES_C)
-/*
- * Decrypt with AES-XXX-CBC, using PBKDF1 for key derivation
- */
+
 static int pem_aes_decrypt(unsigned char aes_iv[16], unsigned int keylen,
                            unsigned char *buf, size_t buflen,
                            const unsigned char *pwd, size_t pwdlen)
@@ -457,9 +441,6 @@ int mbedtls_pem_read_buffer(mbedtls_pem_context *ctx, const char *header, const 
             return ret;
         }
 
-        /* Check PKCS padding and update data length based on padding info.
-         * This can be used to detect invalid padding data and password
-         * mismatches. */
         size_t unpadded_len;
         ret = pem_check_pkcs_padding(buf, len, &unpadded_len);
         if (ret != 0) {
@@ -537,7 +518,6 @@ int mbedtls_pem_write_buffer(const char *header, const char *footer,
     *p++ = '\0';
     *olen = (size_t) (p - buf);
 
-    /* Clean any remaining data previously written to the buffer */
     memset(buf + *olen, 0, buf_len - *olen);
 
     mbedtls_free(encode_buf);

@@ -5,16 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf
- *
- * See also:
- * [MGV] http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
- *
- * We use the algorithm described as Shoup's method with 4-bit tables in
- * [MGV] 4.1, pp. 12-13, to enhance speed without using too much memory.
- */
-
 #include "common.h"
 
 #if defined(MBEDTLS_GCM_C)
@@ -41,15 +31,11 @@
 
 #if !defined(MBEDTLS_GCM_ALT)
 
-/* Used to select the acceleration mechanism */
 #define MBEDTLS_GCM_ACC_SMALLTABLE  0
 #define MBEDTLS_GCM_ACC_LARGETABLE  1
 #define MBEDTLS_GCM_ACC_AESNI       2
 #define MBEDTLS_GCM_ACC_AESCE       3
 
-/*
- * Initialize a context
- */
 void mbedtls_gcm_init(mbedtls_gcm_context *ctx)
 {
     memset(ctx, 0, sizeof(mbedtls_gcm_context));
@@ -88,14 +74,6 @@ static inline void gcm_gen_table_rightshift(uint64_t dst[2], const uint64_t src[
     u8Dst[0] ^= (u8Src[15] & 0x01) ? 0xE1 : 0;
 }
 
-/*
- * Precompute small multiples of H, that is set
- *      HH[i] || HL[i] = H times i,
- * where i is seen as a field element as in [MGV], ie high-order bits
- * correspond to low powers of P. The result is stored in the same way, that
- * is the high-order bit of HH corresponds to P^0 and the low-order bit of HL
- * corresponds to P^127.
- */
 static int gcm_gen_table(mbedtls_gcm_context *ctx)
 {
     int ret, i, j;
@@ -114,7 +92,6 @@ static int gcm_gen_table(mbedtls_gcm_context *ctx)
 
     gcm_set_acceleration(ctx);
 
-    /* MBEDTLS_GCM_HTABLE_SIZE/2 = 1000 corresponds to 1 in GF(2^128) */
     ctx->H[MBEDTLS_GCM_HTABLE_SIZE/2][0] = u64h[0];
     ctx->H[MBEDTLS_GCM_HTABLE_SIZE/2][1] = u64h[1];
 
@@ -286,11 +263,7 @@ static void gcm_mult_largetable(uint8_t *output, const uint8_t *x, uint64_t H[25
     mbedtls_xor_no_simd(output, u8z, (uint8_t *) H[x[0]], 16);
 }
 #else
-/*
- * Shoup's method for multiplication use this table with
- *      last4[x] = x times P^128
- * where x and last4[x] are seen as elements of GF(2^128) as in [MGV]
- */
+
 static const uint16_t last4[16] =
 {
     0x0000, 0x1c20, 0x3840, 0x2460,
@@ -340,10 +313,6 @@ static void gcm_mult_smalltable(uint8_t *output, const uint8_t *x, uint64_t H[16
 }
 #endif
 
-/*
- * Sets output to x times H using the precomputed tables.
- * x and output are seen as elements of GF(2^128) as in [MGV].
- */
 static void gcm_mult(mbedtls_gcm_context *ctx, const unsigned char x[16],
                      unsigned char output[16])
 {
@@ -387,8 +356,6 @@ int mbedtls_gcm_starts(mbedtls_gcm_context *ctx,
     size_t olen = 0;
 #endif
 
-    /* IV is limited to 2^64 bits, so 2^61 bytes */
-    /* IV is not allowed to be zero length */
     if (iv_len == 0 || (uint64_t) iv_len >> 61 != 0) {
         return MBEDTLS_ERR_GCM_BAD_INPUT;
     }
@@ -447,23 +414,6 @@ int mbedtls_gcm_starts(mbedtls_gcm_context *ctx,
     return 0;
 }
 
-/**
- * mbedtls_gcm_context::buf contains the partial state of the computation of
- * the authentication tag.
- * mbedtls_gcm_context::add_len and mbedtls_gcm_context::len indicate
- * different stages of the computation:
- *     * len == 0 && add_len == 0:      initial state
- *     * len == 0 && add_len % 16 != 0: the first `add_len % 16` bytes have
- *                                      a partial block of AD that has been
- *                                      xored in but not yet multiplied in.
- *     * len == 0 && add_len % 16 == 0: the authentication tag is correct if
- *                                      the data ends now.
- *     * len % 16 != 0:                 the first `len % 16` bytes have
- *                                      a partial block of ciphertext that has
- *                                      been xored in but not yet multiplied in.
- *     * len > 0 && len % 16 == 0:      the authentication tag is correct if
- *                                      the data ends now.
- */
 int mbedtls_gcm_update_ad(mbedtls_gcm_context *ctx,
                           const unsigned char *add, size_t add_len)
 {
@@ -471,8 +421,6 @@ int mbedtls_gcm_update_ad(mbedtls_gcm_context *ctx,
     size_t use_len, offset;
     uint64_t new_add_len;
 
-    /* AD is limited to 2^64 bits, ie 2^61 bytes
-     * Also check for possible overflow */
 #if SIZE_MAX > 0xFFFFFFFFFFFFFFFFULL
     if (add_len > 0xFFFFFFFFFFFFFFFFULL) {
         return MBEDTLS_ERR_GCM_BAD_INPUT;
@@ -521,7 +469,6 @@ int mbedtls_gcm_update_ad(mbedtls_gcm_context *ctx,
     return 0;
 }
 
-/* Increment the counter. */
 static void gcm_incr(unsigned char y[16])
 {
     uint32_t x = MBEDTLS_GET_UINT32_BE(y, 12);
@@ -529,8 +476,6 @@ static void gcm_incr(unsigned char y[16])
     MBEDTLS_PUT_UINT32_BE(x, y, 12);
 }
 
-/* Calculate and apply the encryption mask. Process use_len bytes of data,
- * starting at position offset in the mask block. */
 static int gcm_mask(mbedtls_gcm_context *ctx,
                     unsigned char ectr[16],
                     size_t offset, size_t use_len,
@@ -577,10 +522,6 @@ int mbedtls_gcm_update(mbedtls_gcm_context *ctx,
     }
     *output_length = input_length;
 
-    /* Exit early if input_length==0 so that we don't do any pointer arithmetic
-     * on a potentially null pointer.
-     * Returning early also means that the last partial block of AD remains
-     * untouched for mbedtls_gcm_finish */
     if (input_length == 0) {
         return 0;
     }
@@ -589,8 +530,6 @@ int mbedtls_gcm_update(mbedtls_gcm_context *ctx,
         return MBEDTLS_ERR_GCM_BAD_INPUT;
     }
 
-    /* Total length is restricted to 2^39 - 256 bits, ie 2^36 - 2^5 bytes
-     * Also check for possible overflow */
     if (ctx->len + input_length < ctx->len ||
         (uint64_t) ctx->len + input_length > 0xFFFFFFFE0ull) {
         return MBEDTLS_ERR_GCM_BAD_INPUT;
@@ -656,15 +595,10 @@ int mbedtls_gcm_finish(mbedtls_gcm_context *ctx,
     uint64_t orig_len;
     uint64_t orig_add_len;
 
-    /* We never pass any output in finish(). The output parameter exists only
-     * for the sake of alternative implementations. */
     (void) output;
     (void) output_size;
     *output_length = 0;
 
-    /* Total length is restricted to 2^39 - 256 bits, ie 2^36 - 2^5 bytes
-     * and AD length is restricted to 2^64 bits, ie 2^61 bytes so neither of
-     * the two multiplications would overflow. */
     orig_len = ctx->len * 8;
     orig_add_len = ctx->add_len * 8;
 
@@ -756,7 +690,6 @@ int mbedtls_gcm_auth_decrypt(mbedtls_gcm_context *ctx,
         return ret;
     }
 
-    /* Check tag in "constant-time" */
     diff = mbedtls_ct_memcmp(tag, check_tag, tag_len);
 
     if (diff != 0) {
@@ -783,11 +716,7 @@ void mbedtls_gcm_free(mbedtls_gcm_context *ctx)
 #endif /* !MBEDTLS_GCM_ALT */
 
 #if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_CCM_GCM_CAN_AES)
-/*
- * AES-GCM test vectors from:
- *
- * http://csrc.nist.gov/groups/STM/cavp/documents/mac/gcmtestvectors.zip
- */
+
 #define MAX_TESTS   6
 
 static const int key_index_test_data[MAX_TESTS] =
@@ -1060,11 +989,7 @@ int mbedtls_gcm_self_test(int verbose)
             ret = mbedtls_gcm_setkey(&ctx, cipher,
                                      key_test_data[key_index_test_data[i]],
                                      key_len);
-            /*
-             * AES-192 is an optional feature that may be unavailable when
-             * there is an alternative underlying implementation i.e. when
-             * MBEDTLS_AES_ALT is defined.
-             */
+
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && key_len == 192) {
                 mbedtls_printf("skipped\n");
                 break;
@@ -1081,7 +1006,6 @@ int mbedtls_gcm_self_test(int verbose)
                                             pt_test_data[pt_index_test_data[i]],
                                             buf, 16, tag_buf);
 #if defined(MBEDTLS_GCM_ALT)
-            /* Allow alternative implementations to only support 12-byte nonces. */
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED &&
                 iv_len_test_data[i] != 12) {
                 mbedtls_printf("skipped\n");

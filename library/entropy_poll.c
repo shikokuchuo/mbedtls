@@ -6,7 +6,6 @@
  */
 
 #if defined(__linux__) || defined(__midipix__) && !defined(_GNU_SOURCE)
-/* Ensure that syscall() is available even when compiling with -std=c99 */
 #define _GNU_SOURCE
 #endif
 
@@ -46,11 +45,6 @@ int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
     ((void) data);
     *olen = 0;
 
-    /*
-     * BCryptGenRandom takes ULONG for size, which is smaller than size_t on
-     * 64-bit Windows platforms. Extract entropy in chunks of len (dependent
-     * on ULONG_MAX) size.
-     */
     while (len != 0) {
         unsigned long ulong_bytes =
             (len > ULONG_MAX) ? ULONG_MAX : (unsigned long) len;
@@ -68,11 +62,6 @@ int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
 }
 #else /* _WIN32 && !EFIX64 && !EFI32 */
 
-/*
- * Test for Linux getrandom() support.
- * Since there is no wrapper in the libc yet, use the generic syscall wrapper
- * available in GNU libc and compatible libc's (eg uClibc).
- */
 #if ((defined(__linux__) && defined(__GLIBC__)) || defined(__midipix__))
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -82,7 +71,6 @@ int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
 
 static int getrandom_wrapper(void *buf, size_t buflen, unsigned int flags)
 {
-    /* MemSan cannot understand that the syscall writes to the buffer */
 #if defined(__has_feature)
 #if __has_feature(memory_sanitizer)
     memset(buf, 0, buflen);
@@ -108,14 +96,6 @@ static int getrandom_wrapper(void *buf, size_t buflen, unsigned int flags)
           (__DragonFly__ && __DragonFly_version >= 500700) */
 #endif /* __FreeBSD__ || __DragonFly__ */
 
-/*
- * Some BSD systems provide KERN_ARND.
- * This is equivalent to reading from /dev/urandom, only it doesn't require an
- * open file descriptor, and provides up to 256 bytes per call (basically the
- * same as getentropy(), but with a longer history).
- *
- * Documentation: https://netbsd.gw.com/cgi-bin/man-cgi?sysctl+7
- */
 #if (defined(__FreeBSD__) || defined(__NetBSD__)) && !defined(HAVE_GETRANDOM)
 #include <sys/param.h>
 #include <sys/sysctl.h>
@@ -161,7 +141,6 @@ int mbedtls_platform_entropy_poll(void *data,
     } else if (errno != ENOSYS) {
         return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
     }
-    /* Fall through if the system call isn't known. */
 #else
     ((void) ret);
 #endif /* HAVE_GETRANDOM */
@@ -183,7 +162,6 @@ int mbedtls_platform_entropy_poll(void *data,
         return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
     }
 
-    /* Ensure no stdio buffering of secrets, as such buffers cannot be wiped. */
     mbedtls_setbuf(file, NULL);
 
     read_len = fread(output, 1, len, file);
