@@ -23,14 +23,9 @@
 
 #define CHACHAPOLY_STATE_INIT       (0)
 #define CHACHAPOLY_STATE_AAD        (1)
-#define CHACHAPOLY_STATE_CIPHERTEXT (2)   /* Encrypting or decrypting */
+#define CHACHAPOLY_STATE_CIPHERTEXT (2)
 #define CHACHAPOLY_STATE_FINISHED   (3)
 
-/**
- * \brief           Adds nul bytes to pad the AAD for Poly1305.
- *
- * \param ctx       The ChaCha20-Poly1305 context.
- */
 static int chachapoly_pad_aad(mbedtls_chachapoly_context *ctx)
 {
     uint32_t partial_block_len = (uint32_t) (ctx->aad_len % 16U);
@@ -47,11 +42,6 @@ static int chachapoly_pad_aad(mbedtls_chachapoly_context *ctx)
                                    16U - partial_block_len);
 }
 
-/**
- * \brief           Adds nul bytes to pad the ciphertext for Poly1305.
- *
- * \param ctx       The ChaCha20-Poly1305 context.
- */
 static int chachapoly_pad_ciphertext(mbedtls_chachapoly_context *ctx)
 {
     uint32_t partial_block_len = (uint32_t) (ctx->ciphertext_len % 16U);
@@ -108,17 +98,11 @@ int mbedtls_chachapoly_starts(mbedtls_chachapoly_context *ctx,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     unsigned char poly1305_key[64];
 
-    /* Set counter = 0, will be update to 1 when generating Poly1305 key */
     ret = mbedtls_chacha20_starts(&ctx->chacha20_ctx, nonce, 0U);
     if (ret != 0) {
         goto cleanup;
     }
 
-    /* Generate the Poly1305 key by getting the ChaCha20 keystream output with
-     * counter = 0.  This is the same as encrypting a buffer of zeroes.
-     * Only the first 256-bits (32 bytes) of the key is used for Poly1305.
-     * The other 256 bits are discarded.
-     */
     memset(poly1305_key, 0, sizeof(poly1305_key));
     ret = mbedtls_chacha20_update(&ctx->chacha20_ctx, sizeof(poly1305_key),
                                   poly1305_key, poly1305_key);
@@ -225,9 +209,6 @@ int mbedtls_chachapoly_finish(mbedtls_chachapoly_context *ctx,
 
     ctx->state = CHACHAPOLY_STATE_FINISHED;
 
-    /* The lengths of the AAD and ciphertext are processed by
-     * Poly1305 as the final 128-bit block, encoded as little-endian integers.
-     */
     MBEDTLS_PUT_UINT64_LE(ctx->aad_len, len_block, 0);
     MBEDTLS_PUT_UINT64_LE(ctx->ciphertext_len, len_block, 8);
 
@@ -307,7 +288,6 @@ int mbedtls_chachapoly_auth_decrypt(mbedtls_chachapoly_context *ctx,
         return ret;
     }
 
-    /* Check tag in "constant-time" */
     diff = mbedtls_ct_memcmp(tag, check_tag, sizeof(check_tag));
 
     if (diff != 0) {
@@ -335,8 +315,8 @@ static const unsigned char test_key[1][32] =
 static const unsigned char test_nonce[1][12] =
 {
     {
-        0x07, 0x00, 0x00, 0x00,                         /* 32-bit common part */
-        0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47  /* 64-bit IV */
+        0x07, 0x00, 0x00, 0x00,
+        0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47
     }
 };
 
@@ -408,7 +388,6 @@ static const unsigned char test_mac[1][16] =
     }
 };
 
-/* Make sure no other definition is already present. */
 #undef ASSERT
 
 #define ASSERT(cond, args)            \

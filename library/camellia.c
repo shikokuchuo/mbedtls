@@ -153,16 +153,16 @@ static const unsigned char FSb4[256] =
 static const unsigned char shifts[2][4][4] =
 {
     {
-        { 1, 1, 1, 1 }, /* KL */
-        { 0, 0, 0, 0 }, /* KR */
-        { 1, 1, 1, 1 }, /* KA */
-        { 0, 0, 0, 0 }  /* KB */
+        { 1, 1, 1, 1 },
+        { 0, 0, 0, 0 },
+        { 1, 1, 1, 1 },
+        { 0, 0, 0, 0 }
     },
     {
-        { 1, 0, 1, 1 }, /* KL */
-        { 1, 1, 0, 1 }, /* KR */
-        { 1, 1, 1, 0 }, /* KA */
-        { 1, 1, 0, 1 }  /* KB */
+        { 1, 0, 1, 1 },
+        { 1, 1, 0, 1 },
+        { 1, 1, 1, 0 },
+        { 1, 1, 0, 1 }
     }
 };
 
@@ -170,23 +170,23 @@ static const signed char indexes[2][4][20] =
 {
     {
         {  0,  1,  2,  3,  8,  9, 10, 11, 38, 39,
-           36, 37, 23, 20, 21, 22, 27, -1, -1, 26 }, /* KL -> RK */
+           36, 37, 23, 20, 21, 22, 27, -1, -1, 26 },
         { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, /* KR -> RK */
+          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         {  4,  5,  6,  7, 12, 13, 14, 15, 16, 17,
-           18, 19, -1, 24, 25, -1, 31, 28, 29, 30 }, /* KA -> RK */
+           18, 19, -1, 24, 25, -1, 31, 28, 29, 30 },
         { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }  /* KB -> RK */
+          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }
     },
     {
         {  0,  1,  2,  3, 61, 62, 63, 60, -1, -1,
-           -1, -1, 27, 24, 25, 26, 35, 32, 33, 34 }, /* KL -> RK */
+           -1, -1, 27, 24, 25, 26, 35, 32, 33, 34 },
         { -1, -1, -1, -1,  8,  9, 10, 11, 16, 17,
-          18, 19, -1, -1, -1, -1, 39, 36, 37, 38 }, /* KR -> RK */
+          18, 19, -1, -1, -1, -1, 39, 36, 37, 38 },
         { -1, -1, -1, -1, 12, 13, 14, 15, 58, 59,
-          56, 57, 31, 28, 29, 30, -1, -1, -1, -1 }, /* KA -> RK */
+          56, 57, 31, 28, 29, 30, -1, -1, -1, -1 },
         {  4,  5,  6,  7, 65, 66, 67, 64, 20, 21,
-           22, 23, -1, -1, -1, -1, 43, 40, 41, 42 } /* KB -> RK */
+           22, 23, -1, -1, -1, -1, 43, 40, 41, 42 }
     }
 };
 
@@ -208,7 +208,6 @@ static const signed char transposes[2][20] =
     }
 };
 
-/* Shift macro for 128 bit strings with rotation smaller than 32 bits (!) */
 #define ROTL(DEST, SRC, SHIFT)                                      \
     {                                                                   \
         (DEST)[0] = (SRC)[0] << (SHIFT) ^ (SRC)[1] >> (32 - (SHIFT));   \
@@ -285,9 +284,6 @@ void mbedtls_camellia_free(mbedtls_camellia_context *ctx)
     mbedtls_platform_zeroize(ctx, sizeof(mbedtls_camellia_context));
 }
 
-/*
- * Camellia key schedule (encryption)
- */
 int mbedtls_camellia_setkey_enc(mbedtls_camellia_context *ctx,
                                 const unsigned char *key,
                                 unsigned int keybits)
@@ -322,26 +318,17 @@ int mbedtls_camellia_setkey_enc(mbedtls_camellia_context *ctx,
         }
     }
 
-    /*
-     * Prepare SIGMA values
-     */
     for (i = 0; i < 6; i++) {
         SIGMA[i][0] = MBEDTLS_GET_UINT32_BE(SIGMA_CHARS[i], 0);
         SIGMA[i][1] = MBEDTLS_GET_UINT32_BE(SIGMA_CHARS[i], 4);
     }
 
-    /*
-     * Key storage in KC
-     * Order: KL, KR, KA, KB
-     */
     memset(KC, 0, sizeof(KC));
 
-    /* Store KL, KR */
     for (i = 0; i < 8; i++) {
         KC[i] = MBEDTLS_GET_UINT32_BE(t, i * 4);
     }
 
-    /* Generate KA */
     for (i = 0; i < 4; ++i) {
         KC[8 + i] = KC[i] ^ KC[4 + i];
     }
@@ -357,7 +344,6 @@ int mbedtls_camellia_setkey_enc(mbedtls_camellia_context *ctx,
     camellia_feistel(KC + 10, SIGMA[3], KC + 8);
 
     if (keybits > 128) {
-        /* Generate KB */
         for (i = 0; i < 4; ++i) {
             KC[12 + i] = KC[4 + i] ^ KC[8 + i];
         }
@@ -366,27 +352,18 @@ int mbedtls_camellia_setkey_enc(mbedtls_camellia_context *ctx,
         camellia_feistel(KC + 14, SIGMA[5], KC + 12);
     }
 
-    /*
-     * Generating subkeys
-     */
-
-    /* Manipulating KL */
     SHIFT_AND_PLACE(idx, 0);
 
-    /* Manipulating KR */
     if (keybits > 128) {
         SHIFT_AND_PLACE(idx, 1);
     }
 
-    /* Manipulating KA */
     SHIFT_AND_PLACE(idx, 2);
 
-    /* Manipulating KB */
     if (keybits > 128) {
         SHIFT_AND_PLACE(idx, 3);
     }
 
-    /* Do transpositions */
     for (i = 0; i < 20; i++) {
         if (transposes[idx][i] != -1) {
             RK[32 + 12 * idx + i] = RK[transposes[idx][i]];
@@ -396,9 +373,6 @@ int mbedtls_camellia_setkey_enc(mbedtls_camellia_context *ctx,
     return 0;
 }
 
-/*
- * Camellia key schedule (decryption)
- */
 int mbedtls_camellia_setkey_dec(mbedtls_camellia_context *ctx,
                                 const unsigned char *key,
                                 unsigned int keybits)
@@ -411,7 +385,6 @@ int mbedtls_camellia_setkey_dec(mbedtls_camellia_context *ctx,
 
     mbedtls_camellia_init(&cty);
 
-    /* Also checks keybits */
     if ((ret = mbedtls_camellia_setkey_enc(&cty, key, keybits)) != 0) {
         goto exit;
     }
@@ -445,9 +418,6 @@ exit:
     return ret;
 }
 
-/*
- * Camellia-ECB block encryption/decryption
- */
 int mbedtls_camellia_crypt_ecb(mbedtls_camellia_context *ctx,
                                int mode,
                                const unsigned char input[16],
@@ -511,9 +481,7 @@ int mbedtls_camellia_crypt_ecb(mbedtls_camellia_context *ctx,
 }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-/*
- * Camellia-CBC buffer encryption/decryption
- */
+
 int mbedtls_camellia_crypt_cbc(mbedtls_camellia_context *ctx,
                                int mode,
                                size_t length,
@@ -561,9 +529,7 @@ int mbedtls_camellia_crypt_cbc(mbedtls_camellia_context *ctx,
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-/*
- * Camellia-CFB128 buffer encryption/decryption
- */
+
 int mbedtls_camellia_crypt_cfb128(mbedtls_camellia_context *ctx,
                                   int mode,
                                   size_t length,
@@ -614,9 +580,7 @@ int mbedtls_camellia_crypt_cfb128(mbedtls_camellia_context *ctx,
 #endif /* MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-/*
- * Camellia-CTR buffer encryption/decryption
- */
+
 int mbedtls_camellia_crypt_ctr(mbedtls_camellia_context *ctx,
                                size_t length,
                                size_t *nc_off,
@@ -659,14 +623,6 @@ int mbedtls_camellia_crypt_ctr(mbedtls_camellia_context *ctx,
 
 #if defined(MBEDTLS_SELF_TEST)
 
-/*
- * Camellia test vectors from:
- *
- * http://info.isl.ntt.co.jp/crypt/eng/camellia/technology.html:
- *   http://info.isl.ntt.co.jp/crypt/eng/camellia/dl/cryptrec/intermediate.txt
- *   http://info.isl.ntt.co.jp/crypt/eng/camellia/dl/cryptrec/t_camellia.txt
- *                      (For each bitlength: Key 0, Nr 39)
- */
 #define CAMELLIA_TESTS_ECB  2
 
 static const unsigned char camellia_test_ecb_key[3][CAMELLIA_TESTS_ECB][32] =
@@ -921,9 +877,7 @@ int mbedtls_camellia_self_test(int verbose)
     }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-    /*
-     * CBC mode
-     */
+
     for (j = 0; j < 6; j++) {
         u = j >> 1;
         v = j  & 1;
@@ -976,9 +930,7 @@ int mbedtls_camellia_self_test(int verbose)
     }
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-    /*
-     * CTR mode
-     */
+
     for (i = 0; i < 6; i++) {
         u = i >> 1;
         v = i  & 1;

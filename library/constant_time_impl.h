@@ -16,32 +16,11 @@
 #include "mbedtls/bignum.h"
 #endif
 
-/*
- * To improve readability of constant_time_internal.h, the static inline
- * definitions are here, and constant_time_internal.h has only the declarations.
- *
- * This results in duplicate declarations of the form:
- *     static inline void f();         // from constant_time_internal.h
- *     static inline void f() { ... }  // from constant_time_impl.h
- * when constant_time_internal.h is included.
- *
- * This appears to behave as if the declaration-without-definition was not present
- * (except for warnings if gcc -Wredundant-decls or similar is used).
- *
- * Disable -Wredundant-decls so that gcc does not warn about this. This is re-enabled
- * at the bottom of this file.
- */
 #ifdef __GNUC__
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wredundant-decls"
 #endif
 
-/* Disable asm under Memsan because it confuses Memsan and generates false errors.
- *
- * We also disable under Valgrind by default, because it's more useful
- * for Valgrind to test the plain C implementation. MBEDTLS_TEST_CONSTANT_FLOW_ASM //no-check-names
- * may be set to permit building asm under Valgrind.
- */
 #if defined(MBEDTLS_TEST_CONSTANT_FLOW_MEMSAN) || \
     (defined(MBEDTLS_TEST_CONSTANT_FLOW_VALGRIND) && !defined(MBEDTLS_TEST_CONSTANT_FLOW_ASM)) //no-check-names
 #define MBEDTLS_CT_NO_ASM
@@ -51,7 +30,6 @@
 #endif
 #endif
 
-/* armcc5 --gnu defines __GNUC__ but doesn't support GNU's extended asm */
 #if defined(MBEDTLS_HAVE_ASM) && defined(__GNUC__) && (!defined(__ARMCC_VERSION) || \
     __ARMCC_VERSION >= 6000000) && !defined(MBEDTLS_CT_NO_ASM)
 #define MBEDTLS_CT_ASM
@@ -68,35 +46,10 @@
 
 #define MBEDTLS_CT_SIZE (sizeof(mbedtls_ct_uint_t) * 8)
 
-
-/* ============================================================================
- * Core const-time primitives
- */
-
-/* Ensure that the compiler cannot know the value of x (i.e., cannot optimise
- * based on its value) after this function is called.
- *
- * If we are not using assembly, this will be fairly inefficient, so its use
- * should be minimised.
- */
-
 #if !defined(MBEDTLS_CT_ASM)
 extern volatile mbedtls_ct_uint_t mbedtls_ct_zero;
 #endif
 
-/**
- * \brief   Ensure that a value cannot be known at compile time.
- *
- * \param x        The value to hide from the compiler.
- * \return         The same value that was passed in, such that the compiler
- *                 cannot prove its value (even for calls of the form
- *                 x = mbedtls_ct_compiler_opaque(1), x will be unknown).
- *
- * \note           This is mainly used in constructing mbedtls_ct_condition_t
- *                 values and performing operations over them, to ensure that
- *                 there is no way for the compiler to ever know anything about
- *                 the value of an mbedtls_ct_condition_t.
- */
 static inline mbedtls_ct_uint_t mbedtls_ct_compiler_opaque(mbedtls_ct_uint_t x)
 {
 #if defined(MBEDTLS_CT_ASM)
@@ -107,39 +60,14 @@ static inline mbedtls_ct_uint_t mbedtls_ct_compiler_opaque(mbedtls_ct_uint_t x)
 #endif
 }
 
-/*
- * Selecting unified syntax is needed for gcc, and harmless on clang.
- *
- * This is needed because on Thumb 1, condition flags are always set, so
- * e.g. "negs" is supported but "neg" is not (on Thumb 2, both exist).
- *
- * Under Thumb 1 unified syntax, only the "negs" form is accepted, and
- * under divided syntax, only the "neg" form is accepted. clang only
- * supports unified syntax.
- *
- * On Thumb 2 and Arm, both compilers are happy with the "s" suffix,
- * although we don't actually care about setting the flags.
- *
- * For gcc, restore divided syntax afterwards - otherwise old versions of gcc
- * seem to apply unified syntax globally, which breaks other asm code.
- */
 #if !defined(__clang__)
 #define RESTORE_ASM_SYNTAX  ".syntax divided                      \n\t"
 #else
 #define RESTORE_ASM_SYNTAX
 #endif
 
-/* Convert a number into a condition in constant time. */
 static inline mbedtls_ct_condition_t mbedtls_ct_bool(mbedtls_ct_uint_t x)
 {
-    /*
-     * Define mask-generation code that, as far as possible, will not use branches or conditional instructions.
-     *
-     * For some platforms / type sizes, we define assembly to assure this.
-     *
-     * Otherwise, we define a plain C fallback which (in May 2023) does not get optimised into
-     * conditional instructions or branches by trunk clang, gcc, or MSVC v19.
-     */
 #if defined(MBEDTLS_CT_AARCH64_ASM) && (defined(MBEDTLS_CT_SIZE_32) || defined(MBEDTLS_CT_SIZE_64))
     mbedtls_ct_uint_t s;
     asm volatile ("neg %x[s], %x[x]                               \n\t"
@@ -196,18 +124,13 @@ static inline mbedtls_ct_condition_t mbedtls_ct_bool(mbedtls_ct_uint_t x)
 #else
     const mbedtls_ct_uint_t xo = mbedtls_ct_compiler_opaque(x);
 #if defined(_MSC_VER)
-    /* MSVC has a warning about unary minus on unsigned, but this is
-     * well-defined and precisely what we want to do here */
 #pragma warning( push )
 #pragma warning( disable : 4146 )
 #endif
-    // y is negative (i.e., top bit set) iff x is non-zero
     mbedtls_ct_int_t y = (-xo) | -(xo >> 1);
 
-    // extract only the sign bit of y so that y == 1 (if x is non-zero) or 0 (if x is zero)
     y = (((mbedtls_ct_uint_t) y) >> (MBEDTLS_CT_SIZE - 1));
 
-    // -y has all bits set (if x is non-zero), or all bits clear (if x is zero)
     return (mbedtls_ct_condition_t) (-y);
 #if defined(_MSC_VER)
 #pragma warning( pop )
@@ -361,43 +284,22 @@ static inline mbedtls_ct_condition_t mbedtls_ct_uint_lt(mbedtls_ct_uint_t x, mbe
                   );
     return (mbedtls_ct_condition_t) x;
 #else
-    /* Ensure that the compiler cannot optimise the following operations over x and y,
-     * even if it knows the value of x and y.
-     */
     const mbedtls_ct_uint_t xo = mbedtls_ct_compiler_opaque(x);
     const mbedtls_ct_uint_t yo = mbedtls_ct_compiler_opaque(y);
-    /*
-     * Check if the most significant bits (MSB) of the operands are different.
-     * cond is true iff the MSBs differ.
-     */
     mbedtls_ct_condition_t cond = mbedtls_ct_bool((xo ^ yo) >> (MBEDTLS_CT_SIZE - 1));
 
-    /*
-     * If the MSB are the same then the difference x-y will be negative (and
-     * have its MSB set to 1 during conversion to unsigned) if and only if x<y.
-     *
-     * If the MSB are different, then the operand with the MSB of 1 is the
-     * bigger. (That is if y has MSB of 1, then x<y is true and it is false if
-     * the MSB of y is 0.)
-     */
-
-    // Select either y, or x - y
     mbedtls_ct_uint_t ret = mbedtls_ct_if(cond, yo, (mbedtls_ct_uint_t) (xo - yo));
 
-    // Extract only the MSB of ret
     ret = ret >> (MBEDTLS_CT_SIZE - 1);
 
-    // Convert to a condition (i.e., all bits set iff non-zero)
     return mbedtls_ct_bool(ret);
 #endif
 }
 
 static inline mbedtls_ct_condition_t mbedtls_ct_uint_ne(mbedtls_ct_uint_t x, mbedtls_ct_uint_t y)
 {
-    /* diff = 0 if x == y, non-zero otherwise */
     const mbedtls_ct_uint_t diff = mbedtls_ct_compiler_opaque(x) ^ mbedtls_ct_compiler_opaque(y);
 
-    /* all ones if x != y, 0 otherwise */
     return mbedtls_ct_bool(diff);
 }
 
@@ -409,17 +311,11 @@ static inline unsigned char mbedtls_ct_uchar_in_range_if(unsigned char low,
     const unsigned char co = (unsigned char) mbedtls_ct_compiler_opaque(c);
     const unsigned char to = (unsigned char) mbedtls_ct_compiler_opaque(t);
 
-    /* low_mask is: 0 if low <= c, 0x...ff if low > c */
     unsigned low_mask = ((unsigned) co - low) >> 8;
-    /* high_mask is: 0 if c <= high, 0x...ff if c > high */
     unsigned high_mask = ((unsigned) high - co) >> 8;
 
     return (unsigned char) (~(low_mask | high_mask)) & to;
 }
-
-/* ============================================================================
- * Everything below here is trivial wrapper functions
- */
 
 static inline size_t mbedtls_ct_size_if(mbedtls_ct_condition_t condition,
                                         size_t if1,
@@ -484,12 +380,6 @@ static inline mbedtls_mpi_uint mbedtls_ct_mpi_uint_if_else_0(mbedtls_ct_conditio
 
 static inline int mbedtls_ct_error_if(mbedtls_ct_condition_t condition, int if1, int if0)
 {
-    /* Coverting int -> uint -> int here is safe, because we require if1 and if0 to be
-     * in the range -32767..0, and we require 32-bit int and uint types.
-     *
-     * This means that (0 <= -if0 < INT_MAX), so negating if0 is safe, and similarly for
-     * converting back to int.
-     */
     return -((int) mbedtls_ct_if(condition, (mbedtls_ct_uint_t) (-if1),
                                  (mbedtls_ct_uint_t) (-if0)));
 }
@@ -547,7 +437,6 @@ static inline mbedtls_ct_condition_t mbedtls_ct_bool_not(mbedtls_ct_condition_t 
 }
 
 #ifdef __GNUC__
-/* Restore warnings for -Wredundant-decls on gcc */
     #pragma GCC diagnostic pop
 #endif
 

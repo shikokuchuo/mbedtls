@@ -21,14 +21,8 @@
 
 #include "mbedtls/platform.h"
 
-/*
- * Macro to automatically add the size of #define'd OIDs
- */
 #define ADD_LEN(s)      s, MBEDTLS_OID_SIZE(s)
 
-/*
- * Macro to generate mbedtls_oid_descriptor_t
- */
 #if !defined(MBEDTLS_X509_REMOVE_INFO)
 #define OID_DESCRIPTOR(s, name, description)  { ADD_LEN(s), name, description }
 #define NULL_OID_DESCRIPTOR                   { NULL, 0, NULL, NULL }
@@ -37,10 +31,6 @@
 #define NULL_OID_DESCRIPTOR                   { NULL, 0 }
 #endif
 
-/*
- * Macro to generate an internal function for oid_XXX_from_asn1() (used by
- * the other functions)
- */
 #define FN_OID_TYPED_FROM_ASN1(TYPE_T, NAME, LIST)                    \
     static const TYPE_T *oid_ ## NAME ## _from_asn1(                   \
         const mbedtls_asn1_buf *oid)     \
@@ -61,10 +51,7 @@
     }
 
 #if !defined(MBEDTLS_X509_REMOVE_INFO)
-/*
- * Macro to generate a function for retrieving a single attribute from the
- * descriptor of an mbedtls_oid_descriptor_t wrapper.
- */
+
 #define FN_OID_GET_DESCRIPTOR_ATTR1(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1) \
     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1)                  \
     {                                                                       \
@@ -75,10 +62,6 @@
     }
 #endif /* MBEDTLS_X509_REMOVE_INFO */
 
-/*
- * Macro to generate a function for retrieving a single attribute from an
- * mbedtls_oid_descriptor_t wrapper.
- */
 #define FN_OID_GET_ATTR1(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1) \
     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1)                  \
     {                                                                       \
@@ -88,10 +71,6 @@
         return 0;                                                        \
     }
 
-/*
- * Macro to generate a function for retrieving two attributes from an
- * mbedtls_oid_descriptor_t wrapper.
- */
 #define FN_OID_GET_ATTR2(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1,     \
                          ATTR2_TYPE, ATTR2)                                 \
     int FN_NAME(const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1,               \
@@ -104,10 +83,6 @@
         return 0;                                                            \
     }
 
-/*
- * Macro to generate a function for retrieving the OID based on a single
- * attribute from a mbedtls_oid_descriptor_t wrapper.
- */
 #define FN_OID_GET_OID_BY_ATTR1(FN_NAME, TYPE_T, LIST, ATTR1_TYPE, ATTR1)   \
     int FN_NAME(ATTR1_TYPE ATTR1, const char **oid, size_t *olen)             \
     {                                                                           \
@@ -123,10 +98,6 @@
         return MBEDTLS_ERR_OID_NOT_FOUND;                                    \
     }
 
-/*
- * Macro to generate a function for retrieving the OID based on two
- * attributes from a mbedtls_oid_descriptor_t wrapper.
- */
 #define FN_OID_GET_OID_BY_ATTR2(FN_NAME, TYPE_T, LIST, ATTR1_TYPE, ATTR1,   \
                                 ATTR2_TYPE, ATTR2)                          \
     int FN_NAME(ATTR1_TYPE ATTR1, ATTR2_TYPE ATTR2, const char **oid,         \
@@ -144,9 +115,6 @@
         return MBEDTLS_ERR_OID_NOT_FOUND;                                   \
     }
 
-/*
- * For X520 attribute types
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     const char          *short_name;
@@ -262,9 +230,6 @@ FN_OID_GET_ATTR1(mbedtls_oid_get_attr_short_name,
                  const char *,
                  short_name)
 
-/*
- * For X509 extensions
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     int                 ext_type;
@@ -367,9 +332,6 @@ FN_OID_GET_ATTR1(mbedtls_oid_get_certificate_policies,
                  description)
 #endif /* MBEDTLS_X509_REMOVE_INFO */
 
-/*
- * For SignatureAlgorithmIdentifier
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_md_type_t           md_alg;
@@ -495,9 +457,6 @@ FN_OID_GET_OID_BY_ATTR2(mbedtls_oid_get_oid_by_sig_alg,
                         mbedtls_md_type_t,
                         md_alg)
 
-/*
- * For PublicKeyInfo (PKCS1, RFC 5480)
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_pk_type_t           pk_alg;
@@ -532,9 +491,7 @@ FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_pk_alg,
                         pk_alg)
 
 #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
-/*
- * For elliptic curves that use namedCurve inside ECParams (RFC 5480)
- */
+
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_ecp_group_id        grp_id;
@@ -622,10 +579,6 @@ FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_ec_grp,
                         mbedtls_ecp_group_id,
                         grp_id)
 
-/*
- * For Elliptic Curve algorithms that are directly
- * encoded in the AlgorithmIdentifier (RFC 8410)
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_ecp_group_id        grp_id;
@@ -665,9 +618,7 @@ FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_ec_grp_algid,
 #endif /* MBEDTLS_PK_HAVE_ECC_KEYS */
 
 #if defined(MBEDTLS_CIPHER_C)
-/*
- * For PKCS#5 PBES2 encryption algorithm
- */
+
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_cipher_type_t       cipher_alg;
@@ -697,9 +648,6 @@ FN_OID_GET_ATTR1(mbedtls_oid_get_cipher_alg,
                  cipher_alg)
 #endif /* MBEDTLS_CIPHER_C */
 
-/*
- * For digestAlgorithm
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_md_type_t           md_alg;
@@ -787,9 +735,6 @@ FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_md,
                         mbedtls_md_type_t,
                         md_alg)
 
-/*
- * For HMAC digestAlgorithm
- */
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_md_type_t           md_hmac;
@@ -867,9 +812,7 @@ FN_OID_TYPED_FROM_ASN1(oid_md_hmac_t, md_hmac, oid_md_hmac)
 FN_OID_GET_ATTR1(mbedtls_oid_get_md_hmac, oid_md_hmac_t, md_hmac, mbedtls_md_type_t, md_hmac)
 
 #if defined(MBEDTLS_PKCS12_C)
-/*
- * For PKCS#12 PBEs
- */
+
 typedef struct {
     mbedtls_oid_descriptor_t    descriptor;
     mbedtls_md_type_t           md_alg;
@@ -906,7 +849,6 @@ FN_OID_GET_ATTR2(mbedtls_oid_get_pkcs12_pbe_alg,
                  cipher_alg)
 #endif /* MBEDTLS_PKCS12_C */
 
-/* Return the x.y.z.... style numeric string for the given OID */
 int mbedtls_oid_get_numeric_string(char *buf, size_t size,
                                    const mbedtls_asn1_buf *oid)
 {
@@ -916,22 +858,18 @@ int mbedtls_oid_get_numeric_string(char *buf, size_t size,
     unsigned int value = 0;
 
     if (size > INT_MAX) {
-        /* Avoid overflow computing return value */
         return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
     }
 
     if (oid->len <= 0) {
-        /* OID must not be empty */
         return MBEDTLS_ERR_ASN1_OUT_OF_DATA;
     }
 
     for (size_t i = 0; i < oid->len; i++) {
-        /* Prevent overflow in value. */
         if (value > (UINT_MAX >> 7)) {
             return MBEDTLS_ERR_ASN1_INVALID_DATA;
         }
         if ((value == 0) && ((oid->p[i]) == 0x80)) {
-            /* Overlong encoding is not allowed */
             return MBEDTLS_ERR_ASN1_INVALID_DATA;
         }
 
@@ -939,11 +877,9 @@ int mbedtls_oid_get_numeric_string(char *buf, size_t size,
         value |= oid->p[i] & 0x7F;
 
         if (!(oid->p[i] & 0x80)) {
-            /* Last byte */
             if (n == size) {
                 int component1;
                 unsigned int component2;
-                /* First subidentifier contains first two OID components */
                 if (value >= 80) {
                     component1 = '2';
                     component2 = value - 80;
@@ -968,7 +904,6 @@ int mbedtls_oid_get_numeric_string(char *buf, size_t size,
     }
 
     if (value != 0) {
-        /* Unterminated subidentifier */
         return MBEDTLS_ERR_ASN1_OUT_OF_DATA;
     }
 
@@ -1026,7 +961,6 @@ static int oid_subidentifier_encode_into(unsigned char **p,
     return 0;
 }
 
-/* Return the OID for the given x.y.z.... style numeric string  */
 int mbedtls_oid_from_numeric_string(mbedtls_asn1_buf *oid,
                                     const char *oid_str, size_t size)
 {
@@ -1038,24 +972,15 @@ int mbedtls_oid_from_numeric_string(mbedtls_asn1_buf *oid,
     size_t encoded_len;
     unsigned char *resized_mem;
 
-    /* Count the number of dots to get a worst-case allocation size. */
     size_t num_dots = 0;
     for (size_t i = 0; i < size; i++) {
         if (oid_str[i] == '.') {
             num_dots++;
         }
     }
-    /* Allocate maximum possible required memory:
-     * There are (num_dots + 1) integer components, but the first 2 share the
-     * same subidentifier, so we only need num_dots subidentifiers maximum. */
     if (num_dots == 0 || (num_dots > MBEDTLS_OID_MAX_COMPONENTS - 1)) {
         return MBEDTLS_ERR_ASN1_INVALID_DATA;
     }
-    /* Each byte can store 7 bits, calculate number of bytes for a
-     * subidentifier:
-     *
-     * bytes = ceil(subidentifer_size * 8 / 7)
-     */
     size_t bytes_per_subidentifier = (((sizeof(unsigned int) * 8) - 1) / 7)
                                      + 1;
     size_t max_possible_bytes = num_dots * bytes_per_subidentifier;
@@ -1071,7 +996,6 @@ int mbedtls_oid_from_numeric_string(mbedtls_asn1_buf *oid,
         goto error;
     }
     if (component1 > 2) {
-        /* First component can't be > 2 */
         ret = MBEDTLS_ERR_ASN1_INVALID_DATA;
         goto error;
     }
@@ -1086,7 +1010,6 @@ int mbedtls_oid_from_numeric_string(mbedtls_asn1_buf *oid,
         goto error;
     }
     if ((component1 < 2) && (component2 > 39)) {
-        /* Root nodes 0 and 1 may have up to 40 children, numbered 0-39 */
         ret = MBEDTLS_ERR_ASN1_INVALID_DATA;
         goto error;
     }

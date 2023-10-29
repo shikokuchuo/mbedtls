@@ -8,11 +8,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * It is recommended to include this file from your crypto_config.h
- * in order to catch dependency issues early.
- */
-
 #ifndef MBEDTLS_CHECK_CRYPTO_CONFIG_H
 #define MBEDTLS_CHECK_CRYPTO_CONFIG_H
 

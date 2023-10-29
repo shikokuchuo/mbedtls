@@ -5,12 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * References:
- *
- * SEC1 https://www.secg.org/sec1-v2.pdf
- */
-
 #include "common.h"
 
 #if defined(MBEDTLS_ECDSA_C)
@@ -31,20 +25,14 @@
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
 
-/*
- * Sub-context for ecdsa_verify()
- */
 struct mbedtls_ecdsa_restart_ver {
-    mbedtls_mpi u1, u2;     /* intermediate values  */
-    enum {                  /* what to do next?     */
-        ecdsa_ver_init = 0, /* getting started      */
-        ecdsa_ver_muladd,   /* muladd step          */
+    mbedtls_mpi u1, u2;
+    enum {
+        ecdsa_ver_init = 0,
+        ecdsa_ver_muladd,
     } state;
 };
 
-/*
- * Init verify restart sub-context
- */
 static void ecdsa_restart_ver_init(mbedtls_ecdsa_restart_ver_ctx *ctx)
 {
     mbedtls_mpi_init(&ctx->u1);
@@ -52,9 +40,6 @@ static void ecdsa_restart_ver_init(mbedtls_ecdsa_restart_ver_ctx *ctx)
     ctx->state = ecdsa_ver_init;
 }
 
-/*
- * Free the components of a verify restart sub-context
- */
 static void ecdsa_restart_ver_free(mbedtls_ecdsa_restart_ver_ctx *ctx)
 {
     if (ctx == NULL) {
@@ -67,24 +52,18 @@ static void ecdsa_restart_ver_free(mbedtls_ecdsa_restart_ver_ctx *ctx)
     ecdsa_restart_ver_init(ctx);
 }
 
-/*
- * Sub-context for ecdsa_sign()
- */
 struct mbedtls_ecdsa_restart_sig {
     int sign_tries;
     int key_tries;
-    mbedtls_mpi k;          /* per-signature random */
-    mbedtls_mpi r;          /* r value              */
-    enum {                  /* what to do next?     */
-        ecdsa_sig_init = 0, /* getting started      */
-        ecdsa_sig_mul,      /* doing ecp_mul()      */
-        ecdsa_sig_modn,     /* mod N computations   */
+    mbedtls_mpi k;
+    mbedtls_mpi r;
+    enum {
+        ecdsa_sig_init = 0,
+        ecdsa_sig_mul,
+        ecdsa_sig_modn,
     } state;
 };
 
-/*
- * Init verify sign sub-context
- */
 static void ecdsa_restart_sig_init(mbedtls_ecdsa_restart_sig_ctx *ctx)
 {
     ctx->sign_tries = 0;
@@ -94,9 +73,6 @@ static void ecdsa_restart_sig_init(mbedtls_ecdsa_restart_sig_ctx *ctx)
     ctx->state = ecdsa_sig_init;
 }
 
-/*
- * Free the components of a sign restart sub-context
- */
 static void ecdsa_restart_sig_free(mbedtls_ecdsa_restart_sig_ctx *ctx)
 {
     if (ctx == NULL) {
@@ -108,29 +84,21 @@ static void ecdsa_restart_sig_free(mbedtls_ecdsa_restart_sig_ctx *ctx)
 }
 
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
-/*
- * Sub-context for ecdsa_sign_det()
- */
+
 struct mbedtls_ecdsa_restart_det {
-    mbedtls_hmac_drbg_context rng_ctx;  /* DRBG state   */
-    enum {                      /* what to do next?     */
-        ecdsa_det_init = 0,     /* getting started      */
-        ecdsa_det_sign,         /* make signature       */
+    mbedtls_hmac_drbg_context rng_ctx;
+    enum {
+        ecdsa_det_init = 0,
+        ecdsa_det_sign,
     } state;
 };
 
-/*
- * Init verify sign_det sub-context
- */
 static void ecdsa_restart_det_init(mbedtls_ecdsa_restart_det_ctx *ctx)
 {
     mbedtls_hmac_drbg_init(&ctx->rng_ctx);
     ctx->state = ecdsa_det_init;
 }
 
-/*
- * Free the components of a sign_det restart sub-context
- */
 static void ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
 {
     if (ctx == NULL) {
@@ -145,11 +113,9 @@ static void ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
 
 #define ECDSA_RS_ECP    (rs_ctx == NULL ? NULL : &rs_ctx->ecp)
 
-/* Utility macro for checking and updating ops budget */
 #define ECDSA_BUDGET(ops)   \
     MBEDTLS_MPI_CHK(mbedtls_ecp_check_budget(grp, ECDSA_RS_ECP, ops));
 
-/* Call this when entering a function that needs its own sub-context */
 #define ECDSA_RS_ENTER(SUB)   do {                                 \
         /* reset ops count for this call if top-level */                 \
         if (rs_ctx != NULL && rs_ctx->ecp.depth++ == 0)                 \
@@ -167,7 +133,6 @@ static void ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
         }                                                                \
 } while (0)
 
-/* Call this when leaving a function that needs its own sub-context */
 #define ECDSA_RS_LEAVE(SUB)   do {                                 \
         /* clear our sub-context when not in progress (done or error) */ \
         if (rs_ctx != NULL && rs_ctx->SUB != NULL &&                     \
@@ -186,7 +151,7 @@ static void ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
 
 #define ECDSA_RS_ECP    NULL
 
-#define ECDSA_BUDGET(ops)     /* no-op; for compatibility */
+#define ECDSA_BUDGET(ops)
 
 #define ECDSA_RS_ENTER(SUB)   (void) rs_ctx
 #define ECDSA_RS_LEAVE(SUB)   (void) rs_ctx
@@ -196,10 +161,7 @@ static void ecdsa_restart_det_free(mbedtls_ecdsa_restart_det_ctx *ctx)
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC) || \
     !defined(MBEDTLS_ECDSA_SIGN_ALT)     || \
     !defined(MBEDTLS_ECDSA_VERIFY_ALT)
-/*
- * Derive a suitable integer for group grp from a buffer of length len
- * SEC1 4.1.3 step 5 aka SEC1 4.1.4 step 3
- */
+
 static int derive_mpi(const mbedtls_ecp_group *grp, mbedtls_mpi *x,
                       const unsigned char *buf, size_t blen)
 {
@@ -212,7 +174,6 @@ static int derive_mpi(const mbedtls_ecp_group *grp, mbedtls_mpi *x,
         MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(x, use_size * 8 - grp->nbits));
     }
 
-    /* While at it, reduce modulo N */
     if (mbedtls_mpi_cmp_mpi(x, &grp->N) >= 0) {
         MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(x, x, &grp->N));
     }
@@ -236,10 +197,7 @@ int mbedtls_ecdsa_can_do(mbedtls_ecp_group_id gid)
 }
 
 #if !defined(MBEDTLS_ECDSA_SIGN_ALT)
-/*
- * Compute ECDSA signature of a hashed message (SEC1 4.1.3)
- * Obviously, compared to SEC1 4.1.3, we skip step 4 (hash message)
- */
+
 int mbedtls_ecdsa_sign_restartable(mbedtls_ecp_group *grp,
                                    mbedtls_mpi *r, mbedtls_mpi *s,
                                    const mbedtls_mpi *d, const unsigned char *buf, size_t blen,
@@ -254,12 +212,10 @@ int mbedtls_ecdsa_sign_restartable(mbedtls_ecp_group *grp,
     mbedtls_mpi k, e, t;
     mbedtls_mpi *pk = &k, *pr = r;
 
-    /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
     if (!mbedtls_ecdsa_can_do(grp->id) || grp->N.p == NULL) {
         return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
     }
 
-    /* Make sure d is in range 1..n-1 */
     if (mbedtls_mpi_cmp_int(d, 1) < 0 || mbedtls_mpi_cmp_mpi(d, &grp->N) >= 0) {
         return MBEDTLS_ERR_ECP_INVALID_KEY;
     }
@@ -271,13 +227,11 @@ int mbedtls_ecdsa_sign_restartable(mbedtls_ecp_group *grp,
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
     if (rs_ctx != NULL && rs_ctx->sig != NULL) {
-        /* redirect to our context */
         p_sign_tries = &rs_ctx->sig->sign_tries;
         p_key_tries = &rs_ctx->sig->key_tries;
         pk = &rs_ctx->sig->k;
         pr = &rs_ctx->sig->r;
 
-        /* jump to current step */
         if (rs_ctx->sig->state == ecdsa_sig_mul) {
             goto mul;
         }
@@ -294,10 +248,6 @@ int mbedtls_ecdsa_sign_restartable(mbedtls_ecp_group *grp,
             goto cleanup;
         }
 
-        /*
-         * Steps 1-3: generate a suitable ephemeral keypair
-         * and set r = xR mod n
-         */
         *p_key_tries = 0;
         do {
             if ((*p_key_tries)++ > 10) {
@@ -328,27 +278,14 @@ mul:
 
 modn:
 #endif
-        /*
-         * Accounting for everything up to the end of the loop
-         * (step 6, but checking now avoids saving e and t)
-         */
+
         ECDSA_BUDGET(MBEDTLS_ECP_OPS_INV + 4);
 
-        /*
-         * Step 5: derive MPI from hashed message
-         */
         MBEDTLS_MPI_CHK(derive_mpi(grp, &e, buf, blen));
 
-        /*
-         * Generate a random value to blind inv_mod in next step,
-         * avoiding a potential timing leak.
-         */
         MBEDTLS_MPI_CHK(mbedtls_ecp_gen_privkey(grp, &t, f_rng_blind,
                                                 p_rng_blind));
 
-        /*
-         * Step 6: compute s = (e + r * d) / k = t (e + rd) / (kt) mod n
-         */
         MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(s, pr, d));
         MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&e, &e, s));
         MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&e, &e, &t));
@@ -374,26 +311,17 @@ cleanup:
     return ret;
 }
 
-/*
- * Compute ECDSA signature of a hashed message
- */
 int mbedtls_ecdsa_sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
                        const mbedtls_mpi *d, const unsigned char *buf, size_t blen,
                        int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
 {
-    /* Use the same RNG for both blinding and ephemeral key generation */
     return mbedtls_ecdsa_sign_restartable(grp, r, s, d, buf, blen,
                                           f_rng, p_rng, f_rng, p_rng, NULL);
 }
 #endif /* !MBEDTLS_ECDSA_SIGN_ALT */
 
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
-/*
- * Deterministic signature wrapper
- *
- * note:    The f_rng_blind parameter must not be NULL.
- *
- */
+
 int mbedtls_ecdsa_sign_det_restartable(mbedtls_ecp_group *grp,
                                        mbedtls_mpi *r, mbedtls_mpi *s,
                                        const mbedtls_mpi *d, const unsigned char *buf, size_t blen,
@@ -421,17 +349,14 @@ int mbedtls_ecdsa_sign_det_restartable(mbedtls_ecp_group *grp,
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
     if (rs_ctx != NULL && rs_ctx->det != NULL) {
-        /* redirect to our context */
         p_rng = &rs_ctx->det->rng_ctx;
 
-        /* jump to current step */
         if (rs_ctx->det->state == ecdsa_det_sign) {
             goto sign;
         }
     }
 #endif /* MBEDTLS_ECP_RESTARTABLE */
 
-    /* Use private key and message hash (reduced) to initialize HMAC_DRBG */
     MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(d, data, grp_len));
     MBEDTLS_MPI_CHK(derive_mpi(grp, &h, buf, blen));
     MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&h, data + grp_len, grp_len));
@@ -464,9 +389,6 @@ cleanup:
     return ret;
 }
 
-/*
- * Deterministic signature wrapper
- */
 int mbedtls_ecdsa_sign_det_ext(mbedtls_ecp_group *grp, mbedtls_mpi *r,
                                mbedtls_mpi *s, const mbedtls_mpi *d,
                                const unsigned char *buf, size_t blen,
@@ -481,10 +403,7 @@ int mbedtls_ecdsa_sign_det_ext(mbedtls_ecp_group *grp, mbedtls_mpi *r,
 #endif /* MBEDTLS_ECDSA_DETERMINISTIC */
 
 #if !defined(MBEDTLS_ECDSA_VERIFY_ALT)
-/*
- * Verify ECDSA signature of hashed message (SEC1 4.1.4)
- * Obviously, compared to SEC1 4.1.3, we skip step 2 (hash message)
- */
+
 int mbedtls_ecdsa_verify_restartable(mbedtls_ecp_group *grp,
                                      const unsigned char *buf, size_t blen,
                                      const mbedtls_ecp_point *Q,
@@ -501,7 +420,6 @@ int mbedtls_ecdsa_verify_restartable(mbedtls_ecp_group *grp,
     mbedtls_mpi_init(&e); mbedtls_mpi_init(&s_inv);
     mbedtls_mpi_init(&u1); mbedtls_mpi_init(&u2);
 
-    /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
     if (!mbedtls_ecdsa_can_do(grp->id) || grp->N.p == NULL) {
         return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
     }
@@ -510,34 +428,23 @@ int mbedtls_ecdsa_verify_restartable(mbedtls_ecp_group *grp,
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
     if (rs_ctx != NULL && rs_ctx->ver != NULL) {
-        /* redirect to our context */
         pu1 = &rs_ctx->ver->u1;
         pu2 = &rs_ctx->ver->u2;
 
-        /* jump to current step */
         if (rs_ctx->ver->state == ecdsa_ver_muladd) {
             goto muladd;
         }
     }
 #endif /* MBEDTLS_ECP_RESTARTABLE */
 
-    /*
-     * Step 1: make sure r and s are in range 1..n-1
-     */
     if (mbedtls_mpi_cmp_int(r, 1) < 0 || mbedtls_mpi_cmp_mpi(r, &grp->N) >= 0 ||
         mbedtls_mpi_cmp_int(s, 1) < 0 || mbedtls_mpi_cmp_mpi(s, &grp->N) >= 0) {
         ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
         goto cleanup;
     }
 
-    /*
-     * Step 3: derive MPI from hashed message
-     */
     MBEDTLS_MPI_CHK(derive_mpi(grp, &e, buf, blen));
 
-    /*
-     * Step 4: u1 = e / s mod n, u2 = r / s mod n
-     */
     ECDSA_BUDGET(MBEDTLS_ECP_OPS_CHK + MBEDTLS_ECP_OPS_INV + 2);
 
     MBEDTLS_MPI_CHK(mbedtls_mpi_inv_mod(&s_inv, s, &grp->N));
@@ -555,9 +462,7 @@ int mbedtls_ecdsa_verify_restartable(mbedtls_ecp_group *grp,
 
 muladd:
 #endif
-    /*
-     * Step 5: R = u1 G + u2 Q
-     */
+
     MBEDTLS_MPI_CHK(mbedtls_ecp_muladd_restartable(grp,
                                                    &R, pu1, &grp->G, pu2, Q, ECDSA_RS_ECP));
 
@@ -566,15 +471,8 @@ muladd:
         goto cleanup;
     }
 
-    /*
-     * Step 6: convert xR to an integer (no-op)
-     * Step 7: reduce xR mod n (gives v)
-     */
     MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&R.X, &R.X, &grp->N));
 
-    /*
-     * Step 8: check if v (that is, R.X) is equal to r
-     */
     if (mbedtls_mpi_cmp_mpi(&R.X, r) != 0) {
         ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
         goto cleanup;
@@ -590,9 +488,6 @@ cleanup:
     return ret;
 }
 
-/*
- * Verify ECDSA signature of hashed message
- */
 int mbedtls_ecdsa_verify(mbedtls_ecp_group *grp,
                          const unsigned char *buf, size_t blen,
                          const mbedtls_ecp_point *Q,
@@ -603,9 +498,6 @@ int mbedtls_ecdsa_verify(mbedtls_ecp_group *grp,
 }
 #endif /* !MBEDTLS_ECDSA_VERIFY_ALT */
 
-/*
- * Convert a signature (given by context) to ASN.1
- */
 static int ecdsa_signature_to_asn1(const mbedtls_mpi *r, const mbedtls_mpi *s,
                                    unsigned char *sig, size_t sig_size,
                                    size_t *slen)
@@ -633,9 +525,6 @@ static int ecdsa_signature_to_asn1(const mbedtls_mpi *r, const mbedtls_mpi *s,
     return 0;
 }
 
-/*
- * Compute and write signature
- */
 int mbedtls_ecdsa_write_signature_restartable(mbedtls_ecdsa_context *ctx,
                                               mbedtls_md_type_t md_alg,
                                               const unsigned char *hash, size_t hlen,
@@ -666,7 +555,6 @@ int mbedtls_ecdsa_write_signature_restartable(mbedtls_ecdsa_context *ctx,
     MBEDTLS_MPI_CHK(mbedtls_ecdsa_sign(&ctx->grp, &r, &s, &ctx->d,
                                        hash, hlen, f_rng, p_rng));
 #else
-    /* Use the same RNG for both blinding and ephemeral key generation */
     MBEDTLS_MPI_CHK(mbedtls_ecdsa_sign_restartable(&ctx->grp, &r, &s, &ctx->d,
                                                    hash, hlen, f_rng, p_rng, f_rng,
                                                    p_rng, rs_ctx));
@@ -682,9 +570,6 @@ cleanup:
     return ret;
 }
 
-/*
- * Compute and write signature
- */
 int mbedtls_ecdsa_write_signature(mbedtls_ecdsa_context *ctx,
                                   mbedtls_md_type_t md_alg,
                                   const unsigned char *hash, size_t hlen,
@@ -697,9 +582,6 @@ int mbedtls_ecdsa_write_signature(mbedtls_ecdsa_context *ctx,
         f_rng, p_rng, NULL);
 }
 
-/*
- * Read and check signature
- */
 int mbedtls_ecdsa_read_signature(mbedtls_ecdsa_context *ctx,
                                  const unsigned char *hash, size_t hlen,
                                  const unsigned char *sig, size_t slen)
@@ -708,9 +590,6 @@ int mbedtls_ecdsa_read_signature(mbedtls_ecdsa_context *ctx,
         ctx, hash, hlen, sig, slen, NULL);
 }
 
-/*
- * Restartable read and check signature
- */
 int mbedtls_ecdsa_read_signature_restartable(mbedtls_ecdsa_context *ctx,
                                              const unsigned char *hash, size_t hlen,
                                              const unsigned char *sig, size_t slen,
@@ -755,9 +634,6 @@ int mbedtls_ecdsa_read_signature_restartable(mbedtls_ecdsa_context *ctx,
     }
 #endif /* MBEDTLS_ECDSA_VERIFY_ALT */
 
-    /* At this point we know that the buffer starts with a valid signature.
-     * Return 0 if the buffer just contains the signature, and a specific
-     * error code if the valid signature is followed by more data. */
     if (p != end) {
         ret = MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH;
     }
@@ -770,9 +646,7 @@ cleanup:
 }
 
 #if !defined(MBEDTLS_ECDSA_GENKEY_ALT)
-/*
- * Generate key pair
- */
+
 int mbedtls_ecdsa_genkey(mbedtls_ecdsa_context *ctx, mbedtls_ecp_group_id gid,
                          int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
 {
@@ -787,9 +661,6 @@ int mbedtls_ecdsa_genkey(mbedtls_ecdsa_context *ctx, mbedtls_ecp_group_id gid,
 }
 #endif /* !MBEDTLS_ECDSA_GENKEY_ALT */
 
-/*
- * Set context from an mbedtls_ecp_keypair
- */
 int mbedtls_ecdsa_from_keypair(mbedtls_ecdsa_context *ctx, const mbedtls_ecp_keypair *key)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -802,17 +673,11 @@ int mbedtls_ecdsa_from_keypair(mbedtls_ecdsa_context *ctx, const mbedtls_ecp_key
     return ret;
 }
 
-/*
- * Initialize context
- */
 void mbedtls_ecdsa_init(mbedtls_ecdsa_context *ctx)
 {
     mbedtls_ecp_keypair_init(ctx);
 }
 
-/*
- * Free context
- */
 void mbedtls_ecdsa_free(mbedtls_ecdsa_context *ctx)
 {
     if (ctx == NULL) {
@@ -823,9 +688,7 @@ void mbedtls_ecdsa_free(mbedtls_ecdsa_context *ctx)
 }
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
-/*
- * Initialize a restart context
- */
+
 void mbedtls_ecdsa_restart_init(mbedtls_ecdsa_restart_ctx *ctx)
 {
     mbedtls_ecp_restart_init(&ctx->ecp);
@@ -837,9 +700,6 @@ void mbedtls_ecdsa_restart_init(mbedtls_ecdsa_restart_ctx *ctx)
 #endif
 }
 
-/*
- * Free the components of a restart context
- */
 void mbedtls_ecdsa_restart_free(mbedtls_ecdsa_restart_ctx *ctx)
 {
     if (ctx == NULL) {

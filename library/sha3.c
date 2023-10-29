@@ -4,11 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The SHA-3 Secure Hash Standard was published by NIST in 2015.
- *
- *  https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf
- */
 
 #include "common.h"
 
@@ -34,9 +29,6 @@ typedef struct mbedtls_sha3_family_functions {
 }
 mbedtls_sha3_family_functions;
 
-/*
- * List of supported SHA-3 families
- */
 static mbedtls_sha3_family_functions sha3_families[] = {
     { MBEDTLS_SHA3_224,      1152, 224 },
     { MBEDTLS_SHA3_256,      1088, 256 },
@@ -71,7 +63,6 @@ static const uint8_t pi[24] = {
 #define SQUEEZE(ctx, idx) ((uint8_t) (ctx->state[(idx) >> 3] >> (((idx) & 0x7) << 3)))
 #define SWAP(x, y) do { uint64_t tmp = (x); (x) = (y); (y) = tmp; } while (0)
 
-/* The permutation function.  */
 static void keccak_f1600(mbedtls_sha3_context *ctx)
 {
     uint64_t lane[5];
@@ -150,7 +141,6 @@ static void keccak_f1600(mbedtls_sha3_context *ctx)
         s[23] ^= (~lane[4]) & lane[0];
         s[24] ^= (~lane[0]) & lane[1];
 
-        /* Iota */
         s[0] ^= rc[round];
     }
 }
@@ -175,9 +165,6 @@ void mbedtls_sha3_clone(mbedtls_sha3_context *dst,
     *dst = *src;
 }
 
-/*
- * SHA-3 context setup
- */
 int mbedtls_sha3_starts(mbedtls_sha3_context *ctx, mbedtls_sha3_id id)
 {
     mbedtls_sha3_family_functions *p = NULL;
@@ -201,9 +188,6 @@ int mbedtls_sha3_starts(mbedtls_sha3_context *ctx, mbedtls_sha3_id id)
     return 0;
 }
 
-/*
- * SHA-3 process buffer
- */
 int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
                         const uint8_t *input,
                         size_t ilen)
@@ -222,7 +206,6 @@ int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
             }
         }
 
-        // process input in 8-byte chunks
         while (ilen >= 8) {
             ABSORB(ctx, ctx->index, MBEDTLS_GET_UINT64_LE(input, 0));
             input += 8;
@@ -233,7 +216,6 @@ int mbedtls_sha3_update(mbedtls_sha3_context *ctx,
         }
     }
 
-    // handle remaining bytes
     while (ilen-- > 0) {
         ABSORB(ctx, ctx->index, *input++);
         if ((ctx->index = (ctx->index + 1) % ctx->max_block_size) == 0) {
@@ -249,7 +231,6 @@ int mbedtls_sha3_finish(mbedtls_sha3_context *ctx,
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
-    /* Catch SHA-3 families, with fixed output length */
     if (ctx->olen > 0) {
         if (ctx->olen > olen) {
             ret = MBEDTLS_ERR_SHA3_BAD_INPUT_DATA;
@@ -278,9 +259,6 @@ exit:
     return ret;
 }
 
-/*
- * output = SHA-3( input buffer )
- */
 int mbedtls_sha3(mbedtls_sha3_id id, const uint8_t *input,
                  size_t ilen, uint8_t *output, size_t olen)
 {
@@ -289,7 +267,6 @@ int mbedtls_sha3(mbedtls_sha3_id id, const uint8_t *input,
 
     mbedtls_sha3_init(&ctx);
 
-    /* Sanity checks are performed in every mbedtls_sha3_xxx() */
     if ((ret = mbedtls_sha3_starts(&ctx, id)) != 0) {
         goto exit;
     }
@@ -307,8 +284,6 @@ exit:
 
     return ret;
 }
-
-/**************** Self-tests ****************/
 
 #if defined(MBEDTLS_SELF_TEST)
 
@@ -514,7 +489,6 @@ static int mbedtls_sha3_long_kat_test(int verbose,
         }
     }
 
-    /* Process 1,000,000 (one million) 'a' characters */
     for (int i = 0; i < 1000; i++) {
         result = mbedtls_sha3_update(&ctx, buffer, 1000);
         if (result != 0) {
@@ -571,7 +545,6 @@ int mbedtls_sha3_self_test(int verbose)
 {
     int i;
 
-    /* SHA-3 Known Answer Tests (KAT) */
     for (i = 0; i < 2; i++) {
         if (0 != mbedtls_sha3_kat_test(verbose,
                                        "SHA3-224", MBEDTLS_SHA3_224, i)) {

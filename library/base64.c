@@ -26,9 +26,7 @@ MBEDTLS_STATIC_TESTABLE
 unsigned char mbedtls_ct_base64_enc_char(unsigned char value)
 {
     unsigned char digit = 0;
-    /* For each range of values, if value is in that range, mask digit with
-     * the corresponding value. Since value can only be in a single range,
-     * only at most one masking will change digit. */
+
     digit |= mbedtls_ct_uchar_in_range_if(0, 25, value, 'A' + value);
     digit |= mbedtls_ct_uchar_in_range_if(26, 51, value, 'a' + value - 26);
     digit |= mbedtls_ct_uchar_in_range_if(52, 61, value, '0' + value - 52);
@@ -41,23 +39,16 @@ MBEDTLS_STATIC_TESTABLE
 signed char mbedtls_ct_base64_dec_value(unsigned char c)
 {
     unsigned char val = 0;
-    /* For each range of digits, if c is in that range, mask val with
-     * the corresponding value. Since c can only be in a single range,
-     * only at most one masking will change val. Set val to one plus
-     * the desired value so that it stays 0 if c is in none of the ranges. */
+
     val |= mbedtls_ct_uchar_in_range_if('A', 'Z', c, c - 'A' +  0 + 1);
     val |= mbedtls_ct_uchar_in_range_if('a', 'z', c, c - 'a' + 26 + 1);
     val |= mbedtls_ct_uchar_in_range_if('0', '9', c, c - '0' + 52 + 1);
     val |= mbedtls_ct_uchar_in_range_if('+', '+', c, c - '+' + 62 + 1);
     val |= mbedtls_ct_uchar_in_range_if('/', '/', c, c - '/' + 63 + 1);
-    /* At this point, val is 0 if c is an invalid digit and v+1 if c is
-     * a digit with the value v. */
+
     return val - 1;
 }
 
-/*
- * Encode a buffer into base64 format
- */
 int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
                           const unsigned char *src, size_t slen)
 {
@@ -122,30 +113,25 @@ int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
     return 0;
 }
 
-/*
- * Decode a base64-formatted buffer
- */
 int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
                           const unsigned char *src, size_t slen)
 {
-    size_t i; /* index in source */
-    size_t n; /* number of digits or trailing = in source */
-    uint32_t x; /* value accumulator */
+    size_t i;
+    size_t n;
+    uint32_t x;
     unsigned accumulated_digits = 0;
     unsigned equals = 0;
     int spaces_present = 0;
     unsigned char *p;
 
-    /* First pass: check for validity and get output length */
     for (i = n = 0; i < slen; i++) {
-        /* Skip spaces before checking for EOL */
+
         spaces_present = 0;
         while (i < slen && src[i] == ' ') {
             ++i;
             spaces_present = 1;
         }
 
-        /* Spaces at end of buffer are OK */
         if (i == slen) {
             break;
         }
@@ -159,7 +145,6 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
             continue;
         }
 
-        /* Space inside a line is an error */
         if (spaces_present) {
             return MBEDTLS_ERR_BASE64_INVALID_CHARACTER;
         }
@@ -188,10 +173,6 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
         return 0;
     }
 
-    /* The following expression is to calculate the following formula without
-     * risk of integer overflow in n:
-     *     n = ( ( n * 6 ) + 7 ) >> 3;
-     */
     n = (6 * (n >> 3)) + ((6 * (n & 0x7) + 7) >> 3);
     n -= equals;
 
@@ -248,9 +229,6 @@ static const unsigned char base64_test_enc[] =
     "JEhuVodiWr2/F9mixBcaAZTtjx4Rs9cJDLbpEG8i7hPK"
     "swcFdsn6MWwINP+Nwmw4AEPpVJevUEvRQbqVMVoLlw==";
 
-/*
- * Checkup routine
- */
 int mbedtls_base64_self_test(int verbose)
 {
     size_t len;

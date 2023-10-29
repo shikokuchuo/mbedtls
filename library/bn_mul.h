@@ -7,20 +7,7 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *      Multiply source vector [s] with b, add result
- *       to destination vector [d] and set carry c.
- *
- *      Currently supports:
- *
- *         . IA-32 (386+)         . AMD64 / EM64T
- *         . IA-32 (SSE2)         . Motorola 68000
- *         . PowerPC, 32-bit      . MicroBlaze
- *         . PowerPC, 64-bit      . TriCore
- *         . SPARC v8             . ARM v3+
- *         . Alpha                . MIPS32
- *         . C, longlong          . C, generic
- */
+
 #ifndef MBEDTLS_BN_MUL_H
 #define MBEDTLS_BN_MUL_H
 
@@ -28,11 +15,6 @@
 
 #include "mbedtls/bignum.h"
 
-
-/*
- * Conversion macros for embedded constants:
- * build lists of mbedtls_mpi_uint's from lists of unsigned char's grouped by 8, 4 or 2
- */
 #if defined(MBEDTLS_HAVE_INT32)
 
 #define MBEDTLS_BYTES_TO_T_UINT_4(a, b, c, d)               \
@@ -68,35 +50,15 @@
 
 #endif /* bits in mbedtls_mpi_uint */
 
-/* *INDENT-OFF* */
 #if defined(MBEDTLS_HAVE_ASM)
 
-/* armcc5 --gnu defines __GNUC__ but doesn't support GNU's extended asm */
 #if defined(__GNUC__) && \
     ( !defined(__ARMCC_VERSION) || __ARMCC_VERSION >= 6000000 )
 
-/*
- * GCC < 5.0 treated the x86 ebx (which is used for the GOT) as a
- * fixed reserved register when building as PIC, leading to errors
- * like: bn_mul.h:46:13: error: PIC register clobbered by 'ebx' in 'asm'
- *
- * This is fixed by an improved register allocator in GCC 5+. From the
- * release notes:
- * Register allocation improvements: Reuse of the PIC hard register,
- * instead of using a fixed register, was implemented on x86/x86-64
- * targets. This improves generated PIC code performance as more hard
- * registers can be used.
- */
 #if defined(__GNUC__) && __GNUC__ < 5 && defined(__PIC__)
 #define MULADDC_CANNOT_USE_EBX
 #endif
 
-/*
- * Disable use of the i386 assembly code below if option -O0, to disable all
- * compiler optimisations, is passed, detected with __OPTIMIZE__
- * This is done as the number of registers used in the assembly code doesn't
- * work with the -O0 option.
- */
 #if defined(__i386__) && defined(__OPTIMIZE__) && !defined(MULADDC_CANNOT_USE_EBX)
 
 #define MULADDC_X1_INIT                     \
@@ -236,17 +198,8 @@
 
 #endif /* AMD64 */
 
-// The following assembly code assumes that a pointer will fit in a 64-bit register
-// (including ILP32 __aarch64__ ABIs such as on watchOS, hence the 2^32 - 1)
 #if defined(__aarch64__) && (UINTPTR_MAX == 0xfffffffful || UINTPTR_MAX == 0xfffffffffffffffful)
 
-/*
- * There are some issues around different compilers requiring different constraint
- * syntax for updating pointers from assembly code (see notes for
- * MBEDTLS_ASM_AARCH64_PTR_CONSTRAINT in common.h), especially on aarch64_32 (aka ILP32).
- *
- * For this reason we cast the pointers to/from uintptr_t here.
- */
 #define MULADDC_X1_INIT             \
     do { uintptr_t muladdc_d = (uintptr_t) d, muladdc_s = (uintptr_t) s; asm(
 
@@ -496,10 +449,6 @@
 
 #endif /* PPC32 */
 
-/*
- * The Sparc(64) assembly is reported to be broken.
- * Disable it for now, until we're able to fix it.
- */
 #if 0 && defined(__sparc__)
 #if defined(__sparc64__)
 
@@ -662,24 +611,9 @@
 
 #if defined(__thumb__) && !defined(__thumb2__)
 #if defined(MBEDTLS_COMPILER_IS_GCC)
-/*
- * Thumb 1 ISA. This code path has only been tested successfully on gcc;
- * it does not compile on clang or armclang.
- */
 
 #if !defined(__OPTIMIZE__) && defined(__GNUC__)
-/*
- * Note, gcc -O0 by default uses r7 for the frame pointer, so it complains about
- * our use of r7 below, unless -fomit-frame-pointer is passed.
- *
- * On the other hand, -fomit-frame-pointer is implied by any -Ox options with
- * x !=0, which we can detect using __OPTIMIZE__ (which is also defined by
- * clang and armcc5 under the same conditions).
- *
- * If gcc needs to use r7, we use r1 as a scratch register and have a few extra
- * instructions to preserve/restore it; otherwise, we can use r7 and avoid
- * the preserve/restore overhead.
- */
+
 #define MULADDC_SCRATCH              "RS .req r1         \n\t"
 #define MULADDC_PRESERVE_SCRATCH     "mov    r10, r1     \n\t"
 #define MULADDC_RESTORE_SCRATCH      "mov    r1, r10     \n\t"
@@ -751,9 +685,6 @@
 
 #elif (__ARM_ARCH >= 6) && \
     defined (__ARM_FEATURE_DSP) && (__ARM_FEATURE_DSP == 1)
-/* Armv6-M (or later) with DSP Instruction Set Extensions.
- * Requires support for either Thumb 2 or Arm ISA.
- */
 
 #define MULADDC_X1_INIT                            \
     {                                              \
@@ -784,16 +715,6 @@
         mbedtls_mpi_uint tmp_a1, tmp_b1;             \
         asm volatile (
 
-            /* - Make sure loop is 4-byte aligned to avoid stalls
-             *   upon repeated non-word aligned instructions in
-             *   some microarchitectures.
-             * - Don't use ldm with post-increment or back-to-back
-             *   loads with post-increment and same address register
-             *   to avoid stalls on some microarchitectures.
-             * - Bunch loads and stores to reduce latency on some
-             *   microarchitectures. E.g., on Cortex-M4, the first
-             *   in a series of load/store operations has latency
-             *   2 cycles, while subsequent loads/stores are single-cycle. */
 #define MULADDC_X2_CORE                                           \
            ".p2align  2                                   \n\t"   \
             "ldr      %[a0], [%[in]],  #+8                \n\t"   \

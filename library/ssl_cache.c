@@ -4,10 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- * These session callbacks use a simple chained list
- * to store and retrieve the session information.
- */
 
 #include "common.h"
 
@@ -110,19 +106,16 @@ exit:
     return ret;
 }
 
-/* zeroize a cache entry */
 static void ssl_cache_entry_zeroize(mbedtls_ssl_cache_entry *entry)
 {
     if (entry == NULL) {
         return;
     }
 
-    /* zeroize and free session structure */
     if (entry->session != NULL) {
         mbedtls_zeroize_and_free(entry->session, entry->session_len);
     }
 
-    /* zeroize the whole entry structure */
     mbedtls_platform_zeroize(entry, sizeof(mbedtls_ssl_cache_entry));
 }
 
@@ -140,14 +133,6 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
     int count = 0;
     mbedtls_ssl_cache_entry *cur, *last;
 
-    /* Check 1: Is there already an entry with the given session ID?
-     *
-     * If yes, overwrite it.
-     *
-     * If not, `count` will hold the size of the session cache
-     * at the end of this loop, and `last` will point to the last
-     * entry, both of which will be used later. */
-
     last = NULL;
     for (cur = cache->chain; cur != NULL; cur = cur->next) {
         count++;
@@ -157,13 +142,6 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
         }
         last = cur;
     }
-
-    /* Check 2: Is there an outdated entry in the cache?
-     *
-     * If so, overwrite it.
-     *
-     * If not, remember the oldest entry in `old` for later.
-     */
 
 #if defined(MBEDTLS_HAVE_TIME)
     for (cur = cache->chain; cur != NULL; cur = cur->next) {
@@ -179,8 +157,6 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
     }
 #endif /* MBEDTLS_HAVE_TIME */
 
-    /* Check 3: Is there free space in the cache? */
-
     if (count < cache->max_entries) {
         /* Create new entry */
         cur = mbedtls_calloc(1, sizeof(mbedtls_ssl_cache_entry));
@@ -188,7 +164,6 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
             return MBEDTLS_ERR_SSL_ALLOC_FAILED;
         }
 
-        /* Append to the end of the linked list. */
         if (last == NULL) {
             cache->chain = cur;
         } else {
@@ -198,20 +173,13 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
         goto found;
     }
 
-    /* Last resort: The cache is full and doesn't contain any outdated
-     * elements. In this case, we evict the oldest one, judged by timestamp
-     * (if present) or cache-order. */
 
 #if defined(MBEDTLS_HAVE_TIME)
     if (old == NULL) {
-        /* This should only happen on an ill-configured cache
-         * with max_entries == 0. */
         return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
     }
 #else /* MBEDTLS_HAVE_TIME */
-    /* Reuse first entry in chain, but move to last place. */
     if (cache->chain == NULL) {
-        /* This should never happen */
         return MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     }
 
@@ -220,16 +188,11 @@ static int ssl_cache_pick_writing_slot(mbedtls_ssl_cache_context *cache,
     old->next = NULL;
     last->next = old;
 #endif /* MBEDTLS_HAVE_TIME */
-
-    /* Now `old` points to the oldest entry to be overwritten. */
     cur = old;
 
 found:
 
-    /* If we're reusing an entry, free it first. */
     if (cur->session != NULL) {
-        /* `ssl_cache_entry_zeroize` would break the chain,
-         * so we reuse `old` to record `next` temporarily. */
         old = cur->next;
         ssl_cache_entry_zeroize(cur);
         cur->next = old;
@@ -268,8 +231,6 @@ int mbedtls_ssl_cache_set(void *data,
         goto exit;
     }
 
-    /* Check how much space we need to serialize the session
-     * and allocate a sufficiently large buffer. */
     ret = mbedtls_ssl_session_save(session, NULL, 0, &session_serialized_len);
     if (ret != MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL) {
         goto exit;
@@ -281,7 +242,6 @@ int mbedtls_ssl_cache_set(void *data,
         goto exit;
     }
 
-    /* Now serialize the session into the allocated buffer. */
     ret = mbedtls_ssl_session_save(session,
                                    session_serialized,
                                    session_serialized_len,
@@ -334,13 +294,11 @@ int mbedtls_ssl_cache_remove(void *data,
 #endif
 
     ret = ssl_cache_find_entry(cache, session_id, session_id_len, &entry);
-    /* No valid entry found, exit with success */
     if (ret != 0) {
         ret = 0;
         goto exit;
     }
 
-    /* Now we remove the entry from the chain */
     if (entry == cache->chain) {
         cache->chain = entry->next;
         goto free;

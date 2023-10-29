@@ -5,11 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * The following functions are implemented without using comparison operators, as those
- * might be translated to branches by some compilers on some platforms.
- */
-
 #include <stdint.h>
 #include <limits.h>
 
@@ -23,8 +18,7 @@
 
 #if defined(MBEDTLS_USE_PSA_CRYPTO) && defined(MBEDTLS_SSL_SOME_SUITES_USE_MAC)
 #include "psa/crypto.h"
-/* Define a local translating function to save code size by not using too many
- * arguments in each translating place. */
+
 static int local_err_translation(psa_status_t status)
 {
     return psa_status_to_mbedtls(status, psa_to_ssl_errors,
@@ -35,36 +29,18 @@ static int local_err_translation(psa_status_t status)
 #endif
 
 #if !defined(MBEDTLS_CT_ASM)
-/*
- * Define an object with the value zero, such that the compiler cannot prove that it
- * has the value zero (because it is volatile, it "may be modified in ways unknown to
- * the implementation").
- */
+
 volatile mbedtls_ct_uint_t mbedtls_ct_zero = 0;
 #endif
 
-/*
- * Define MBEDTLS_EFFICIENT_UNALIGNED_VOLATILE_ACCESS where assembly is present to
- * perform fast unaligned access to volatile data.
- *
- * This is needed because mbedtls_get_unaligned_uintXX etc don't support volatile
- * memory accesses.
- *
- * Some of these definitions could be moved into alignment.h but for now they are
- * only used here.
- */
 #if defined(MBEDTLS_EFFICIENT_UNALIGNED_ACCESS) && \
     ((defined(MBEDTLS_CT_ARM_ASM) && (UINTPTR_MAX == 0xfffffffful)) || \
     defined(MBEDTLS_CT_AARCH64_ASM))
-/* We check pointer sizes to avoid issues with them not matching register size requirements */
+
 #define MBEDTLS_EFFICIENT_UNALIGNED_VOLATILE_ACCESS
 
 static inline uint32_t mbedtls_get_unaligned_volatile_uint32(volatile const unsigned char *p)
 {
-    /* This is UB, even where it's safe:
-     *    return *((volatile uint32_t*)p);
-     * so instead the same thing is expressed in assembly below.
-     */
     uint32_t r;
 #if defined(MBEDTLS_CT_ARM_ASM)
     asm volatile ("ldr %0, [%1]" : "=r" (r) : "r" (p) :);
@@ -83,12 +59,6 @@ int mbedtls_ct_memcmp(const void *a,
                       size_t n)
 {
     size_t i = 0;
-    /*
-     * `A` and `B` are cast to volatile to ensure that the compiler
-     * generates code that always fully reads both buffers.
-     * Otherwise it could generate a test to exit early if `diff` has all
-     * bits set early in the loop.
-     */
     volatile const unsigned char *A = (volatile const unsigned char *) a;
     volatile const unsigned char *B = (volatile const unsigned char *) b;
     uint32_t diff = 0;
@@ -102,29 +72,14 @@ int mbedtls_ct_memcmp(const void *a,
 #endif
 
     for (; i < n; i++) {
-        /* Read volatile data in order before computing diff.
-         * This avoids IAR compiler warning:
-         * 'the order of volatile accesses is undefined ..' */
         unsigned char x = A[i], y = B[i];
         diff |= x ^ y;
     }
 
 
 #if (INT_MAX < INT32_MAX)
-    /* We don't support int smaller than 32-bits, but if someone tried to build
-     * with this configuration, there is a risk that, for differing data, the
-     * only bits set in diff are in the top 16-bits, and would be lost by a
-     * simple cast from uint32 to int.
-     * This would have significant security implications, so protect against it. */
 #error "mbedtls_ct_memcmp() requires minimum 32-bit ints"
 #else
-    /* The bit-twiddling ensures that when we cast uint32_t to int, we are casting
-     * a value that is in the range 0..INT_MAX - a value larger than this would
-     * result in implementation defined behaviour.
-     *
-     * This ensures that the value returned by the function is non-zero iff
-     * diff is non-zero.
-     */
     return (int) ((diff & 0xffff) | (diff >> 16));
 #endif
 }
@@ -152,8 +107,6 @@ int mbedtls_ct_memcmp_partial(const void *a,
         diff |= mbedtls_ct_uint_if_else_0(valid, d);
     }
 
-    /* Since we go byte-by-byte, the only bits set will be in the bottom 8 bits, so the
-     * cast from uint to int is safe. */
     return (int) diff;
 }
 
@@ -166,9 +119,7 @@ void mbedtls_ct_memmove_left(void *start, size_t total, size_t offset)
     volatile unsigned char *buf = start;
     for (size_t i = 0; i < total; i++) {
         mbedtls_ct_condition_t no_op = mbedtls_ct_uint_gt(total - offset, i);
-        /* The first `total - offset` passes are a no-op. The last
-         * `offset` passes shift the data one byte to the left and
-         * zero out the last byte. */
+
         for (size_t n = 0; n < total - 1; n++) {
             unsigned char current = buf[n];
             unsigned char next    = buf[n+1];
@@ -194,16 +145,10 @@ void mbedtls_ct_memcpy_if(mbedtls_ct_condition_t condition,
     const uint32_t not_mask = (uint32_t) ~mbedtls_ct_compiler_opaque(condition);
 #endif
 
-    /* If src2 is NULL, setup src2 so that we read from the destination address.
-     *
-     * This means that if src2 == NULL && condition is false, the result will be a
-     * no-op because we read from dest and write the same data back into dest.
-     */
     if (src2 == NULL) {
         src2 = dest;
     }
 
-    /* dest[i] = c1 == c2 ? src[i] : dest[i] */
     size_t i = 0;
 #if defined(MBEDTLS_EFFICIENT_UNALIGNED_ACCESS)
 #if defined(MBEDTLS_CT_SIZE_64)

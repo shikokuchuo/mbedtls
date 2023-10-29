@@ -179,7 +179,6 @@ const char *mbedtls_high_level_strerr(int error_code)
         error_code = -error_code;
     }
 
-    /* Extract the high-level part from the error code. */
     high_level_error_code = error_code & 0xFF80;
 
     switch (high_level_error_code) {
@@ -805,7 +804,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
     if (ret & 0xFF80) {
         use_ret = ret & 0xFF80;
 
-        // Translate high level error code.
         high_level_error_description = mbedtls_high_level_strerr(ret);
 
         if (high_level_error_description == NULL) {
@@ -815,8 +813,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         }
 
 #if defined(MBEDTLS_SSL_TLS_C)
-        // Early return in case of a fatal error - do not try to translate low
-        // level code.
         if (use_ret == -(MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE)) {
             return;
         }
@@ -829,9 +825,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         return;
     }
 
-    // If high level code is present, make a concatenation between both
-    // error strings.
-    //
     len = strlen(buf);
 
     if (len > 0) {
@@ -845,7 +838,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         buflen -= len + 3;
     }
 
-    // Translate low level error code.
     low_level_error_description = mbedtls_low_level_strerr(ret);
 
     if (low_level_error_description == NULL) {
@@ -857,9 +849,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
 
 #else /* MBEDTLS_ERROR_C */
 
-/*
- * Provide a dummy implementation when MBEDTLS_ERROR_C is not defined
- */
 void mbedtls_strerror(int ret, char *buf, size_t buflen)
 {
     ((void) ret);

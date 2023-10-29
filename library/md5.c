@@ -44,9 +44,6 @@ void mbedtls_md5_clone(mbedtls_md5_context *dst,
     *dst = *src;
 }
 
-/*
- * MD5 context setup
- */
 int mbedtls_md5_starts(mbedtls_md5_context *ctx)
 {
     ctx->total[0] = 0;
@@ -189,7 +186,6 @@ int mbedtls_internal_md5_process(mbedtls_md5_context *ctx,
     ctx->state[2] += local.C;
     ctx->state[3] += local.D;
 
-    /* Zeroise variables to clear sensitive data from memory. */
     mbedtls_platform_zeroize(&local, sizeof(local));
 
     return 0;
@@ -197,9 +193,6 @@ int mbedtls_internal_md5_process(mbedtls_md5_context *ctx,
 
 #endif /* !MBEDTLS_MD5_PROCESS_ALT */
 
-/*
- * MD5 process buffer
- */
 int mbedtls_md5_update(mbedtls_md5_context *ctx,
                        const unsigned char *input,
                        size_t ilen)
@@ -249,9 +242,6 @@ int mbedtls_md5_update(mbedtls_md5_context *ctx,
     return 0;
 }
 
-/*
- * MD5 final digest
- */
 int mbedtls_md5_finish(mbedtls_md5_context *ctx,
                        unsigned char output[16])
 {
@@ -259,18 +249,13 @@ int mbedtls_md5_finish(mbedtls_md5_context *ctx,
     uint32_t used;
     uint32_t high, low;
 
-    /*
-     * Add padding: 0x80 then 0x00 until 8 bytes remain for the length
-     */
     used = ctx->total[0] & 0x3F;
 
     ctx->buffer[used++] = 0x80;
 
     if (used <= 56) {
-        /* Enough room for padding + length in current block */
         memset(ctx->buffer + used, 0, 56 - used);
     } else {
-        /* We'll need an extra block */
         memset(ctx->buffer + used, 0, 64 - used);
 
         if ((ret = mbedtls_internal_md5_process(ctx, ctx->buffer)) != 0) {
@@ -280,9 +265,6 @@ int mbedtls_md5_finish(mbedtls_md5_context *ctx,
         memset(ctx->buffer, 0, 56);
     }
 
-    /*
-     * Add message length
-     */
     high = (ctx->total[0] >> 29)
            | (ctx->total[1] <<  3);
     low  = (ctx->total[0] <<  3);
@@ -294,9 +276,6 @@ int mbedtls_md5_finish(mbedtls_md5_context *ctx,
         goto exit;
     }
 
-    /*
-     * Output final state
-     */
     MBEDTLS_PUT_UINT32_LE(ctx->state[0], output,  0);
     MBEDTLS_PUT_UINT32_LE(ctx->state[1], output,  4);
     MBEDTLS_PUT_UINT32_LE(ctx->state[2], output,  8);
@@ -311,9 +290,6 @@ exit:
 
 #endif /* !MBEDTLS_MD5_ALT */
 
-/*
- * output = MD5( input buffer )
- */
 int mbedtls_md5(const unsigned char *input,
                 size_t ilen,
                 unsigned char output[16])
@@ -342,9 +318,7 @@ exit:
 }
 
 #if defined(MBEDTLS_SELF_TEST)
-/*
- * RFC 1321 test vectors
- */
+
 static const unsigned char md5_test_buf[7][81] =
 {
     { "" },
@@ -379,9 +353,6 @@ static const unsigned char md5_test_sum[7][16] =
       0xAC, 0x49, 0xDA, 0x2E, 0x21, 0x07, 0xB6, 0x7A }
 };
 
-/*
- * Checkup routine
- */
 int mbedtls_md5_self_test(int verbose)
 {
     int i, ret = 0;

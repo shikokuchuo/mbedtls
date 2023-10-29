@@ -33,18 +33,7 @@
 #endif
 
 #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
-/**
- * Public function mbedtls_pk_ec() can be used to get direct access to the
- * wrapped ecp_keypair structure pointed to the pk_ctx. However this is not
- * ideal because it bypasses the PK module on the control of its internal
- * structure (pk_context) fields.
- * For backward compatibility we keep mbedtls_pk_ec() when ECP_C is defined, but
- * we provide 2 very similar functions when only ECP_LIGHT is enabled and not
- * ECP_C.
- * These variants embed the "ro" or "rw" keywords in their name to make the
- * usage of the returned pointer explicit. Of course the returned value is
- * const or non-const accordingly.
- */
+
 static inline const mbedtls_ecp_keypair *mbedtls_pk_ec_ro(const mbedtls_pk_context pk)
 {
     switch (mbedtls_pk_get_type(&pk)) {
@@ -99,7 +88,6 @@ static inline mbedtls_ecp_group_id mbedtls_pk_get_group_id(const mbedtls_pk_cont
     return id;
 }
 
-/* Helper for Montgomery curves */
 #if defined(MBEDTLS_ECP_HAVE_CURVE25519) || defined(MBEDTLS_ECP_HAVE_CURVE448)
 #define MBEDTLS_PK_HAVE_RFC8410_CURVES
 #endif /* MBEDTLS_ECP_HAVE_CURVE25519 || MBEDTLS_ECP_DP_CURVE448 */

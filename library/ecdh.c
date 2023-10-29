@@ -5,13 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- * References:
- *
- * SEC1 https://www.secg.org/sec1-v2.pdf
- * RFC 4492
- */
-
 #include "common.h"
 
 #if defined(MBEDTLS_ECDH_C)
@@ -38,19 +31,12 @@ static mbedtls_ecp_group_id mbedtls_ecdh_grp_id(
 
 int mbedtls_ecdh_can_do(mbedtls_ecp_group_id gid)
 {
-    /* At this time, all groups support ECDH. */
     (void) gid;
     return 1;
 }
 
 #if !defined(MBEDTLS_ECDH_GEN_PUBLIC_ALT)
-/*
- * Generate public key (restartable version)
- *
- * Note: this internal function relies on its caller preserving the value of
- * the output parameter 'd' across continuation calls. This would not be
- * acceptable for a public function but is OK here as we control call sites.
- */
+
 static int ecdh_gen_public_restartable(mbedtls_ecp_group *grp,
                                        mbedtls_mpi *d, mbedtls_ecp_point *Q,
                                        int (*f_rng)(void *, unsigned char *, size_t),
@@ -63,7 +49,6 @@ static int ecdh_gen_public_restartable(mbedtls_ecp_group *grp,
 #if defined(MBEDTLS_ECP_RESTARTABLE)
     restarting = (rs_ctx != NULL && rs_ctx->rsm != NULL);
 #endif
-    /* If multiplication is in progress, we already generated a privkey */
     if (!restarting) {
         MBEDTLS_MPI_CHK(mbedtls_ecp_gen_privkey(grp, d, f_rng, p_rng));
     }
@@ -75,9 +60,6 @@ cleanup:
     return ret;
 }
 
-/*
- * Generate public key
- */
 int mbedtls_ecdh_gen_public(mbedtls_ecp_group *grp, mbedtls_mpi *d, mbedtls_ecp_point *Q,
                             int (*f_rng)(void *, unsigned char *, size_t),
                             void *p_rng)
@@ -87,9 +69,7 @@ int mbedtls_ecdh_gen_public(mbedtls_ecp_group *grp, mbedtls_mpi *d, mbedtls_ecp_
 #endif /* !MBEDTLS_ECDH_GEN_PUBLIC_ALT */
 
 #if !defined(MBEDTLS_ECDH_COMPUTE_SHARED_ALT)
-/*
- * Compute shared secret (SEC1 3.3.1)
- */
+
 static int ecdh_compute_shared_restartable(mbedtls_ecp_group *grp,
                                            mbedtls_mpi *z,
                                            const mbedtls_ecp_point *Q, const mbedtls_mpi *d,
@@ -118,9 +98,6 @@ cleanup:
     return ret;
 }
 
-/*
- * Compute shared secret (SEC1 3.3.1)
- */
 int mbedtls_ecdh_compute_shared(mbedtls_ecp_group *grp, mbedtls_mpi *z,
                                 const mbedtls_ecp_point *Q, const mbedtls_mpi *d,
                                 int (*f_rng)(void *, unsigned char *, size_t),
@@ -144,9 +121,6 @@ static void ecdh_init_internal(mbedtls_ecdh_context_mbed *ctx)
 #endif
 }
 
-/*
- * Initialize context
- */
 void mbedtls_ecdh_init(mbedtls_ecdh_context *ctx)
 {
 #if defined(MBEDTLS_ECDH_LEGACY_CONTEXT)
@@ -178,9 +152,6 @@ static int ecdh_setup_internal(mbedtls_ecdh_context_mbed *ctx,
     return 0;
 }
 
-/*
- * Setup context
- */
 int mbedtls_ecdh_setup(mbedtls_ecdh_context *ctx, mbedtls_ecp_group_id grp_id)
 {
 #if defined(MBEDTLS_ECDH_LEGACY_CONTEXT)
@@ -218,18 +189,13 @@ static void ecdh_free_internal(mbedtls_ecdh_context_mbed *ctx)
 }
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
-/*
- * Enable restartable operations for context
- */
+
 void mbedtls_ecdh_enable_restart(mbedtls_ecdh_context *ctx)
 {
     ctx->restart_enabled = 1;
 }
 #endif
 
-/*
- * Free context
- */
 void mbedtls_ecdh_free(mbedtls_ecdh_context *ctx)
 {
     if (ctx == NULL) {
@@ -318,13 +284,6 @@ static int ecdh_make_params_internal(mbedtls_ecdh_context_mbed *ctx,
     return 0;
 }
 
-/*
- * Setup and write the ServerKeyExchange parameters (RFC 4492)
- *      struct {
- *          ECParameters    curve_params;
- *          ECPoint         public;
- *      } ServerECDHParams;
- */
 int mbedtls_ecdh_make_params(mbedtls_ecdh_context *ctx, size_t *olen,
                              unsigned char *buf, size_t blen,
                              int (*f_rng)(void *, unsigned char *, size_t),
@@ -366,13 +325,6 @@ static int ecdh_read_params_internal(mbedtls_ecdh_context_mbed *ctx,
                                       end - *buf);
 }
 
-/*
- * Read the ServerKeyExchange parameters (RFC 4492)
- *      struct {
- *          ECParameters    curve_params;
- *          ECPoint         public;
- *      } ServerECDHParams;
- */
 int mbedtls_ecdh_read_params(mbedtls_ecdh_context *ctx,
                              const unsigned char **buf,
                              const unsigned char *end)
@@ -412,12 +364,10 @@ static int ecdh_get_params_internal(mbedtls_ecdh_context_mbed *ctx,
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
-    /* If it's not our key, just import the public part as Qp */
     if (side == MBEDTLS_ECDH_THEIRS) {
         return mbedtls_ecp_copy(&ctx->Qp, &key->Q);
     }
 
-    /* Our key: import public (as Q) and private parts */
     if (side != MBEDTLS_ECDH_OURS) {
         return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
     }
@@ -430,9 +380,6 @@ static int ecdh_get_params_internal(mbedtls_ecdh_context_mbed *ctx,
     return 0;
 }
 
-/*
- * Get parameters from a keypair
- */
 int mbedtls_ecdh_get_params(mbedtls_ecdh_context *ctx,
                             const mbedtls_ecp_keypair *key,
                             mbedtls_ecdh_side side)
@@ -443,15 +390,10 @@ int mbedtls_ecdh_get_params(mbedtls_ecdh_context *ctx,
     }
 
     if (mbedtls_ecdh_grp_id(ctx) == MBEDTLS_ECP_DP_NONE) {
-        /* This is the first call to get_params(). Set up the context
-         * for use with the group. */
         if ((ret = mbedtls_ecdh_setup(ctx, key->grp.id)) != 0) {
             return ret;
         }
     } else {
-        /* This is not the first call to get_params(). Check that the
-         * current key's group is the same as the context's, which was set
-         * from the first key's group. */
         if (mbedtls_ecdh_grp_id(ctx) != key->grp.id) {
             return MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
         }
@@ -522,9 +464,6 @@ static int ecdh_make_public_internal(mbedtls_ecdh_context_mbed *ctx,
                                        buf, blen);
 }
 
-/*
- * Setup and export the client public value
- */
 int mbedtls_ecdh_make_public(mbedtls_ecdh_context *ctx, size_t *olen,
                              unsigned char *buf, size_t blen,
                              int (*f_rng)(void *, unsigned char *, size_t),
@@ -574,9 +513,6 @@ static int ecdh_read_public_internal(mbedtls_ecdh_context_mbed *ctx,
     return 0;
 }
 
-/*
- * Parse and import the client's public value
- */
 int mbedtls_ecdh_read_public(mbedtls_ecdh_context *ctx,
                              const unsigned char *buf, size_t blen)
 {
@@ -650,9 +586,6 @@ static int ecdh_calc_secret_internal(mbedtls_ecdh_context_mbed *ctx,
     return mbedtls_mpi_write_binary(&ctx->z, buf, *olen);
 }
 
-/*
- * Derive and export the shared secret
- */
 int mbedtls_ecdh_calc_secret(mbedtls_ecdh_context *ctx, size_t *olen,
                              unsigned char *buf, size_t blen,
                              int (*f_rng)(void *, unsigned char *, size_t),
