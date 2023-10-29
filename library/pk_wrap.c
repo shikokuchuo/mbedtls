@@ -27,7 +27,6 @@
 #include "mbedtls/error.h"
 #include "md_psa.h"
 
-/* Even if RSA not activated, for the sake of RSA-alt */
 #include "mbedtls/rsa.h"
 
 #if defined(MBEDTLS_ECP_C)
@@ -216,8 +215,6 @@ static int rsa_verify_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
         return MBEDTLS_ERR_RSA_VERIFY_FAILED;
     }
 
-    /* mbedtls_pk_write_pubkey_der() expects a full PK context;
-     * re-construct one to make it happy */
     key.pk_info = &mbedtls_rsa_info;
     key.pk_ctx = rsa;
     key_len = mbedtls_pk_write_pubkey_der(&key, buf, sizeof(buf));
@@ -278,11 +275,6 @@ static int rsa_verify_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
         return ret;
     }
 
-    /* The buffer contains a valid signature followed by extra data.
-     * We have a special error code for that so that so that callers can
-     * use mbedtls_pk_verify() to check "Does the buffer start with a
-     * valid signature?" and not just "Does the buffer contain a valid
-     * signature?". */
     if (sig_len > rsa_len) {
         return MBEDTLS_ERR_PK_SIG_LEN_MISMATCH;
     }
@@ -317,8 +309,6 @@ int  mbedtls_pk_psa_rsa_sign_ext(psa_algorithm_t alg,
         return MBEDTLS_ERR_PK_BUFFER_TOO_SMALL;
     }
 
-    /* mbedtls_pk_write_key_der() expects a full PK context;
-     * re-construct one to make it happy */
     key.pk_info = &pk_info;
     key.pk_ctx = rsa_ctx;
     key_len = mbedtls_pk_write_key_der(&key, buf, MBEDTLS_PK_RSA_PRV_DER_MAX_BYTES);
@@ -429,8 +419,6 @@ static int rsa_decrypt_wrap(mbedtls_pk_context *pk,
         return MBEDTLS_ERR_RSA_BAD_INPUT_DATA;
     }
 
-    /* mbedtls_pk_write_key_der() expects a full PK context;
-     * re-construct one to make it happy */
     key.pk_info = &mbedtls_rsa_info;
     key.pk_ctx = rsa;
     key_len = mbedtls_pk_write_key_der(&key, buf, sizeof(buf));
@@ -515,8 +503,6 @@ static int rsa_encrypt_wrap(mbedtls_pk_context *pk,
         return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE;
     }
 
-    /* mbedtls_pk_write_pubkey_der() expects a full PK context;
-     * re-construct one to make it happy */
     key.pk_info = &mbedtls_rsa_info;
     key.pk_ctx = rsa;
     key_len = mbedtls_pk_write_pubkey_der(&key, buf, sizeof(buf));
@@ -603,7 +589,6 @@ static void rsa_free_wrap(void *ctx)
 static void rsa_debug(mbedtls_pk_context *pk, mbedtls_pk_debug_item *items)
 {
 #if defined(MBEDTLS_RSA_ALT)
-    /* Not supported */
     (void) pk;
     (void) items;
 #else
@@ -644,9 +629,7 @@ const mbedtls_pk_info_t mbedtls_rsa_info = {
 #endif /* MBEDTLS_RSA_C */
 
 #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
-/*
- * Generic EC key
- */
+
 static int eckey_can_do(mbedtls_pk_type_t type)
 {
     return type == MBEDTLS_PK_ECKEY ||
@@ -666,10 +649,7 @@ static size_t eckey_get_bitlen(mbedtls_pk_context *pk)
 
 #if defined(MBEDTLS_PK_CAN_ECDSA_VERIFY)
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
-/*
- * An ASN.1 encoded signature is a sequence of two ASN.1 integers. Parse one of
- * those integers and convert it to the fixed-length encoding expected by PSA.
- */
+
 static int extract_ecdsa_sig_int(unsigned char **from, const unsigned char *end,
                                  unsigned char *to, size_t to_len)
 {
@@ -698,11 +678,6 @@ static int extract_ecdsa_sig_int(unsigned char **from, const unsigned char *end,
     return 0;
 }
 
-/*
- * Convert a signature from an ASN.1 sequence of two integers
- * to a raw {r,s} buffer. Note: the provided sig buffer must be at least
- * twice as big as int_size.
- */
 static int extract_ecdsa_sig(unsigned char **p, const unsigned char *end,
                              unsigned char *sig, size_t int_size)
 {
@@ -714,11 +689,10 @@ static int extract_ecdsa_sig(unsigned char **p, const unsigned char *end,
         return ret;
     }
 
-    /* Extract r */
     if ((ret = extract_ecdsa_sig_int(p, end, sig, int_size)) != 0) {
         return ret;
     }
-    /* Extract s */
+
     if ((ret = extract_ecdsa_sig_int(p, end, sig + int_size, int_size)) != 0) {
         return ret;
     }
@@ -726,7 +700,6 @@ static int extract_ecdsa_sig(unsigned char **p, const unsigned char *end,
     return 0;
 }
 
-/* Common helper for ECDSA verify using PSA functions. */
 static int ecdsa_verify_psa(unsigned char *key, size_t key_len,
                             psa_ecc_family_t curve, size_t curve_bits,
                             const unsigned char *hash, size_t hash_len,
@@ -761,9 +734,7 @@ static int ecdsa_verify_psa(unsigned char *key, size_t key_len,
     }
 
     p = (unsigned char *) sig;
-    /* extract_ecdsa_sig's last parameter is the size
-     * of each integer to be parsed, so it's actually half
-     * the size of the signature. */
+
     if ((ret = extract_ecdsa_sig(&p, sig + sig_len, extracted_sig,
                                  signature_len/2)) != 0) {
         goto cleanup;
@@ -881,15 +852,7 @@ static int ecdsa_verify_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
 
 #if defined(MBEDTLS_PK_CAN_ECDSA_SIGN)
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
-/*
- * Simultaneously convert and move raw MPI from the beginning of a buffer
- * to an ASN.1 MPI at the end of the buffer.
- * See also mbedtls_asn1_write_mpi().
- *
- * p: pointer to the end of the output buffer
- * start: start of the output buffer, and also of the mpi to write at the end
- * n_len: length of the mpi to read from start
- */
+
 static int asn1_write_mpibuf(unsigned char **p, unsigned char *start,
                              size_t n_len)
 {
@@ -904,21 +867,15 @@ static int asn1_write_mpibuf(unsigned char **p, unsigned char *start,
     *p -= len;
     memmove(*p, start, len);
 
-    /* ASN.1 DER encoding requires minimal length, so skip leading 0s.
-     * Neither r nor s should be 0, but as a failsafe measure, still detect
-     * that rather than overflowing the buffer in case of a PSA error. */
     while (len > 0 && **p == 0x00) {
         ++(*p);
         --len;
     }
 
-    /* this is only reached if the signature was invalid */
     if (len == 0) {
         return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
     }
 
-    /* if the msb is 1, ASN.1 requires that we prepend a 0.
-     * Neither r nor s can be 0, so we can assume len > 0 at all times. */
     if (**p & 0x80) {
         if (*p - start < 1) {
             return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
@@ -935,14 +892,6 @@ static int asn1_write_mpibuf(unsigned char **p, unsigned char *start,
     return (int) len;
 }
 
-/* Transcode signature from PSA format to ASN.1 sequence.
- * See ecdsa_signature_to_asn1 in ecdsa.c, but with byte buffers instead of
- * MPIs, and in-place.
- *
- * [in/out] sig: the signature pre- and post-transcoding
- * [in/out] sig_len: signature length pre- and post-transcoding
- * [int] buf_len: the available size the in/out buffer
- */
 static int pk_ecdsa_sig_asn1_from_psa(unsigned char *sig, size_t *sig_len,
                                       size_t buf_len)
 {
@@ -965,7 +914,6 @@ static int pk_ecdsa_sig_asn1_from_psa(unsigned char *sig, size_t *sig_len,
     return 0;
 }
 
-/* Common helper for ECDSA sign using PSA functions. */
 static int ecdsa_sign_psa(mbedtls_svc_key_id_t key_id, mbedtls_md_type_t md_alg,
                           const unsigned char *hash, size_t hash_len,
                           unsigned char *sig, size_t sig_size, size_t *sig_len)
@@ -1016,8 +964,7 @@ static int ecdsa_opaque_sign_wrap(mbedtls_pk_context *pk,
 }
 
 #if defined(MBEDTLS_PK_USE_PSA_EC_DATA)
-/* When PK_USE_PSA_EC_DATA is defined opaque and non-opaque keys end up
- * using the same function. */
+
 #define ecdsa_sign_wrap     ecdsa_opaque_sign_wrap
 #else /* MBEDTLS_PK_USE_PSA_EC_DATA */
 static int ecdsa_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
@@ -1094,7 +1041,7 @@ static int ecdsa_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
 #endif /* MBEDTLS_PK_CAN_ECDSA_SIGN */
 
 #if defined(MBEDTLS_ECDSA_C) && defined(MBEDTLS_ECP_RESTARTABLE)
-/* Forward declarations */
+
 static int ecdsa_verify_rs_wrap(mbedtls_pk_context *ctx, mbedtls_md_type_t md_alg,
                                 const unsigned char *hash, size_t hash_len,
                                 const unsigned char *sig, size_t sig_len,
@@ -1106,12 +1053,6 @@ static int ecdsa_sign_rs_wrap(mbedtls_pk_context *ctx, mbedtls_md_type_t md_alg,
                               int (*f_rng)(void *, unsigned char *, size_t), void *p_rng,
                               void *rs_ctx);
 
-/*
- * Restart context for ECDSA operations with ECKEY context
- *
- * We need to store an actual ECDSA context, as we need to pass the same to
- * the underlying ecdsa function, so we can't create it on the fly every time.
- */
 typedef struct {
     mbedtls_ecdsa_restart_ctx ecdsa_rs;
     mbedtls_ecdsa_context ecdsa_ctx;
@@ -1155,12 +1096,10 @@ static int eckey_verify_rs_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     eckey_restart_ctx *rs = rs_ctx;
 
-    /* Should never happen */
     if (rs == NULL) {
         return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
     }
 
-    /* set up our own sub-context if needed (that is, on first run) */
     if (rs->ecdsa_ctx.grp.pbits == 0) {
         MBEDTLS_MPI_CHK(mbedtls_ecdsa_from_keypair(&rs->ecdsa_ctx, pk->pk_ctx));
     }
@@ -1182,12 +1121,10 @@ static int eckey_sign_rs_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     eckey_restart_ctx *rs = rs_ctx;
 
-    /* Should never happen */
     if (rs == NULL) {
         return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
     }
 
-    /* set up our own sub-context if needed (that is, on first run) */
     if (rs->ecdsa_ctx.grp.pbits == 0) {
         MBEDTLS_MPI_CHK(mbedtls_ecdsa_from_keypair(&rs->ecdsa_ctx, pk->pk_ctx));
     }
@@ -1262,7 +1199,6 @@ static int eckey_check_pair_psa(mbedtls_pk_context *pub, mbedtls_pk_context *prv
         return ret;
     }
 
-    // From now on prv_key_buf is used to store the public key of prv.
     status = psa_export_public_key(key_id, prv_key_buf, sizeof(prv_key_buf),
                                    &prv_key_len);
     ret = PSA_PK_TO_MBEDTLS_ERR(status);
@@ -1311,8 +1247,7 @@ static int eckey_check_pair_wrap(mbedtls_pk_context *pub, mbedtls_pk_context *pr
 
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
 #if defined(MBEDTLS_PK_USE_PSA_EC_DATA)
-/* When PK_USE_PSA_EC_DATA is defined opaque and non-opaque keys end up
- * using the same function. */
+
 #define ecdsa_opaque_check_pair_wrap    eckey_check_pair_wrap
 #else /* MBEDTLS_PK_USE_PSA_EC_DATA */
 static int ecdsa_opaque_check_pair_wrap(mbedtls_pk_context *pub,
@@ -1418,9 +1353,6 @@ const mbedtls_pk_info_t mbedtls_eckey_info = {
     .debug_func = eckey_debug,
 };
 
-/*
- * EC key restricted to ECDH
- */
 static int eckeydh_can_do(mbedtls_pk_type_t type)
 {
     return type == MBEDTLS_PK_ECKEY ||
@@ -1546,9 +1478,6 @@ const mbedtls_pk_info_t mbedtls_ecdsa_info = {
 #endif /* MBEDTLS_PK_HAVE_ECC_KEYS */
 
 #if defined(MBEDTLS_PK_RSA_ALT_SUPPORT)
-/*
- * Support for alternative RSA-private implementations
- */
 
 static int rsa_alt_can_do(mbedtls_pk_type_t type)
 {
@@ -1745,7 +1674,6 @@ static int rsa_opaque_decrypt(mbedtls_pk_context *pk,
 {
     psa_status_t status;
 
-    /* PSA has its own RNG */
     (void) f_rng;
     (void) p_rng;
 
@@ -1772,7 +1700,6 @@ static int rsa_opaque_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg
     psa_key_type_t type;
     psa_status_t status;
 
-    /* PSA has its own RNG */
     (void) f_rng;
     (void) p_rng;
 
@@ -1790,7 +1717,6 @@ static int rsa_opaque_sign_wrap(mbedtls_pk_context *pk, mbedtls_md_type_t md_alg
         return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
     }
 
-    /* make the signature */
     status = psa_sign_hash(pk->priv_id, alg, hash, hash_len,
                            sig, sig_size, sig_len);
     if (status != PSA_SUCCESS) {

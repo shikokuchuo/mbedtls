@@ -17,10 +17,6 @@
  *  limitations under the License.
  */
 
-/*
- * Ensure gmtime_r is available even with -std=c99; must be defined before
- * mbedtls_config.h, which pulls in glibc's features.h. Harmless on other platforms.
- */
 #if !defined(_POSIX_C_SOURCE)
 #define _POSIX_C_SOURCE 200112L
 #endif
@@ -43,13 +39,6 @@
 #if !((defined(_POSIX_VERSION) && _POSIX_VERSION >= 200809L) ||     \
     (defined(_POSIX_THREAD_SAFE_FUNCTIONS) &&                     \
     _POSIX_THREAD_SAFE_FUNCTIONS >= 200112L))
-/*
- * This is a convenience shorthand macro to avoid checking the long
- * preprocessor conditions above. Ideally, we could expose this macro in
- * platform_util.h and simply use it in platform_util.c, threading.c and
- * threading.h. However, this macro is not part of the Mbed TLS public API, so
- * we keep it private by only defining it in this file
- */
 
 #if !(defined(_WIN32) && !defined(EFIX64) && !defined(EFI32))
 #define THREADING_USE_GMTIME
@@ -68,12 +57,6 @@ static void threading_mutex_init_pthread(mbedtls_threading_mutex_t *mutex)
         return;
     }
 
-    /* A nonzero value of is_valid indicates a successfully initialized
-     * mutex. This is a workaround for not being able to return an error
-     * code for this function. The lock/unlock functions return an error
-     * if is_valid is nonzero. The Mbed TLS unit test code uses this field
-     * to distinguish more states of the mutex; see
-     * tests/src/threading_helpers for details. */
     mutex->is_valid = pthread_mutex_init(&mutex->mutex, NULL) == 0;
 }
 
@@ -118,9 +101,6 @@ void (*mbedtls_mutex_free)(mbedtls_threading_mutex_t *) = threading_mutex_free_p
 int (*mbedtls_mutex_lock)(mbedtls_threading_mutex_t *) = threading_mutex_lock_pthread;
 int (*mbedtls_mutex_unlock)(mbedtls_threading_mutex_t *) = threading_mutex_unlock_pthread;
 
-/*
- * With pthreads we can statically initialize mutexes
- */
 #define MUTEX_INIT  = { PTHREAD_MUTEX_INITIALIZER, 1 }
 
 #endif /* MBEDTLS_THREADING_PTHREAD */
@@ -142,9 +122,6 @@ void (*mbedtls_mutex_free)(mbedtls_threading_mutex_t *) = threading_mutex_dummy;
 int (*mbedtls_mutex_lock)(mbedtls_threading_mutex_t *) = threading_mutex_fail;
 int (*mbedtls_mutex_unlock)(mbedtls_threading_mutex_t *) = threading_mutex_fail;
 
-/*
- * Set functions pointers and initialize global mutexes
- */
 void mbedtls_threading_set_alt(void (*mutex_init)(mbedtls_threading_mutex_t *),
                                void (*mutex_free)(mbedtls_threading_mutex_t *),
                                int (*mutex_lock)(mbedtls_threading_mutex_t *),
@@ -163,9 +140,6 @@ void mbedtls_threading_set_alt(void (*mutex_init)(mbedtls_threading_mutex_t *),
 #endif
 }
 
-/*
- * Free global mutexes
- */
 void mbedtls_threading_free_alt(void)
 {
 #if defined(MBEDTLS_FS_IO)
@@ -177,9 +151,6 @@ void mbedtls_threading_free_alt(void)
 }
 #endif /* MBEDTLS_THREADING_ALT */
 
-/*
- * Define global mutexes
- */
 #ifndef MUTEX_INIT
 #define MUTEX_INIT
 #endif

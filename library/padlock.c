@@ -16,12 +16,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/*
- *  This implementation is based on the VIA PadLock Programming Guide:
- *
- *  http://www.via.com.tw/en/downloads/whitepapers/initiatives/padlock/
- *  programming_guide.pdf
- */
 
 #include "common.h"
 
@@ -33,9 +27,6 @@
 
 #if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
 
-/*
- * PadLock detection routine
- */
 int mbedtls_padlock_has_support(int feature)
 {
     static int flags = -1;
@@ -63,9 +54,6 @@ int mbedtls_padlock_has_support(int feature)
     return flags & feature;
 }
 
-/*
- * PadLock AES-ECB block en(de)cryption
- */
 int mbedtls_padlock_xcryptecb(mbedtls_aes_context *ctx,
                               int mode,
                               const unsigned char input[16],
@@ -108,9 +96,6 @@ int mbedtls_padlock_xcryptecb(mbedtls_aes_context *ctx,
     return 0;
 }
 
-/*
- * PadLock AES-CBC buffer en(de)cryption
- */
 int mbedtls_padlock_xcryptcbc(mbedtls_aes_context *ctx,
                               int mode,
                               size_t length,

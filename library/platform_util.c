@@ -18,17 +18,12 @@
  *  limitations under the License.
  */
 
-/*
- * Ensure gmtime_r is available even with -std=c99; must be defined before
- * mbedtls_config.h, which pulls in glibc's features.h. Harmless on other platforms
- * except OpenBSD, where it stops us accessing explicit_bzero.
- */
 #if !defined(_POSIX_C_SOURCE) && !defined(__OpenBSD__)
 #define _POSIX_C_SOURCE 200112L
 #endif
 
 #if !defined(_GNU_SOURCE)
-/* Clang requires this to get support for explicit_bzero */
+
 #define _GNU_SOURCE
 #endif
 
@@ -41,7 +36,7 @@
 #include <stddef.h>
 
 #ifndef __STDC_WANT_LIB_EXT1__
-#define __STDC_WANT_LIB_EXT1__ 1 /* Ask for the C11 gmtime_s() and memset_s() if available */
+#define __STDC_WANT_LIB_EXT1__ 1
 #endif
 #include <string.h>
 
@@ -49,7 +44,6 @@
 #include <windows.h>
 #endif
 
-// Detect platforms known to support explicit_bzero()
 #if defined(__GLIBC__) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 25)
 #define MBEDTLS_PLATFORM_HAS_EXPLICIT_BZERO 1
 #elif (defined(__FreeBSD__) && (__FreeBSD_version >= 1100037)) || defined(__OpenBSD__)
@@ -66,37 +60,6 @@
 #endif
 #endif
 
-/*
- * Where possible, we try to detect the presence of a platform-provided
- * secure memset, such as explicit_bzero(), that is safe against being optimized
- * out, and use that.
- *
- * For other platforms, we provide an implementation that aims not to be
- * optimized out by the compiler.
- *
- * This implementation for mbedtls_platform_zeroize() was inspired from Colin
- * Percival's blog article at:
- *
- * http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
- *
- * It uses a volatile function pointer to the standard memset(). Because the
- * pointer is volatile the compiler expects it to change at
- * any time and will not optimize out the call that could potentially perform
- * other operations on the input buffer instead of just setting it to 0.
- * Nevertheless, as pointed out by davidtgoldblatt on Hacker News
- * (refer to http://www.daemonology.net/blog/2014-09-05-erratum.html for
- * details), optimizations of the following form are still possible:
- *
- * if (memset_func != memset)
- *     memset_func(buf, 0, len);
- *
- * Note that it is extremely difficult to guarantee that
- * the memset() call will not be optimized out by aggressive compilers
- * in a portable way. For this reason, Mbed TLS also provides the configuration
- * option MBEDTLS_PLATFORM_ZEROIZE_ALT, which allows users to configure
- * mbedtls_platform_zeroize() to use a suitable implementation for their
- * platform and needs.
- */
 #if !defined(MBEDTLS_PLATFORM_HAS_EXPLICIT_BZERO) && !(defined(__STDC_LIB_EXT1__) && \
     !defined(__IAR_SYSTEMS_ICC__)) \
     && !defined(_WIN32)
@@ -111,12 +74,6 @@ void mbedtls_platform_zeroize(void *buf, size_t len)
 #if defined(MBEDTLS_PLATFORM_HAS_EXPLICIT_BZERO)
         explicit_bzero(buf, len);
 #if defined(HAVE_MEMORY_SANITIZER)
-        /* You'd think that Msan would recognize explicit_bzero() as
-         * equivalent to bzero(), but it actually doesn't on several
-         * platforms, including Linux (Ubuntu 20.04).
-         * https://github.com/google/sanitizers/issues/1507
-         * https://github.com/openssh/openssh-portable/commit/74433a19bb6f4cef607680fa4d1d7d81ca3826aa
-         */
         __msan_unpoison(buf, len);
 #endif
 #elif defined(__STDC_LIB_EXT1__) && !defined(__IAR_SYSTEMS_ICC__)
@@ -128,8 +85,6 @@ void mbedtls_platform_zeroize(void *buf, size_t len)
 #endif
 
 #if defined(__GNUC__)
-        /* For clang and recent gcc, pretend that we have some assembly that reads the
-         * zero'd memory as an additional protection against being optimised away. */
 #if defined(__clang__) || (__GNUC__ >= 10)
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -171,13 +126,7 @@ void mbedtls_zeroize_and_free(void *buf, size_t len)
 #if !((defined(_POSIX_VERSION) && _POSIX_VERSION >= 200809L) ||     \
     (defined(_POSIX_THREAD_SAFE_FUNCTIONS) &&                     \
     _POSIX_THREAD_SAFE_FUNCTIONS >= 200112L))
-/*
- * This is a convenience shorthand macro to avoid checking the long
- * preprocessor conditions above. Ideally, we could expose this macro in
- * platform_util.h and simply use it in platform_util.c, threading.c and
- * threading.h. However, this macro is not part of the Mbed TLS public API, so
- * we keep it private by only defining it in this file
- */
+
 #if !(defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)) || \
     (defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR))
 #define PLATFORM_UTIL_USE_GMTIME
@@ -194,7 +143,6 @@ struct tm *mbedtls_platform_gmtime_r(const mbedtls_time_t *tt,
 #if defined(__STDC_LIB_EXT1__)
     return (gmtime_s(tt, tm_buf) == 0) ? NULL : tm_buf;
 #else
-    /* MSVC and mingw64 argument order and return value are inconsistent with the C11 standard */
     return (gmtime_s(tm_buf, tt) == 0) ? tm_buf : NULL;
 #endif
 #elif !defined(PLATFORM_UTIL_USE_GMTIME)
@@ -229,10 +177,6 @@ struct tm *mbedtls_platform_gmtime_r(const mbedtls_time_t *tt,
 void (*mbedtls_test_hook_test_fail)(const char *, int, const char *);
 #endif /* MBEDTLS_TEST_HOOKS */
 
-/*
- * Provide external definitions of some inline functions so that the compiler
- * has the option to not inline them
- */
 extern inline void mbedtls_xor(unsigned char *r,
                                const unsigned char *a,
                                const unsigned char *b,

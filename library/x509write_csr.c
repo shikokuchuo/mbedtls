@@ -16,11 +16,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/*
- * References:
- * - CSRs: PKCS#10 v1.7 aka RFC 2986
- * - attributes: PKCS#9 v2.0 aka RFC 2985
- */
 
 #include "common.h"
 
@@ -159,7 +154,6 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
     psa_algorithm_t hash_alg = mbedtls_md_psa_alg_from_type(ctx->md_alg);
 #endif /* MBEDTLS_USE_PSA_CRYPTO */
 
-    /* Write the CSR backwards starting from the end of buf */
     c = buf + size;
 
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_x509_write_extensions(&c, buf,
@@ -201,15 +195,9 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
     c -= pub_len;
     len += pub_len;
 
-    /*
-     *  Subject  ::=  Name
-     */
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_x509_write_names(&c, buf,
                                                        ctx->subject));
 
-    /*
-     *  Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
-     */
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_int(&c, buf, 0));
 
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c, buf, len));
@@ -218,10 +206,6 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
                              &c, buf,
                              MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE));
 
-    /*
-     * Sign the written CSR data into the sig buffer
-     * Note: hash errors can happen only after an internal error
-     */
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
     if (psa_hash_compute(hash_alg,
                          c,
@@ -256,30 +240,16 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
         return ret;
     }
 
-    /*
-     * Move the written CSR data to the start of buf to create space for
-     * writing the signature into buf.
-     */
     memmove(buf, c, len);
 
-    /*
-     * Write sig and its OID into buf backwards from the end of buf.
-     * Note: mbedtls_x509_write_sig will check for c2 - ( buf + len ) < sig_len
-     * and return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL if needed.
-     */
     c2 = buf + size;
     MBEDTLS_ASN1_CHK_ADD(sig_and_oid_len,
                          mbedtls_x509_write_sig(&c2, buf + len, sig_oid, sig_oid_len,
                                                 sig, sig_len, pk_alg));
 
-    /*
-     * Compact the space between the CSR data and signature by moving the
-     * CSR data to the start of the signature.
-     */
     c2 -= len;
     memmove(c2, buf, len);
 
-    /* ASN encode the total size and tag the CSR data with it. */
     len += sig_and_oid_len;
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c2, buf, len));
     MBEDTLS_ASN1_CHK_ADD(len,
@@ -287,7 +257,6 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
                              &c2, buf,
                              MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE));
 
-    /* Zero the unused bytes at the start of buf */
     memset(buf, 0, c2 - buf);
 
     return (int) len;

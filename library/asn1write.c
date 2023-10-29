@@ -112,12 +112,8 @@ int mbedtls_asn1_write_mpi(unsigned char **p, const unsigned char *start, const 
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len = 0;
 
-    // Write the MPI
-    //
     len = mbedtls_mpi_size(X);
 
-    /* DER represents 0 with a sign bit (0=nonnegative) and 7 value bits, not
-     * as 0 digits. We need to end up with 020100, not with 0200. */
     if (len == 0) {
         len = 1;
     }
@@ -129,9 +125,6 @@ int mbedtls_asn1_write_mpi(unsigned char **p, const unsigned char *start, const 
     (*p) -= len;
     MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(X, *p, len));
 
-    // DER format assumes 2s complement for numbers, so the leftmost bit
-    // should be 0 for positive numbers and 1 for negative numbers.
-    //
     if (X->s == 1 && **p & 0x80) {
         if (*p - start < 1) {
             return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
@@ -150,8 +143,6 @@ cleanup:
 
 int mbedtls_asn1_write_null(unsigned char **p, const unsigned char *start)
 {
-    // Write NULL
-    //
     return mbedtls_asn1_write_len_and_tag(p, start, 0, MBEDTLS_ASN1_NULL);
 }
 
@@ -333,7 +324,6 @@ int mbedtls_asn1_write_bitstring(unsigned char **p, const unsigned char *start,
 
     len = byte_len + 1;
 
-    /* Write the bitstring. Ensure the unused bits are zeroed */
     if (byte_len > 0) {
         byte_len--;
         *--(*p) = buf[byte_len] & ~((0x1 << unused_bits) - 1);
@@ -341,7 +331,6 @@ int mbedtls_asn1_write_bitstring(unsigned char **p, const unsigned char *start,
         memcpy(*p, buf, byte_len);
     }
 
-    /* Write unused bits */
     *--(*p) = (unsigned char) unused_bits;
 
     return mbedtls_asn1_write_len_and_tag(p, start, len, MBEDTLS_ASN1_BIT_STRING);
@@ -360,8 +349,7 @@ int mbedtls_asn1_write_octet_string(unsigned char **p, const unsigned char *star
 
 
 #if !defined(MBEDTLS_ASN1_PARSE_C)
-/* This is a copy of the ASN.1 parsing function mbedtls_asn1_find_named_data(),
- * which is replicated to avoid a dependency ASN1_WRITE_C on ASN1_PARSE_C. */
+
 static mbedtls_asn1_named_data *asn1_find_named_data(
     mbedtls_asn1_named_data *list,
     const char *oid, size_t len)
@@ -391,8 +379,7 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data(
     mbedtls_asn1_named_data *cur;
 
     if ((cur = asn1_find_named_data(*head, oid, oid_len)) == NULL) {
-        // Add new entry if not present yet based on OID
-        //
+
         cur = (mbedtls_asn1_named_data *) mbedtls_calloc(1,
                                                          sizeof(mbedtls_asn1_named_data));
         if (cur == NULL) {
@@ -424,11 +411,7 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data(
         mbedtls_free(cur->val.p);
         cur->val.p = NULL;
     } else if (cur->val.len != val_len) {
-        /*
-         * Enlarge existing value buffer if needed
-         * Preserve old data until the allocation succeeded, to leave list in
-         * a consistent state in case allocation fails.
-         */
+
         void *p = mbedtls_calloc(1, val_len);
         if (p == NULL) {
             return NULL;

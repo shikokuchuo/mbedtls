@@ -122,12 +122,11 @@ enum mbedtls_cipher_base_index {
 #if defined(MBEDTLS_CIPHER_MODE_XTS) && defined(MBEDTLS_AES_C)
     MBEDTLS_CIPHER_BASE_INDEX_XTS_AES,
 #endif
-    /* Prevent compile failure due to empty enum */
     MBEDTLS_CIPHER_BASE_PREVENT_EMPTY_ENUM
 };
 
 #if defined(MBEDTLS_GCM_C)
-/* shared by all GCM ciphers */
+
 static void *gcm_ctx_alloc(void)
 {
     void *ctx = mbedtls_calloc(1, sizeof(mbedtls_gcm_context));
@@ -147,7 +146,7 @@ static void gcm_ctx_free(void *ctx)
 #endif /* MBEDTLS_GCM_C */
 
 #if defined(MBEDTLS_CCM_C)
-/* shared by all CCM ciphers */
+
 static void *ccm_ctx_alloc(void)
 {
     void *ctx = mbedtls_calloc(1, sizeof(mbedtls_ccm_context));

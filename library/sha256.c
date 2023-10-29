@@ -16,30 +16,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/*
- *  The SHA-256 Secure Hash Standard was published by NIST in 2002.
- *
- *  http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf
- */
 
 #if defined(__aarch64__) && !defined(__ARM_FEATURE_CRYPTO) && \
     defined(__clang__) && __clang_major__ >= 4
-/* TODO: Re-consider above after https://reviews.llvm.org/D131064 merged.
- *
- * The intrinsic declaration are guarded by predefined ACLE macros in clang:
- * these are normally only enabled by the -march option on the command line.
- * By defining the macros ourselves we gain access to those declarations without
- * requiring -march on the command line.
- *
- * `arm_neon.h` could be included by any header file, so we put these defines
- * at the top of this file, before any includes.
- */
+
 #define __ARM_FEATURE_CRYPTO 1
-/* See: https://arm-software.github.io/acle/main/acle.html#cryptographic-extensions
- *
- * `__ARM_FEATURE_CRYPTO` is deprecated, but we need to continue to specify it
- * for older compilers.
- */
+
 #define __ARM_FEATURE_SHA2   1
 #define MBEDTLS_ENABLE_ARM_CRYPTO_EXTENSIONS_COMPILER_FLAG
 #endif
@@ -61,8 +43,6 @@
 #  if defined(MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT) || \
     defined(MBEDTLS_SHA256_USE_A64_CRYPTO_ONLY)
 
-/* *INDENT-OFF* */
-
 #   ifdef __ARM_NEON
 #       include <arm_neon.h>
 #   else
@@ -83,9 +63,7 @@
 #        pragma clang attribute push (__attribute__((target("crypto"))), apply_to=function)
 #        define MBEDTLS_POP_TARGET_PRAGMA
 #      elif defined(__GNUC__)
-         /* FIXME: GCC 5 claims to support Armv8 Crypto Extensions, but some
-          *        intrinsics are missing. Missing intrinsics could be worked around.
-          */
+
 #        if __GNUC__ < 6
 #          error "A more recent GCC is required for MBEDTLS_SHA256_USE_A64_CRYPTO_*"
 #        else
@@ -97,16 +75,13 @@
 #        error "Only GCC and Clang supported for MBEDTLS_SHA256_USE_A64_CRYPTO_*"
 #      endif
 #    endif
-/* *INDENT-ON* */
 
 #  endif
 #  if defined(MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT)
 #    if defined(__unix__)
 #      if defined(__linux__)
-/* Our preferred method of detection is getauxval() */
 #        include <sys/auxv.h>
 #      endif
-/* Use SIGILL on Unix, and fall back to it on Linux */
 #      include <signal.h>
 #    endif
 #  endif
@@ -121,10 +96,6 @@
 #endif
 
 #if defined(MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT)
-/*
- * Capability detection code comes early, so we can disable
- * MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT if no detection mechanism found
- */
 #if defined(HWCAP_SHA2)
 static int mbedtls_a64_crypto_sha256_determine_support(void)
 {
@@ -146,15 +117,11 @@ static int mbedtls_a64_crypto_sha256_determine_support(void)
            1 : 0;
 }
 #elif defined(__unix__) && defined(SIG_SETMASK)
-/* Detection with SIGILL, setjmp() and longjmp() */
 #include <signal.h>
 #include <setjmp.h>
 
 static jmp_buf return_from_sigill;
 
-/*
- * A64 SHA256 support detection via SIGILL
- */
 static void sigill_handler(int signal)
 {
     (void) signal;
@@ -178,8 +145,7 @@ static int mbedtls_a64_crypto_sha256_determine_support(void)
 
     static int ret = 0;
 
-    if (setjmp(return_from_sigill) == 0) {         /* First return only */
-        /* If this traps, we will return a second time from setjmp() with 1 */
+    if (setjmp(return_from_sigill) == 0) {
         asm ("sha256h q0, q0, v0.4s" : : : "v0");
         ret = 1;
     }
@@ -220,9 +186,6 @@ void mbedtls_sha256_clone(mbedtls_sha256_context *dst,
     *dst = *src;
 }
 
-/*
- * SHA-256 context setup
- */
 int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
 {
 #if defined(MBEDTLS_SHA224_C) && defined(MBEDTLS_SHA256_C)
@@ -233,7 +196,7 @@ int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
     if (is224 != 0) {
         return MBEDTLS_ERR_SHA256_BAD_INPUT_DATA;
     }
-#else /* defined MBEDTLS_SHA224_C only */
+#else
     if (is224 == 0) {
         return MBEDTLS_ERR_SHA256_BAD_INPUT_DATA;
     }
@@ -327,61 +290,52 @@ static size_t mbedtls_internal_sha256_process_many_a64_crypto(
         uint32x4_t sched2 = (uint32x4_t) vld1q_u8(msg + 16 * 2);
         uint32x4_t sched3 = (uint32x4_t) vld1q_u8(msg + 16 * 3);
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__  /* Will be true if not defined */
-                                               /* Untested on BE */
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
         sched0 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(sched0)));
         sched1 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(sched1)));
         sched2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(sched2)));
         sched3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(sched3)));
 #endif
 
-        /* Rounds 0 to 3 */
         tmp = vaddq_u32(sched0, vld1q_u32(&K[0]));
         abcd_prev = abcd;
         abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
         efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-        /* Rounds 4 to 7 */
         tmp = vaddq_u32(sched1, vld1q_u32(&K[4]));
         abcd_prev = abcd;
         abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
         efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-        /* Rounds 8 to 11 */
         tmp = vaddq_u32(sched2, vld1q_u32(&K[8]));
         abcd_prev = abcd;
         abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
         efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-        /* Rounds 12 to 15 */
         tmp = vaddq_u32(sched3, vld1q_u32(&K[12]));
         abcd_prev = abcd;
         abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
         efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
         for (int t = 16; t < 64; t += 16) {
-            /* Rounds t to t + 3 */
             sched0 = vsha256su1q_u32(vsha256su0q_u32(sched0, sched1), sched2, sched3);
             tmp = vaddq_u32(sched0, vld1q_u32(&K[t]));
             abcd_prev = abcd;
             abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
             efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-            /* Rounds t + 4 to t + 7 */
             sched1 = vsha256su1q_u32(vsha256su0q_u32(sched1, sched2), sched3, sched0);
             tmp = vaddq_u32(sched1, vld1q_u32(&K[t + 4]));
             abcd_prev = abcd;
             abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
             efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-            /* Rounds t + 8 to t + 11 */
             sched2 = vsha256su1q_u32(vsha256su0q_u32(sched2, sched3), sched0, sched1);
             tmp = vaddq_u32(sched2, vld1q_u32(&K[t + 8]));
             abcd_prev = abcd;
             abcd = vsha256hq_u32(abcd_prev, efgh, tmp);
             efgh = vsha256h2q_u32(efgh, abcd_prev, tmp);
 
-            /* Rounds t + 12 to t + 15 */
             sched3 = vsha256su1q_u32(vsha256su0q_u32(sched3, sched0), sched1, sched2);
             tmp = vaddq_u32(sched3, vld1q_u32(&K[t + 12]));
             abcd_prev = abcd;
@@ -400,10 +354,6 @@ static size_t mbedtls_internal_sha256_process_many_a64_crypto(
 }
 
 #if defined(MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT)
-/*
- * This function is for internal use only if we are building both C and A64
- * versions, otherwise it is renamed to be the public mbedtls_internal_sha256_process()
- */
 static
 #endif
 int mbedtls_internal_sha256_process_a64_crypto(mbedtls_sha256_context *ctx,
@@ -461,10 +411,6 @@ int mbedtls_internal_sha256_process_a64_crypto(mbedtls_sha256_context *ctx,
     } while (0)
 
 #if defined(MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT)
-/*
- * This function is for internal use only if we are building both C and A64
- * versions, otherwise it is renamed to be the public mbedtls_internal_sha256_process()
- */
 static
 #endif
 int mbedtls_internal_sha256_process_c(mbedtls_sha256_context *ctx,
@@ -546,7 +492,6 @@ int mbedtls_internal_sha256_process_c(mbedtls_sha256_context *ctx,
         ctx->state[i] += local.A[i];
     }
 
-    /* Zeroise buffers and variables to clear sensitive data from memory. */
     mbedtls_platform_zeroize(&local, sizeof(local));
 
     return 0;
@@ -616,10 +561,6 @@ int mbedtls_internal_sha256_process(mbedtls_sha256_context *ctx,
 
 #endif /* MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT */
 
-
-/*
- * SHA-256 process buffer
- */
 int mbedtls_sha256_update(mbedtls_sha256_context *ctx,
                           const unsigned char *input,
                           size_t ilen)
@@ -672,9 +613,6 @@ int mbedtls_sha256_update(mbedtls_sha256_context *ctx,
     return 0;
 }
 
-/*
- * SHA-256 final digest
- */
 int mbedtls_sha256_finish(mbedtls_sha256_context *ctx,
                           unsigned char *output)
 {
@@ -683,18 +621,13 @@ int mbedtls_sha256_finish(mbedtls_sha256_context *ctx,
     uint32_t high, low;
     int truncated = 0;
 
-    /*
-     * Add padding: 0x80 then 0x00 until 8 bytes remain for the length
-     */
     used = ctx->total[0] & 0x3F;
 
     ctx->buffer[used++] = 0x80;
 
     if (used <= 56) {
-        /* Enough room for padding + length in current block */
         memset(ctx->buffer + used, 0, 56 - used);
     } else {
-        /* We'll need an extra block */
         memset(ctx->buffer + used, 0, SHA256_BLOCK_SIZE - used);
 
         if ((ret = mbedtls_internal_sha256_process(ctx, ctx->buffer)) != 0) {
@@ -704,9 +637,6 @@ int mbedtls_sha256_finish(mbedtls_sha256_context *ctx,
         memset(ctx->buffer, 0, 56);
     }
 
-    /*
-     * Add message length
-     */
     high = (ctx->total[0] >> 29)
            | (ctx->total[1] <<  3);
     low  = (ctx->total[0] <<  3);
@@ -718,9 +648,6 @@ int mbedtls_sha256_finish(mbedtls_sha256_context *ctx,
         goto exit;
     }
 
-    /*
-     * Output final state
-     */
     MBEDTLS_PUT_UINT32_BE(ctx->state[0], output,  0);
     MBEDTLS_PUT_UINT32_BE(ctx->state[1], output,  4);
     MBEDTLS_PUT_UINT32_BE(ctx->state[2], output,  8);
@@ -745,9 +672,6 @@ exit:
 
 #endif /* !MBEDTLS_SHA256_ALT */
 
-/*
- * output = SHA-256( input buffer )
- */
 int mbedtls_sha256(const unsigned char *input,
                    size_t ilen,
                    unsigned char *output,
@@ -791,9 +715,7 @@ exit:
 }
 
 #if defined(MBEDTLS_SELF_TEST)
-/*
- * FIPS-180-2 test vectors
- */
+
 static const unsigned char sha_test_buf[3][57] =
 {
     { "abc" },
@@ -808,9 +730,6 @@ static const size_t sha_test_buflen[3] =
 
 typedef const unsigned char (sha_test_sum_t)[32];
 
-/*
- * SHA-224 test vectors
- */
 #if defined(MBEDTLS_SHA224_C)
 static sha_test_sum_t sha224_test_sum[] =
 {
@@ -829,9 +748,6 @@ static sha_test_sum_t sha224_test_sum[] =
 };
 #endif
 
-/*
- * SHA-256 test vectors
- */
 #if defined(MBEDTLS_SHA256_C)
 static sha_test_sum_t sha256_test_sum[] =
 {
@@ -850,9 +766,6 @@ static sha_test_sum_t sha256_test_sum[] =
 };
 #endif
 
-/*
- * Checkup routine
- */
 static int mbedtls_sha256_common_self_test(int verbose, int is224)
 {
     int i, buflen, ret = 0;

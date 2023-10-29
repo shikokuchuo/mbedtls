@@ -43,56 +43,29 @@
 
 #define CHACHA20_BLOCK_SIZE_BYTES (4U * 16U)
 
-/**
- * \brief           ChaCha20 quarter round operation.
- *
- *                  The quarter round is defined as follows (from RFC 7539):
- *                      1.  a += b; d ^= a; d <<<= 16;
- *                      2.  c += d; b ^= c; b <<<= 12;
- *                      3.  a += b; d ^= a; d <<<= 8;
- *                      4.  c += d; b ^= c; b <<<= 7;
- *
- * \param state     ChaCha20 state to modify.
- * \param a         The index of 'a' in the state.
- * \param b         The index of 'b' in the state.
- * \param c         The index of 'c' in the state.
- * \param d         The index of 'd' in the state.
- */
 static inline void chacha20_quarter_round(uint32_t state[16],
                                           size_t a,
                                           size_t b,
                                           size_t c,
                                           size_t d)
 {
-    /* a += b; d ^= a; d <<<= 16; */
     state[a] += state[b];
     state[d] ^= state[a];
     state[d] = ROTL32(state[d], 16);
 
-    /* c += d; b ^= c; b <<<= 12 */
     state[c] += state[d];
     state[b] ^= state[c];
     state[b] = ROTL32(state[b], 12);
 
-    /* a += b; d ^= a; d <<<= 8; */
     state[a] += state[b];
     state[d] ^= state[a];
     state[d] = ROTL32(state[d], 8);
 
-    /* c += d; b ^= c; b <<<= 7; */
     state[c] += state[d];
     state[b] ^= state[c];
     state[b] = ROTL32(state[b], 7);
 }
 
-/**
- * \brief           Perform the ChaCha20 inner block operation.
- *
- *                  This function performs two rounds: the column round and the
- *                  diagonal round.
- *
- * \param state     The ChaCha20 state to update.
- */
 static void chacha20_inner_block(uint32_t state[16])
 {
     chacha20_quarter_round(state, 0, 4, 8,  12);
@@ -106,12 +79,6 @@ static void chacha20_inner_block(uint32_t state[16])
     chacha20_quarter_round(state, 3, 4, 9,  14);
 }
 
-/**
- * \brief               Generates a keystream block.
- *
- * \param initial_state The initial ChaCha20 state (key, nonce, counter).
- * \param keystream     Generated keystream bytes are written to this buffer.
- */
 static void chacha20_block(const uint32_t initial_state[16],
                            unsigned char keystream[64])
 {
@@ -157,7 +124,6 @@ void mbedtls_chacha20_init(mbedtls_chacha20_context *ctx)
     mbedtls_platform_zeroize(ctx->state, sizeof(ctx->state));
     mbedtls_platform_zeroize(ctx->keystream8, sizeof(ctx->keystream8));
 
-    /* Initially, there's no keystream bytes available */
     ctx->keystream_bytes_used = CHACHA20_BLOCK_SIZE_BYTES;
 }
 
@@ -171,13 +137,11 @@ void mbedtls_chacha20_free(mbedtls_chacha20_context *ctx)
 int mbedtls_chacha20_setkey(mbedtls_chacha20_context *ctx,
                             const unsigned char key[32])
 {
-    /* ChaCha20 constants - the string "expand 32-byte k" */
     ctx->state[0] = 0x61707865;
     ctx->state[1] = 0x3320646e;
     ctx->state[2] = 0x79622d32;
     ctx->state[3] = 0x6b206574;
 
-    /* Set key */
     ctx->state[4]  = MBEDTLS_GET_UINT32_LE(key, 0);
     ctx->state[5]  = MBEDTLS_GET_UINT32_LE(key, 4);
     ctx->state[6]  = MBEDTLS_GET_UINT32_LE(key, 8);
@@ -194,17 +158,14 @@ int mbedtls_chacha20_starts(mbedtls_chacha20_context *ctx,
                             const unsigned char nonce[12],
                             uint32_t counter)
 {
-    /* Counter */
     ctx->state[12] = counter;
 
-    /* Nonce */
     ctx->state[13] = MBEDTLS_GET_UINT32_LE(nonce, 0);
     ctx->state[14] = MBEDTLS_GET_UINT32_LE(nonce, 4);
     ctx->state[15] = MBEDTLS_GET_UINT32_LE(nonce, 8);
 
     mbedtls_platform_zeroize(ctx->keystream8, sizeof(ctx->keystream8));
 
-    /* Initially, there's no keystream bytes available */
     ctx->keystream_bytes_used = CHACHA20_BLOCK_SIZE_BYTES;
 
     return 0;
@@ -217,7 +178,6 @@ int mbedtls_chacha20_update(mbedtls_chacha20_context *ctx,
 {
     size_t offset = 0U;
 
-    /* Use leftover keystream bytes, if available */
     while (size > 0U && ctx->keystream_bytes_used < CHACHA20_BLOCK_SIZE_BYTES) {
         output[offset] = input[offset]
                          ^ ctx->keystream8[ctx->keystream_bytes_used];
@@ -227,9 +187,7 @@ int mbedtls_chacha20_update(mbedtls_chacha20_context *ctx,
         size--;
     }
 
-    /* Process full blocks */
     while (size >= CHACHA20_BLOCK_SIZE_BYTES) {
-        /* Generate new keystream block and increment counter */
         chacha20_block(ctx->state, ctx->keystream8);
         ctx->state[CHACHA20_CTR_INDEX]++;
 
@@ -239,9 +197,7 @@ int mbedtls_chacha20_update(mbedtls_chacha20_context *ctx,
         size   -= CHACHA20_BLOCK_SIZE_BYTES;
     }
 
-    /* Last (partial) block */
     if (size > 0U) {
-        /* Generate new keystream block and increment counter */
         chacha20_block(ctx->state, ctx->keystream8);
         ctx->state[CHACHA20_CTR_INDEX]++;
 
@@ -453,7 +409,6 @@ static const size_t test_lengths[2] =
     375U
 };
 
-/* Make sure no other definition is already present. */
 #undef ASSERT
 
 #define ASSERT(cond, args)            \

@@ -20,12 +20,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/*
- * PKCS#5 includes PBKDF2 and more
- *
- * http://tools.ietf.org/html/rfc2898 (Specification)
- * http://tools.ietf.org/html/rfc6070 (Test vectors)
- */
 
 #include "common.h"
 
@@ -60,15 +54,7 @@ static int pkcs5_parse_pbkdf2_params(const mbedtls_asn1_buf *params,
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT,
                                  MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
     }
-    /*
-     *  PBKDF2-params ::= SEQUENCE {
-     *    salt              OCTET STRING,
-     *    iterationCount    INTEGER,
-     *    keyLength         INTEGER OPTIONAL
-     *    prf               AlgorithmIdentifier DEFAULT algid-hmacWithSHA1
-     *  }
-     *
-     */
+
     if ((ret = mbedtls_asn1_get_tag(&p, end, &salt->len,
                                     MBEDTLS_ASN1_OCTET_STRING)) != 0) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT, ret);
@@ -127,10 +113,6 @@ int mbedtls_pkcs5_pbes2(const mbedtls_asn1_buf *pbe_params, int mode,
 {
     size_t output_len = 0;
 
-    /* We assume caller of the function is providing a big enough output buffer
-     * so we pass output_size as SIZE_MAX to pass checks, However, no guarantees
-     * for the output size actually being correct.
-     */
     return mbedtls_pkcs5_pbes2_ext(pbe_params, mode, pwd, pwdlen, data,
                                    datalen, output, SIZE_MAX, &output_len);
 }
@@ -156,12 +138,6 @@ int mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
     p = pbe_params->p;
     end = p + pbe_params->len;
 
-    /*
-     *  PBES2-params ::= SEQUENCE {
-     *    keyDerivationFunc AlgorithmIdentifier {{PBES2-KDFs}},
-     *    encryptionScheme AlgorithmIdentifier {{PBES2-Encs}}
-     *  }
-     */
     if (pbe_params->tag != (MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT,
                                  MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
@@ -172,8 +148,6 @@ int mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_PKCS5_INVALID_FORMAT, ret);
     }
 
-    // Only PBKDF2 supported at the moment
-    //
     if (MBEDTLS_OID_CMP(MBEDTLS_OID_PKCS5_PBKDF2, &kdf_alg_oid) != 0) {
         return MBEDTLS_ERR_PKCS5_FEATURE_UNAVAILABLE;
     }
@@ -198,10 +172,6 @@ int mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
         return MBEDTLS_ERR_PKCS5_FEATURE_UNAVAILABLE;
     }
 
-    /*
-     * The value of keylen from pkcs5_parse_pbkdf2_params() is ignored
-     * since it is optional and we don't know if it was set or not
-     */
     keylen = (int) mbedtls_cipher_info_get_key_bitlen(cipher_info) / 8;
 
     if (enc_scheme_params.tag != MBEDTLS_ASN1_OCTET_STRING ||
@@ -242,17 +212,8 @@ int mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
     }
 
 #if defined(MBEDTLS_CIPHER_MODE_WITH_PADDING)
-    /* PKCS5 uses CBC with PKCS7 padding (which is the same as
-     * "PKCS5 padding" except that it's typically only called PKCS5
-     * with 64-bit-block ciphers).
-     */
     mbedtls_cipher_padding_t padding = MBEDTLS_PADDING_PKCS7;
 #if !defined(MBEDTLS_CIPHER_PADDING_PKCS7)
-    /* For historical reasons, when decrypting, this function works when
-     * decrypting even when support for PKCS7 padding is disabled. In this
-     * case, it ignores the padding, and so will never report a
-     * password mismatch.
-     */
     if (mode == MBEDTLS_DECRYPT) {
         padding = MBEDTLS_PADDING_NONE;
     }
@@ -301,8 +262,6 @@ static int pkcs5_pbkdf2_hmac(mbedtls_md_context_t *ctx,
         return ret;
     }
     while (key_length) {
-        // U1 ends up in work
-        //
         if ((ret = mbedtls_md_hmac_update(ctx, salt, slen)) != 0) {
             goto cleanup;
         }
@@ -322,8 +281,6 @@ static int pkcs5_pbkdf2_hmac(mbedtls_md_context_t *ctx,
         memcpy(md1, work, md_size);
 
         for (i = 1; i < iteration_count; i++) {
-            // U2 ends up in md1
-            //
             if ((ret = mbedtls_md_hmac_update(ctx, md1, md_size)) != 0) {
                 goto cleanup;
             }
@@ -336,8 +293,6 @@ static int pkcs5_pbkdf2_hmac(mbedtls_md_context_t *ctx,
                 goto cleanup;
             }
 
-            // U1 xor U2
-            //
             mbedtls_xor(work, work, md1, md_size);
         }
 
@@ -355,7 +310,6 @@ static int pkcs5_pbkdf2_hmac(mbedtls_md_context_t *ctx,
     }
 
 cleanup:
-    /* Zeroise buffers to clear sensitive data from memory. */
     mbedtls_platform_zeroize(work, MBEDTLS_MD_MAX_SIZE);
     mbedtls_platform_zeroize(md1, MBEDTLS_MD_MAX_SIZE);
 

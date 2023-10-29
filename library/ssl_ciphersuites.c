@@ -34,25 +34,12 @@
 
 #include <string.h>
 
-/*
- * Ordered from most preferred to least preferred in terms of security.
- *
- * Current rule (except weak and null which come last):
- * 1. By key exchange:
- *    Forward-secure non-PSK > forward-secure PSK > ECJPAKE > other non-PSK > other PSK
- * 2. By key length and cipher:
- *    ChaCha > AES-256 > Camellia-256 > ARIA-256 > AES-128 > Camellia-128 > ARIA-128
- * 3. By cipher mode when relevant GCM > CCM > CBC > CCM_8
- * 4. By hash function used when relevant
- * 5. By key exchange/auth again: EC > non-EC
- */
 static const int ciphersuite_preference[] =
 {
 #if defined(MBEDTLS_SSL_CIPHERSUITES)
     MBEDTLS_SSL_CIPHERSUITES,
 #else
 #if defined(MBEDTLS_SSL_PROTO_TLS1_3)
-    /* TLS 1.3 ciphersuites */
     MBEDTLS_TLS1_3_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS1_3_AES_256_GCM_SHA384,
     MBEDTLS_TLS1_3_AES_128_GCM_SHA256,
@@ -60,12 +47,10 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS1_3_AES_128_CCM_8_SHA256,
 #endif /* MBEDTLS_SSL_PROTO_TLS1_3 */
 
-    /* Chacha-Poly ephemeral suites */
     MBEDTLS_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 
-    /* All AES-256 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
     MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
     MBEDTLS_TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
@@ -80,7 +65,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,
     MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CCM_8,
 
-    /* All CAMELLIA-256 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
     MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
@@ -89,7 +73,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
 
-    /* All ARIA-256 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384,
     MBEDTLS_TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384,
     MBEDTLS_TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384,
@@ -97,7 +80,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384,
     MBEDTLS_TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384,
 
-    /* All AES-128 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
     MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -112,7 +94,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
     MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CCM_8,
 
-    /* All CAMELLIA-128 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
     MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
@@ -121,7 +102,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
 
-    /* All ARIA-128 ephemeral suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256,
@@ -129,7 +109,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256,
     MBEDTLS_TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256,
 
-    /* The PSK ephemeral suites */
     MBEDTLS_TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
@@ -160,10 +139,8 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256,
     MBEDTLS_TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256,
 
-    /* The ECJPAKE suite */
     MBEDTLS_TLS_ECJPAKE_WITH_AES_128_CCM_8,
 
-    /* All AES-256 suites */
     MBEDTLS_TLS_RSA_WITH_AES_256_GCM_SHA384,
     MBEDTLS_TLS_RSA_WITH_AES_256_CCM,
     MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
@@ -176,7 +153,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
     MBEDTLS_TLS_RSA_WITH_AES_256_CCM_8,
 
-    /* All CAMELLIA-256 suites */
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384,
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
@@ -185,7 +161,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
 
-    /* All ARIA-256 suites */
     MBEDTLS_TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384,
     MBEDTLS_TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384,
     MBEDTLS_TLS_RSA_WITH_ARIA_256_GCM_SHA384,
@@ -193,7 +168,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384,
     MBEDTLS_TLS_RSA_WITH_ARIA_256_CBC_SHA384,
 
-    /* All AES-128 suites */
     MBEDTLS_TLS_RSA_WITH_AES_128_GCM_SHA256,
     MBEDTLS_TLS_RSA_WITH_AES_128_CCM,
     MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256,
@@ -206,7 +180,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
     MBEDTLS_TLS_RSA_WITH_AES_128_CCM_8,
 
-    /* All CAMELLIA-128 suites */
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256,
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256,
     MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
@@ -215,7 +188,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
     MBEDTLS_TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
 
-    /* All ARIA-128 suites */
     MBEDTLS_TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_RSA_WITH_ARIA_128_GCM_SHA256,
@@ -223,7 +195,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256,
     MBEDTLS_TLS_RSA_WITH_ARIA_128_CBC_SHA256,
 
-    /* The RSA PSK suites */
     MBEDTLS_TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_RSA_PSK_WITH_AES_256_GCM_SHA384,
     MBEDTLS_TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
@@ -241,7 +212,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256,
 
-    /* The PSK suites */
     MBEDTLS_TLS_PSK_WITH_CHACHA20_POLY1305_SHA256,
     MBEDTLS_TLS_PSK_WITH_AES_256_GCM_SHA384,
     MBEDTLS_TLS_PSK_WITH_AES_256_CCM,
@@ -263,7 +233,6 @@ static const int ciphersuite_preference[] =
     MBEDTLS_TLS_PSK_WITH_ARIA_128_GCM_SHA256,
     MBEDTLS_TLS_PSK_WITH_ARIA_128_CBC_SHA256,
 
-    /* NULL suites */
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_NULL_SHA,
     MBEDTLS_TLS_ECDHE_RSA_WITH_NULL_SHA,
     MBEDTLS_TLS_ECDHE_PSK_WITH_NULL_SHA384,
@@ -297,14 +266,14 @@ static const mbedtls_ssl_ciphersuite_t ciphersuite_definitions[] =
 #if defined(MBEDTLS_MD_CAN_SHA384)
     { MBEDTLS_TLS1_3_AES_256_GCM_SHA384, "TLS1-3-AES-256-GCM-SHA384",
       MBEDTLS_CIPHER_AES_256_GCM, MBEDTLS_MD_SHA384,
-      MBEDTLS_KEY_EXCHANGE_NONE, /* Key exchange not part of ciphersuite in TLS 1.3 */
+      MBEDTLS_KEY_EXCHANGE_NONE,
       0,
       MBEDTLS_SSL_VERSION_TLS1_3, MBEDTLS_SSL_VERSION_TLS1_3 },
 #endif /* MBEDTLS_MD_CAN_SHA384 */
 #if defined(MBEDTLS_MD_CAN_SHA256)
     { MBEDTLS_TLS1_3_AES_128_GCM_SHA256, "TLS1-3-AES-128-GCM-SHA256",
       MBEDTLS_CIPHER_AES_128_GCM, MBEDTLS_MD_SHA256,
-      MBEDTLS_KEY_EXCHANGE_NONE, /* Key exchange not part of ciphersuite in TLS 1.3 */
+      MBEDTLS_KEY_EXCHANGE_NONE,
       0,
       MBEDTLS_SSL_VERSION_TLS1_3, MBEDTLS_SSL_VERSION_TLS1_3 },
 #endif /* MBEDTLS_MD_CAN_SHA256 */
@@ -312,12 +281,12 @@ static const mbedtls_ssl_ciphersuite_t ciphersuite_definitions[] =
 #if defined(MBEDTLS_CCM_C) && defined(MBEDTLS_MD_CAN_SHA256)
     { MBEDTLS_TLS1_3_AES_128_CCM_SHA256, "TLS1-3-AES-128-CCM-SHA256",
       MBEDTLS_CIPHER_AES_128_CCM, MBEDTLS_MD_SHA256,
-      MBEDTLS_KEY_EXCHANGE_NONE, /* Key exchange not part of ciphersuite in TLS 1.3 */
+      MBEDTLS_KEY_EXCHANGE_NONE,
       0,
       MBEDTLS_SSL_VERSION_TLS1_3, MBEDTLS_SSL_VERSION_TLS1_3 },
     { MBEDTLS_TLS1_3_AES_128_CCM_8_SHA256, "TLS1-3-AES-128-CCM-8-SHA256",
       MBEDTLS_CIPHER_AES_128_CCM, MBEDTLS_MD_SHA256,
-      MBEDTLS_KEY_EXCHANGE_NONE, /* Key exchange not part of ciphersuite in TLS 1.3 */
+      MBEDTLS_KEY_EXCHANGE_NONE,
       MBEDTLS_CIPHERSUITE_SHORT_TAG,
       MBEDTLS_SSL_VERSION_TLS1_3, MBEDTLS_SSL_VERSION_TLS1_3 },
 #endif /* MBEDTLS_MD_CAN_SHA256 && MBEDTLS_CCM_C */
@@ -326,7 +295,7 @@ static const mbedtls_ssl_ciphersuite_t ciphersuite_definitions[] =
     { MBEDTLS_TLS1_3_CHACHA20_POLY1305_SHA256,
       "TLS1-3-CHACHA20-POLY1305-SHA256",
       MBEDTLS_CIPHER_CHACHA20_POLY1305, MBEDTLS_MD_SHA256,
-      MBEDTLS_KEY_EXCHANGE_NONE, /* Key exchange not part of ciphersuite in TLS 1.3 */
+      MBEDTLS_KEY_EXCHANGE_NONE,
       0,
       MBEDTLS_SSL_VERSION_TLS1_3, MBEDTLS_SSL_VERSION_TLS1_3 },
 #endif /* MBEDTLS_CHACHAPOLY_C && MBEDTLS_MD_CAN_SHA256 */
@@ -1825,10 +1794,6 @@ static int ciphersuite_is_removed(const mbedtls_ssl_ciphersuite_t *cs_info)
 
 const int *mbedtls_ssl_list_ciphersuites(void)
 {
-    /*
-     * On initial call filter out all ciphersuites not supported by current
-     * build based on presence in the ciphersuite_definitions.
-     */
     if (supported_init == 0) {
         const int *p;
         int *q;

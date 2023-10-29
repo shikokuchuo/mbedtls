@@ -45,8 +45,6 @@ struct _hr_time {
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
-/* time.h should be included independently of MBEDTLS_HAVE_TIME. If the
- * platform matches the ifdefs above, it will be used. */
 #include <time.h>
 #include <sys/time.h>
 struct _hr_time {
@@ -54,25 +52,6 @@ struct _hr_time {
 };
 #endif /* _WIN32 && !EFIX64 && !EFI32 */
 
-/**
- * \brief          Return the elapsed time in milliseconds
- *
- * \warning        May change without notice
- *
- * \param val      points to a timer structure
- * \param reset    If 0, query the elapsed time. Otherwise (re)start the timer.
- *
- * \return         Elapsed time since the previous reset in ms. When
- *                 restarting, this is always 0.
- *
- * \note           To initialize a timer, call this function with reset=1.
- *
- *                 Determining the elapsed time and resetting the timer is not
- *                 atomic on all platforms, so after the sequence
- *                 `{ get_timer(1); ...; time1 = get_timer(1); ...; time2 =
- *                 get_timer(0) }` the value time1+time2 is only approximately
- *                 the delay since the first reset.
- */
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 
 unsigned long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int reset)
@@ -114,9 +93,6 @@ unsigned long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int r
 
 #endif /* _WIN32 && !EFIX64 && !EFI32 */
 
-/*
- * Set delays to watch
- */
 void mbedtls_timing_set_delay(void *data, uint32_t int_ms, uint32_t fin_ms)
 {
     mbedtls_timing_delay_context *ctx = (mbedtls_timing_delay_context *) data;
@@ -129,9 +105,6 @@ void mbedtls_timing_set_delay(void *data, uint32_t int_ms, uint32_t fin_ms)
     }
 }
 
-/*
- * Get number of delays expired
- */
 int mbedtls_timing_get_delay(void *data)
 {
     mbedtls_timing_delay_context *ctx = (mbedtls_timing_delay_context *) data;
@@ -154,9 +127,6 @@ int mbedtls_timing_get_delay(void *data)
     return 0;
 }
 
-/*
- * Get the final delay.
- */
 uint32_t mbedtls_timing_get_final_delay(
     const mbedtls_timing_delay_context *data)
 {

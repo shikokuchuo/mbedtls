@@ -34,20 +34,14 @@
 
 #define POLY1305_BLOCK_SIZE_BYTES (16U)
 
-/*
- * Our implementation is tuned for 32-bit platforms with a 64-bit multiplier.
- * However we provided an alternative for platforms without such a multiplier.
- */
 #if defined(MBEDTLS_NO_64BIT_MULTIPLICATION)
 static uint64_t mul64(uint32_t a, uint32_t b)
 {
-    /* a = al + 2**16 ah, b = bl + 2**16 bh */
     const uint16_t al = (uint16_t) a;
     const uint16_t bl = (uint16_t) b;
     const uint16_t ah = a >> 16;
     const uint16_t bh = b >> 16;
 
-    /* ab = al*bl + 2**16 (ah*bl + bl*bh) + 2**32 ah*bh */
     const uint32_t lo = (uint32_t) al * bl;
     const uint64_t me = (uint64_t) ((uint32_t) ah * bl) + (uint32_t) al * bh;
     const uint32_t hi = (uint32_t) ah * bh;
@@ -61,18 +55,6 @@ static inline uint64_t mul64(uint32_t a, uint32_t b)
 }
 #endif
 
-
-/**
- * \brief                   Process blocks with Poly1305.
- *
- * \param ctx               The Poly1305 context.
- * \param nblocks           Number of blocks to process. Note that this
- *                          function only processes full blocks.
- * \param input             Buffer containing the input block(s).
- * \param needs_padding     Set to 0 if the padding bit has already been
- *                          applied to the input data before calling this
- *                          function.  Otherwise, set this parameter to 1.
- */
 static void poly1305_process(mbedtls_poly1305_context *ctx,
                              size_t nblocks,
                              const unsigned char *input,
@@ -100,15 +82,12 @@ static void poly1305_process(mbedtls_poly1305_context *ctx,
     acc3 = ctx->acc[3];
     acc4 = ctx->acc[4];
 
-    /* Process full blocks */
     for (i = 0U; i < nblocks; i++) {
-        /* The input block is treated as a 128-bit little-endian integer */
         d0   = MBEDTLS_GET_UINT32_LE(input, offset + 0);
         d1   = MBEDTLS_GET_UINT32_LE(input, offset + 4);
         d2   = MBEDTLS_GET_UINT32_LE(input, offset + 8);
         d3   = MBEDTLS_GET_UINT32_LE(input, offset + 12);
 
-        /* Compute: acc += (padded) block as a 130-bit integer */
         d0  += (uint64_t) acc0;
         d1  += (uint64_t) acc1 + (d0 >> 32U);
         d2  += (uint64_t) acc2 + (d1 >> 32U);
@@ -119,7 +98,6 @@ static void poly1305_process(mbedtls_poly1305_context *ctx,
         acc3 = (uint32_t) d3;
         acc4 += (uint32_t) (d3 >> 32U) + needs_padding;
 
-        /* Compute: acc *= r */
         d0 = mul64(acc0, r0) +
              mul64(acc1, rs3) +
              mul64(acc2, rs2) +
@@ -141,7 +119,6 @@ static void poly1305_process(mbedtls_poly1305_context *ctx,
              mul64(acc4, rs3);
         acc4 *= r0;
 
-        /* Compute: acc %= (2^130 - 5) (partial remainder) */
         d1 += (d0 >> 32);
         d2 += (d1 >> 32);
         d3 += (d2 >> 32);
@@ -173,13 +150,6 @@ static void poly1305_process(mbedtls_poly1305_context *ctx,
     ctx->acc[4] = acc4;
 }
 
-/**
- * \brief                   Compute the Poly1305 MAC
- *
- * \param ctx               The Poly1305 context.
- * \param mac               The buffer to where the MAC is written. Must be
- *                          big enough to contain the 16-byte MAC.
- */
 static void poly1305_compute_mac(const mbedtls_poly1305_context *ctx,
                                  unsigned char mac[16])
 {
@@ -195,12 +165,6 @@ static void poly1305_compute_mac(const mbedtls_poly1305_context *ctx,
     acc3 = ctx->acc[3];
     acc4 = ctx->acc[4];
 
-    /* Before adding 's' we ensure that the accumulator is mod 2^130 - 5.
-     * We do this by calculating acc - (2^130 - 5), then checking if
-     * the 131st bit is set. If it is, then reduce: acc -= (2^130 - 5)
-     */
-
-    /* Calculate acc + -(2^130 - 5) */
     d  = ((uint64_t) acc0 + 5U);
     g0 = (uint32_t) d;
     d  = ((uint64_t) acc1 + (d >> 32));
@@ -211,17 +175,14 @@ static void poly1305_compute_mac(const mbedtls_poly1305_context *ctx,
     g3 = (uint32_t) d;
     g4 = acc4 + (uint32_t) (d >> 32U);
 
-    /* mask == 0xFFFFFFFF if 131st bit is set, otherwise mask == 0 */
     mask = (uint32_t) 0U - (g4 >> 2U);
     mask_inv = ~mask;
 
-    /* If 131st bit is set then acc=g, otherwise, acc is unmodified */
     acc0 = (acc0 & mask_inv) | (g0 & mask);
     acc1 = (acc1 & mask_inv) | (g1 & mask);
     acc2 = (acc2 & mask_inv) | (g2 & mask);
     acc3 = (acc3 & mask_inv) | (g3 & mask);
 
-    /* Add 's' */
     d = (uint64_t) acc0 + ctx->s[0];
     acc0 = (uint32_t) d;
     d = (uint64_t) acc1 + ctx->s[1] + (d >> 32U);
@@ -230,7 +191,6 @@ static void poly1305_compute_mac(const mbedtls_poly1305_context *ctx,
     acc2 = (uint32_t) d;
     acc3 += ctx->s[3] + (uint32_t) (d >> 32U);
 
-    /* Compute MAC (128 least significant bits of the accumulator) */
     MBEDTLS_PUT_UINT32_LE(acc0, mac,  0);
     MBEDTLS_PUT_UINT32_LE(acc1, mac,  4);
     MBEDTLS_PUT_UINT32_LE(acc2, mac,  8);
@@ -254,7 +214,6 @@ void mbedtls_poly1305_free(mbedtls_poly1305_context *ctx)
 int mbedtls_poly1305_starts(mbedtls_poly1305_context *ctx,
                             const unsigned char key[32])
 {
-    /* r &= 0x0ffffffc0ffffffc0ffffffc0fffffff */
     ctx->r[0] = MBEDTLS_GET_UINT32_LE(key, 0)  & 0x0FFFFFFFU;
     ctx->r[1] = MBEDTLS_GET_UINT32_LE(key, 4)  & 0x0FFFFFFCU;
     ctx->r[2] = MBEDTLS_GET_UINT32_LE(key, 8)  & 0x0FFFFFFCU;
@@ -265,14 +224,12 @@ int mbedtls_poly1305_starts(mbedtls_poly1305_context *ctx,
     ctx->s[2] = MBEDTLS_GET_UINT32_LE(key, 24);
     ctx->s[3] = MBEDTLS_GET_UINT32_LE(key, 28);
 
-    /* Initial accumulator state */
     ctx->acc[0] = 0U;
     ctx->acc[1] = 0U;
     ctx->acc[2] = 0U;
     ctx->acc[3] = 0U;
     ctx->acc[4] = 0U;
 
-    /* Queue initially empty */
     mbedtls_platform_zeroize(ctx->queue, sizeof(ctx->queue));
     ctx->queue_len = 0U;
 
@@ -292,9 +249,7 @@ int mbedtls_poly1305_update(mbedtls_poly1305_context *ctx,
         queue_free_len = (POLY1305_BLOCK_SIZE_BYTES - ctx->queue_len);
 
         if (ilen < queue_free_len) {
-            /* Not enough data to complete the block.
-             * Store this data with the other leftovers.
-             */
+
             memcpy(&ctx->queue[ctx->queue_len],
                    input,
                    ilen);
@@ -303,14 +258,14 @@ int mbedtls_poly1305_update(mbedtls_poly1305_context *ctx,
 
             remaining = 0U;
         } else {
-            /* Enough data to produce a complete block */
+
             memcpy(&ctx->queue[ctx->queue_len],
                    input,
                    queue_free_len);
 
             ctx->queue_len = 0U;
 
-            poly1305_process(ctx, 1U, ctx->queue, 1U);   /* add padding bit */
+            poly1305_process(ctx, 1U, ctx->queue, 1U);
 
             offset    += queue_free_len;
             remaining -= queue_free_len;
@@ -327,7 +282,6 @@ int mbedtls_poly1305_update(mbedtls_poly1305_context *ctx,
     }
 
     if (remaining > 0U) {
-        /* Store partial block */
         ctx->queue_len = remaining;
         memcpy(ctx->queue, &input[offset], remaining);
     }
@@ -338,19 +292,16 @@ int mbedtls_poly1305_update(mbedtls_poly1305_context *ctx,
 int mbedtls_poly1305_finish(mbedtls_poly1305_context *ctx,
                             unsigned char mac[16])
 {
-    /* Process any leftover data */
     if (ctx->queue_len > 0U) {
-        /* Add padding bit */
         ctx->queue[ctx->queue_len] = 1U;
         ctx->queue_len++;
 
-        /* Pad with zeroes */
         memset(&ctx->queue[ctx->queue_len],
                0,
                POLY1305_BLOCK_SIZE_BYTES - ctx->queue_len);
 
-        poly1305_process(ctx, 1U,           /* Process 1 block */
-                         ctx->queue, 0U);   /* Already padded above */
+        poly1305_process(ctx, 1U,
+                         ctx->queue, 0U);
     }
 
     poly1305_compute_mac(ctx, mac);
@@ -452,7 +403,6 @@ static const unsigned char test_mac[2][16] =
     }
 };
 
-/* Make sure no other definition is already present. */
 #undef ASSERT
 
 #define ASSERT(cond, args)            \
