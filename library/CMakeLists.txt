@@ -20,12 +20,7 @@ set(src_crypto
     base64.c
     bignum.c
     bignum_core.c
-<<<<<<< HEAD
-    bignum_mod.c
-    bignum_mod_raw.c
     block_cipher.c
-=======
->>>>>>> 7d6639cfb (nanonext edit)
     camellia.c
     ccm.c
     chacha20.c

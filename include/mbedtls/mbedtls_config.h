@@ -216,8 +216,6 @@
 
 #define MBEDTLS_SHA512_C
 
-#define MBEDTLS_SHA3_C
-
 #define MBEDTLS_SSL_CACHE_C
 
 #define MBEDTLS_SSL_COOKIE_C
