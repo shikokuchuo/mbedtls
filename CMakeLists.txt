@@ -33,21 +33,10 @@ cmake_policy(SET CMP0011 NEW)
 # is deprecated and will be removed in future versions.
 cmake_policy(SET CMP0012 NEW)
 
-<<<<<<< HEAD
-if(TEST_CPP)
-    project("Mbed TLS"
-        LANGUAGES C CXX
-        VERSION 3.6.0
-    )
-else()
-    project("Mbed TLS"
-        LANGUAGES C
-        VERSION 3.6.0
-    )
-endif()
-=======
-project("Mbed TLS" LANGUAGES C)
->>>>>>> 7d6639cfb (nanonext edit)
+project("Mbed TLS"
+    LANGUAGES C
+    VERSION 3.6.0
+)
 
 include(GNUInstallDirs)
 
@@ -88,38 +77,11 @@ set(CTR_DRBG_128_BIT_KEY_WARNING "${WARNING_BORDER}"
                          "${CTR_DRBG_128_BIT_KEY_WARN_L3}"
                          "${WARNING_BORDER}")
 
-<<<<<<< HEAD
-# Python 3 is only needed here to check for configuration warnings.
-if(NOT CMAKE_VERSION VERSION_LESS 3.15.0)
-    set(Python3_FIND_STRATEGY LOCATION)
-    find_package(Python3 COMPONENTS Interpreter)
-    if(Python3_Interpreter_FOUND)
-        set(MBEDTLS_PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
-    endif()
-else()
-    find_package(PythonInterp 3)
-    if(PYTHONINTERP_FOUND)
-        set(MBEDTLS_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-    endif()
-endif()
-if(MBEDTLS_PYTHON_EXECUTABLE)
-
-    # If 128-bit keys are configured for CTR_DRBG, display an appropriate warning
-    execute_process(COMMAND ${MBEDTLS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config.py -f ${CMAKE_CURRENT_SOURCE_DIR}/include/mbedtls/mbedtls_config.h get MBEDTLS_CTR_DRBG_USE_128_BIT_KEY
-                        RESULT_VARIABLE result)
-    if(${result} EQUAL 0)
-        message(WARNING ${CTR_DRBG_128_BIT_KEY_WARNING})
-    endif()
-
-endif()
-
 # We now potentially need to link all executables against PThreads, if available
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 
-=======
->>>>>>> 7d6639cfb (nanonext edit)
 # If this is the root project add longer list of available CMAKE_BUILD_TYPE values
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
@@ -241,107 +203,6 @@ add_subdirectory(include)
 
 add_subdirectory(library)
 
-<<<<<<< HEAD
-add_subdirectory(pkgconfig)
-
-#
-# The C files in tests/src directory contain test code shared among test suites
-# and programs. This shared test code is compiled and linked to test suites and
-# programs objects as a set of compiled objects. The compiled objects are NOT
-# built into a library that the test suite and program objects would link
-# against as they link against the mbedcrypto, mbedx509 and mbedtls libraries.
-# The reason is that such library is expected to have mutual dependencies with
-# the aforementioned libraries and that there is as of today no portable way of
-# handling such dependencies (only toolchain specific solutions).
-#
-# Thus the below definition of the `mbedtls_test` CMake library of objects
-# target. This library of objects is used by tests and programs CMake files
-# to define the test executables.
-#
-if(ENABLE_TESTING OR ENABLE_PROGRAMS)
-    file(GLOB MBEDTLS_TEST_FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/tests/src/*.c
-         ${CMAKE_CURRENT_SOURCE_DIR}/tests/src/drivers/*.c)
-    add_library(mbedtls_test OBJECT ${MBEDTLS_TEST_FILES})
-    target_include_directories(mbedtls_test
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/include
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/library)
-    # Request C11, needed for memory poisoning tests
-    set_target_properties(mbedtls_test PROPERTIES C_STANDARD 11)
-
-    file(GLOB MBEDTLS_TEST_HELPER_FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/tests/src/test_helpers/*.c)
-    add_library(mbedtls_test_helpers OBJECT ${MBEDTLS_TEST_HELPER_FILES})
-    target_include_directories(mbedtls_test_helpers
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/include
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/library
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/everest/include)
-
-    # Pass-through MBEDTLS_CONFIG_FILE and MBEDTLS_USER_CONFIG_FILE
-    if(MBEDTLS_CONFIG_FILE)
-        target_compile_definitions(mbedtls_test
-            PUBLIC MBEDTLS_CONFIG_FILE="${MBEDTLS_CONFIG_FILE}")
-        target_compile_definitions(mbedtls_test_helpers
-            PUBLIC MBEDTLS_CONFIG_FILE="${MBEDTLS_CONFIG_FILE}")
-    endif()
-    if(MBEDTLS_USER_CONFIG_FILE)
-        target_compile_definitions(mbedtls_test
-            PUBLIC MBEDTLS_USER_CONFIG_FILE="${MBEDTLS_USER_CONFIG_FILE}")
-        target_compile_definitions(mbedtls_test_helpers
-            PUBLIC MBEDTLS_USER_CONFIG_FILE="${MBEDTLS_USER_CONFIG_FILE}")
-    endif()
-endif()
-
-if(ENABLE_PROGRAMS)
-    add_subdirectory(programs)
-endif()
-
-ADD_CUSTOM_TARGET(${MBEDTLS_TARGET_PREFIX}apidoc
-    COMMAND doxygen mbedtls.doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen)
-
-if(ENABLE_TESTING)
-    enable_testing()
-
-    add_subdirectory(tests)
-
-    # additional convenience targets for Unix only
-    if(UNIX)
-
-        # For coverage testing:
-        # 1. Build with:
-        #         cmake -D CMAKE_BUILD_TYPE=Coverage /path/to/source && make
-        # 2. Run the relevant tests for the part of the code you're interested in.
-        #    For the reference coverage measurement, see
-        #    tests/scripts/basic-build-test.sh
-        # 3. Run scripts/lcov.sh to generate an HTML report.
-        ADD_CUSTOM_TARGET(lcov
-            COMMAND scripts/lcov.sh
-        )
-
-        ADD_CUSTOM_TARGET(memcheck
-            COMMAND sed -i.bak s+/usr/bin/valgrind+`which valgrind`+ DartConfiguration.tcl
-            COMMAND ctest -O memcheck.log -D ExperimentalMemCheck
-            COMMAND tail -n1 memcheck.log | grep 'Memory checking results:' > /dev/null
-            COMMAND rm -f memcheck.log
-            COMMAND mv DartConfiguration.tcl.bak DartConfiguration.tcl
-        )
-    endif(UNIX)
-
-    # Make scripts needed for testing available in an out-of-source build.
-    if (NOT ${CMAKE_CURRENT_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-        link_to_source(scripts)
-        # Copy (don't link) DartConfiguration.tcl, needed for memcheck, to
-        # keep things simple with the sed commands in the memcheck target.
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DartConfiguration.tcl
-                    ${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl COPYONLY)
-    endif()
-endif()
-
-=======
->>>>>>> 7d6639cfb (nanonext edit)
 if(NOT DISABLE_PACKAGE_CONFIG_AND_INSTALL)
     configure_package_config_file(
         "cmake/MbedTLSConfig.cmake.in"
