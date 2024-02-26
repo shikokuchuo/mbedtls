@@ -82,7 +82,7 @@ static inline const unsigned char *mbedtls_buffer_offset_const(
     return p == NULL ? NULL : p + n;
 }
 
-inline void mbedtls_xor(unsigned char *r, const unsigned char *a, const unsigned char *b, size_t n)
+static inline void mbedtls_xor(unsigned char *r, const unsigned char *a, const unsigned char *b, size_t n)
 {
     size_t i = 0;
 #if defined(MBEDTLS_EFFICIENT_UNALIGNED_ACCESS)
