@@ -55,10 +55,6 @@
 #include "mbedtls/platform.h"
 #include "ctr.h"
 
-/*
- * This is a convenience shorthand macro to check if we need reverse S-box and
- * reverse tables. It's private and only defined in this file.
- */
 #if (!defined(MBEDTLS_AES_DECRYPT_ALT) || \
     (!defined(MBEDTLS_AES_SETKEY_DEC_ALT) && !defined(MBEDTLS_AES_USE_HARDWARE_ONLY))) && \
     !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
@@ -195,16 +191,7 @@ MBEDTLS_MAYBE_UNUSED static const uint32_t FT3[256] = { FT };
 
 #undef FT
 
-<<<<<<< HEAD
-/*
- * Reverse S-box
- */
 MBEDTLS_MAYBE_UNUSED static const unsigned char RSb[256] =
-=======
-#if !defined(MBEDTLS_AES_DECRYPT_ALT)
-
-static const unsigned char RSb[256] =
->>>>>>> ca13c4b9e (squash bundle)
 {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38,
     0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,

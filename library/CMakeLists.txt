@@ -64,7 +64,6 @@ set(src_crypto
     sha1.c
     sha256.c
     sha512.c
-    sha3.c
     threading.c
     timing.c
     version.c
@@ -93,10 +92,6 @@ set(src_tls
     ssl_tls.c
     ssl_tls12_client.c
     ssl_tls12_server.c
-    ssl_tls13_keys.c
-    ssl_tls13_server.c
-    ssl_tls13_client.c
-    ssl_tls13_generic.c
 )
 
 link_to_source(error.c)

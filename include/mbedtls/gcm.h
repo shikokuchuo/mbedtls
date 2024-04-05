@@ -66,6 +66,11 @@ typedef struct mbedtls_gcm_context {
 }
 mbedtls_gcm_context;
 
+#else  /* !MBEDTLS_GCM_ALT */
+#include "gcm_alt.h"
+#endif /* !MBEDTLS_GCM_ALT */
+
+
 void mbedtls_gcm_init(mbedtls_gcm_context *ctx);
 
 int mbedtls_gcm_setkey(mbedtls_gcm_context *ctx,

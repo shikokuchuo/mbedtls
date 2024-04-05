@@ -5028,7 +5028,6 @@ void mbedtls_ssl_config_init(mbedtls_ssl_config *conf)
 }
 
 static const uint16_t ssl_preset_default_groups[] = {
->>>>>>> ca13c4b9e (squash bundle)
 #if defined(MBEDTLS_ECP_HAVE_CURVE25519)
     MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
 #endif

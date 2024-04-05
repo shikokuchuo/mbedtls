@@ -243,24 +243,6 @@
 #define MBEDTLS_CCM_GCM_CAN_CAMELLIA
 #endif
 
-/* MBEDTLS_ECP_LIGHT is auto-enabled by the following symbols:
- * - MBEDTLS_ECP_C because now it consists of MBEDTLS_ECP_LIGHT plus functions
- *   for curve arithmetic. As a consequence if MBEDTLS_ECP_C is required for
- *   some reason, then MBEDTLS_ECP_LIGHT should be enabled as well.
- * - MBEDTLS_PK_PARSE_EC_EXTENDED and MBEDTLS_PK_PARSE_EC_COMPRESSED because
- *   these features are not supported in PSA so the only way to have them is
- *   to enable the built-in solution.
- *   Both of them are temporary dependencies:
- *   - PK_PARSE_EC_EXTENDED will be removed after #7779 and #7789
- *   - support for compressed points should also be added to PSA, but in this
- *     case there is no associated issue to track it yet.
- * - PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE because Weierstrass key derivation
- *   still depends on ECP_LIGHT.
- * - PK_C + USE_PSA + PSA_WANT_ALG_ECDSA is a temporary dependency which will
- *   be fixed by #7453.
- */
-=======
->>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_ECP_C) || \
     defined(MBEDTLS_PK_PARSE_EC_EXTENDED) || \
     defined(MBEDTLS_PK_PARSE_EC_COMPRESSED) || \
@@ -268,14 +250,6 @@
 #define MBEDTLS_ECP_LIGHT
 #endif
 
-<<<<<<< HEAD
-/* MBEDTLS_PK_PARSE_EC_COMPRESSED is introduced in Mbed TLS version 3.5, while
- * in previous version compressed points were automatically supported as long
- * as PK_PARSE_C and ECP_C were enabled. As a consequence, for backward
- * compatibility, we auto-enable PK_PARSE_EC_COMPRESSED when these conditions
- * are met. */
-=======
->>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_PK_PARSE_C) && defined(MBEDTLS_ECP_C)
 #define MBEDTLS_PK_PARSE_EC_COMPRESSED
 #endif
@@ -309,16 +283,6 @@
 #define MBEDTLS_PSA_CRYPTO_CLIENT
 #endif /* MBEDTLS_PSA_CRYPTO_C */
 
-<<<<<<< HEAD
-/* Helpers to state that each key is supported either on the builtin or PSA side. */
-=======
-#if defined(MBEDTLS_PSA_CRYPTO_C) && defined(MBEDTLS_RSA_C)
-#define MBEDTLS_PK_C
-#define MBEDTLS_PK_WRITE_C
-#define MBEDTLS_PK_PARSE_C
-#endif
-
->>>>>>> 60fbe0d10 (strip headers)
 #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED) || defined(PSA_WANT_ECC_SECP_R1_521)
 #define MBEDTLS_ECP_HAVE_SECP521R1
 #endif
