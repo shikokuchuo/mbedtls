@@ -20,7 +20,6 @@
 #include "mbedtls/psa_util.h"
 
 #include "ssl_misc.h"
-#include "ssl_tls13_invasive.h"
 #include "ssl_tls13_keys.h"
 #include "ssl_debug_helpers.h"
 

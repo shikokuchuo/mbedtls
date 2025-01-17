@@ -17,7 +17,6 @@
 
 #include "bn_mul.h"
 #include "bignum_core.h"
-#include "ecp_invasive.h"
 
 #include <string.h>
 

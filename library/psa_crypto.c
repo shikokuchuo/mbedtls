@@ -15,7 +15,6 @@
 #include "psa/crypto_values.h"
 #include "psa_crypto_cipher.h"
 #include "psa_crypto_core.h"
-#include "psa_crypto_invasive.h"
 #include "psa_crypto_driver_wrappers.h"
 #include "psa_crypto_driver_wrappers_no_static.h"
 #include "psa_crypto_ecp.h"

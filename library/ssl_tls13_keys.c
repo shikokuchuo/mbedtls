@@ -19,7 +19,6 @@
 
 #include "ssl_misc.h"
 #include "ssl_tls13_keys.h"
-#include "ssl_tls13_invasive.h"
 
 #include "psa/crypto.h"
 #include "mbedtls/psa_util.h"
