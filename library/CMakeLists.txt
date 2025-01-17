@@ -20,8 +20,6 @@ set(src_crypto
     base64.c
     bignum.c
     bignum_core.c
-    bignum_mod.c
-    bignum_mod_raw.c
     block_cipher.c
     camellia.c
     ccm.c
@@ -39,7 +37,6 @@ set(src_crypto
     ecjpake.c
     ecp.c
     ecp_curves.c
-    ecp_curves_new.c
     entropy.c
     entropy_poll.c
     error.c
@@ -120,7 +117,6 @@ set(src_tls
 
 link_to_source(error.c)
 link_to_source(version_features.c)
-link_to_source(ssl_debug_helpers_generated.c)
 link_to_source(psa_crypto_driver_wrappers_no_static.c)
 
 if(CMAKE_COMPILER_IS_GNUCC)
