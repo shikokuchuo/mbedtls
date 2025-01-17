@@ -68,14 +68,6 @@ set(CMAKE_COLOR_MAKEFILE OFF)
 set(CMAKE_INSTALL_MESSAGE NEVER)
 
 option(UNSAFE_BUILD "Allow unsafe builds. These builds ARE NOT SECURE." OFF)
-if(CMAKE_HOST_WIN32)
-    # N.B. The comment on the next line is significant! If you change it,
-    # edit the sed command in prepare_release.sh that modifies
-    # CMakeLists.txt.
-    option(GEN_FILES "Generate the auto-generated files as needed" OFF) # off in development
-else()
-    option(GEN_FILES "Generate the auto-generated files as needed" OFF)
-endif()
 
 option(DISABLE_PACKAGE_CONFIG_AND_INSTALL "Disable package configuration, target export and installation" ${MBEDTLS_AS_SUBPROJECT})
 
