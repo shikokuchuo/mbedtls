@@ -222,8 +222,6 @@
 
 #define MBEDTLS_PSA_CRYPTO_C
 
-#define MBEDTLS_RIPEMD160_C
-
 #define MBEDTLS_RSA_C
 
 #define MBEDTLS_SHA1_C
@@ -235,8 +233,6 @@
 #define MBEDTLS_SHA384_C
 
 #define MBEDTLS_SHA512_C
-
-#define MBEDTLS_SHA3_C
 
 #define MBEDTLS_SSL_CACHE_C
 

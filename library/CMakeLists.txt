@@ -73,13 +73,11 @@ set(src_crypto
     psa_crypto_slot_management.c
     psa_crypto_storage.c
     psa_util.c
-    ripemd160.c
     rsa.c
     rsa_alt_helpers.c
     sha1.c
     sha256.c
     sha512.c
-    sha3.c
     threading.c
     timing.c
     version.c
