@@ -176,9 +176,6 @@ typedef struct {
 
 
 /* EC-JPAKE operation definitions */
-
-#include "mbedtls/ecjpake.h"
-
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_JPAKE)
 #define MBEDTLS_PSA_BUILTIN_PAKE  1
 #endif

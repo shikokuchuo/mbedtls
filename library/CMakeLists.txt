@@ -34,7 +34,6 @@ set(src_crypto
     dhm.c
     ecdh.c
     ecdsa.c
-    ecjpake.c
     ecp.c
     ecp_curves.c
     entropy.c
@@ -42,7 +41,6 @@ set(src_crypto
     error.c
     gcm.c
     hkdf.c
-    hmac_drbg.c
     md.c
     md5.c
     nist_kw.c
@@ -68,10 +66,8 @@ set(src_crypto
     psa_crypto_ffdh.c
     psa_crypto_hash.c
     psa_crypto_mac.c
-    psa_crypto_pake.c
     psa_crypto_rsa.c
     psa_crypto_slot_management.c
-    psa_crypto_storage.c
     psa_util.c
     rsa.c
     rsa_alt_helpers.c
