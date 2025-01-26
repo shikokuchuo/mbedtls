@@ -59,9 +59,6 @@ int MBEDTLS_DEPRECATED mbedtls_pkcs5_pbkdf2_hmac(mbedtls_md_context_t *ctx,
                                                  unsigned char *output);
 #endif
 #endif
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_pkcs5_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

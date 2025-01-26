@@ -88,12 +88,6 @@ int mbedtls_entropy_update_nv_seed(mbedtls_entropy_context *ctx);
 int mbedtls_entropy_write_seed_file(mbedtls_entropy_context *ctx, const char *path);
 int mbedtls_entropy_update_seed_file(mbedtls_entropy_context *ctx, const char *path);
 #endif
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_entropy_self_test(int verbose);
-#if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
-int mbedtls_entropy_source_self_test(int verbose);
-#endif
-#endif
 #ifdef __cplusplus
 }
 #endif

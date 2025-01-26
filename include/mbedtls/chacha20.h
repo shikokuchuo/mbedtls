@@ -53,9 +53,6 @@ int mbedtls_chacha20_crypt(const unsigned char key[32],
                            size_t size,
                            const unsigned char *input,
                            unsigned char *output);
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_chacha20_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

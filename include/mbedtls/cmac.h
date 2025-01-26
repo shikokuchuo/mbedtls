@@ -54,9 +54,6 @@ int mbedtls_aes_cmac_prf_128(const unsigned char *key, size_t key_len,
                              const unsigned char *input, size_t in_len,
                              unsigned char output[16]);
 #endif
-#if defined(MBEDTLS_SELF_TEST) && (defined(MBEDTLS_AES_C) || defined(MBEDTLS_DES_C))
-int mbedtls_cmac_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

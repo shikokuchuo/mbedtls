@@ -4,18 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The ITU-T X.509 standard defines a certificate format for PKI.
- *
- *  http://www.ietf.org/rfc/rfc5280.txt (Certificates and CRLs)
- *  http://www.ietf.org/rfc/rfc3279.txt (Alg IDs for CRLs)
- *  http://www.ietf.org/rfc/rfc2986.txt (CSRs, aka PKCS#10)
- *
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.680-0207.pdf
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
- *
- *  [SIRO] https://cabforum.org/wp-content/uploads/Chunghwatelecom201503cabforumV4.pdf
- */
 #include "common.h"
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
 #include "mbedtls/x509_crt.h"

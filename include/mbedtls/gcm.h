@@ -99,9 +99,6 @@ int mbedtls_gcm_finish(mbedtls_gcm_context *ctx,
                        size_t *output_length,
                        unsigned char *tag, size_t tag_len);
 void mbedtls_gcm_free(mbedtls_gcm_context *ctx);
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_gcm_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

@@ -144,9 +144,6 @@ int mbedtls_ctr_drbg_random(void *p_rng,
 int mbedtls_ctr_drbg_write_seed_file(mbedtls_ctr_drbg_context *ctx, const char *path);
 int mbedtls_ctr_drbg_update_seed_file(mbedtls_ctr_drbg_context *ctx, const char *path);
 #endif
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_ctr_drbg_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

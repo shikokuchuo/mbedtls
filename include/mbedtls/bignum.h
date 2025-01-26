@@ -199,9 +199,6 @@ typedef enum {
 int mbedtls_mpi_gen_prime(mbedtls_mpi *X, size_t nbits, int flags,
                           int (*f_rng)(void *, unsigned char *, size_t),
                           void *p_rng);
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_mpi_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

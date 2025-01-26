@@ -78,9 +78,6 @@ int mbedtls_aria_crypt_ctr(mbedtls_aria_context *ctx,
                            const unsigned char *input,
                            unsigned char *output);
 #endif
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_aria_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

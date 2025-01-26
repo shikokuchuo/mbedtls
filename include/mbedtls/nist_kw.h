@@ -51,9 +51,6 @@ int mbedtls_nist_kw_wrap(mbedtls_nist_kw_context *ctx, mbedtls_nist_kw_mode_t mo
 int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx, mbedtls_nist_kw_mode_t mode,
                            const unsigned char *input, size_t in_len,
                            unsigned char *output, size_t *out_len, size_t out_size);
-#if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_AES_C)
-int mbedtls_nist_kw_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

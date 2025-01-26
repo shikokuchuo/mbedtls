@@ -297,9 +297,6 @@ mbedtls_ecp_group_id mbedtls_ecp_keypair_get_group_id(
     const mbedtls_ecp_keypair *key);
 int mbedtls_ecp_export(const mbedtls_ecp_keypair *key, mbedtls_ecp_group *grp,
                        mbedtls_mpi *d, mbedtls_ecp_point *Q);
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_ecp_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

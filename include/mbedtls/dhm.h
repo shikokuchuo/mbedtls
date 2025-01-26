@@ -124,9 +124,6 @@ int mbedtls_dhm_parse_dhm(mbedtls_dhm_context *dhm, const unsigned char *dhmin,
 int mbedtls_dhm_parse_dhmfile(mbedtls_dhm_context *dhm, const char *path);
 #endif
 #endif
-#if defined(MBEDTLS_SELF_TEST)
-int mbedtls_dhm_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif

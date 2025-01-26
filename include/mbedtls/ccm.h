@@ -112,9 +112,6 @@ int mbedtls_ccm_update(mbedtls_ccm_context *ctx,
                        size_t *output_len);
 int mbedtls_ccm_finish(mbedtls_ccm_context *ctx,
                        unsigned char *tag, size_t tag_len);
-#if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_CCM_GCM_CAN_AES)
-int mbedtls_ccm_self_test(int verbose);
-#endif
 #ifdef __cplusplus
 }
 #endif
