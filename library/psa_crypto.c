@@ -36,7 +36,6 @@
 #include "mbedtls/asn1.h"
 #include "mbedtls/asn1write.h"
 #include "mbedtls/bignum.h"
-#include "mbedtls/camellia.h"
 #include "mbedtls/chacha20.h"
 #include "mbedtls/chachapoly.h"
 #include "mbedtls/cipher.h"
