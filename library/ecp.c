@@ -29,8 +29,6 @@
  *     <http://eprint.iacr.org/2004/342.pdf>
  */
 #include "common.h"
-#if defined(MBEDTLS_ECP_INTERNAL_ALT)
-#endif
 #if defined(MBEDTLS_ECP_LIGHT)
 #include "mbedtls/ecp.h"
 #include "mbedtls/threading.h"
@@ -40,7 +38,6 @@
 #include <string.h>
 #if !defined(MBEDTLS_ECP_ALT)
 #include "mbedtls/platform.h"
-#include "ecp_internal_alt.h"
 #if defined(MBEDTLS_ECP_RESTARTABLE)
 static unsigned ecp_max_ops = 0;
 void mbedtls_ecp_set_max_ops(unsigned max_ops)
