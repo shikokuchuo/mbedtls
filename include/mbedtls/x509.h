@@ -1,7 +1,7 @@
 /**
- * \file x509.h
+ * \file x509_crl.h
  *
- * \brief X.509 generic defines and structures
+ * \brief X.509 certificate revocation list parsing
  */
 /*
  *  Copyright The Mbed TLS Contributors
