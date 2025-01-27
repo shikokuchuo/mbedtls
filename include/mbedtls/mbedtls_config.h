@@ -136,8 +136,6 @@
 
 #define MBEDTLS_BIGNUM_C
 
-#define MBEDTLS_ARIA_C
-
 #define MBEDTLS_CCM_C
 
 #define MBEDTLS_CHACHA20_C
