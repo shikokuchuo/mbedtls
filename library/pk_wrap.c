@@ -10,7 +10,6 @@
 #include "pk_wrap.h"
 #include "pk_internal.h"
 #include "mbedtls/error.h"
-#include "mbedtls/psa_util.h"
 #include "mbedtls/rsa.h"
 #if defined(MBEDTLS_ECP_C)
 #include "mbedtls/ecp.h"

@@ -29,8 +29,6 @@
 #include "mbedtls/des.h"
 #endif
 
-#include "psa_util_internal.h"
-
 #if defined(MBEDTLS_ASN1_PARSE_C) && defined(MBEDTLS_CIPHER_C)
 
 static int pkcs12_parse_pbe_params(mbedtls_asn1_buf *params,

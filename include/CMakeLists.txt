@@ -3,7 +3,6 @@ option(INSTALL_MBEDTLS_HEADERS "Install Mbed TLS headers." ON)
 if(INSTALL_MBEDTLS_HEADERS)
 
     file(GLOB headers "mbedtls/*.h")
-    file(GLOB psa_headers "psa/*.h")
 
     install(FILES ${headers}
         DESTINATION include/mbedtls

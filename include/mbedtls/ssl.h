@@ -29,7 +29,6 @@
 #if defined(MBEDTLS_HAVE_TIME)
 #include "mbedtls/platform_time.h"
 #endif
-#include "psa/crypto.h"
 #define MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS -0x7000
 #define MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE -0x7080
 #define MBEDTLS_ERR_SSL_BAD_INPUT_DATA -0x7100
@@ -381,7 +380,7 @@ union mbedtls_ssl_premaster_secret {
 #endif
 };
 #define MBEDTLS_PREMASTER_SIZE sizeof(union mbedtls_ssl_premaster_secret)
-#define MBEDTLS_TLS1_3_MD_MAX_SIZE PSA_HASH_MAX_SIZE
+#define MBEDTLS_TLS1_3_MD_MAX_SIZE 64u
 #define MBEDTLS_SSL_SEQUENCE_NUMBER_LEN 8
 #ifdef __cplusplus
 extern "C" {
