@@ -1,0 +1,2 @@
+Bugfix
+    * CMake now installs headers to `CMAKE_INSTALL_INCLUDEDIR` instead of the hard-coded `include` directory.
