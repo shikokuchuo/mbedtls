@@ -8,7 +8,7 @@ add_library(${everest_target}
 target_include_directories(${everest_target}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<BUILD_INTERFACE:${MBEDTLS_DIR}/include>
-         $<INSTALL_INTERFACE:include>
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE include/everest
           include/everest/kremlib
           ${MBEDTLS_DIR}/library/)
