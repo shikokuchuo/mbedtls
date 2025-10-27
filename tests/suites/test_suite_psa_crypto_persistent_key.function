@@ -466,7 +466,7 @@ void load_primed_storage(int32_t owner_id,
             TEST_EQUAL(file_status, PSA_ERROR_INVALID_ARGUMENT);
         }
     } else if (KEY_ID_IN_RESERVED_FILE_ID_RANGE(key_id_arg) &&
-        file_status == PSA_SUCCESS) {
+               file_status == PSA_SUCCESS) {
         /* The key ID corresponds to a reserved file (e.g. transaction
          * log or entropy seed). Don't corrupt that file. */
     } else {
