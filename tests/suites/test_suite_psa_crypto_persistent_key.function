@@ -57,6 +57,9 @@ typedef struct {
     uint8_t key_data[];
 } psa_persistent_key_storage_format;
 
+const size_t persistent_key_payload_offset =
+    offsetof(psa_persistent_key_storage_format, key_data);
+
 /* END_HEADER */
 
 /* BEGIN_DEPENDENCIES
@@ -439,19 +442,29 @@ void load_primed_storage(int32_t owner_id,
 
     PSA_INIT();
 
-#if !defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG) && \
-    defined(MBEDTLS_CTR_DRBG_C) && \
-    defined(MBEDTLS_CTR_DRBG_USE_PSA_CRYPTO)
-    /* Skip this test if we happened to pick the volatile key used by the
-     * PSA RNG, if there is one. */
-    if (owner_id == 0 && psa_key_id_is_volatile(key_id)) {
-        if (psa_get_key_attributes(key_id, &attributes) == PSA_SUCCESS) {
-            mbedtls_test_skip("Volatile key already in use",
-                              __LINE__, __FILE__);
-            goto exit;
-        }
+    /* This is the start of the test case, so normally, no key exists.
+     * The test data is based on the assumption that the key doesn't exist.
+     * However, there are some cases where a key does exist:
+     * - A volatile key used by the PSA RNG.
+     * - A built-in key provided by the platform (in our test code:
+     *   mbedtls_psa_platform_get_builtin_key() in platform_builtin_keys.c).
+     * In such cases, we'll have different expectations.
+     */
+    int key_already_existed =
+        psa_get_key_attributes(key_id, &attributes) == PSA_SUCCESS;
+    if (key_already_existed) {
+        expected_attributes_status = PSA_SUCCESS;
+        expected_export_status =
+            (psa_get_key_usage_flags(&attributes) & PSA_KEY_USAGE_EXPORT ?
+             PSA_SUCCESS :
+             PSA_KEY_TYPE_IS_PUBLIC_KEY(psa_get_key_type(&attributes)) ?
+             PSA_SUCCESS :
+             PSA_ERROR_NOT_PERMITTED);
     }
-#endif
+    /* In case this is a built-in key, psa_get_key_attributes()
+     * loads it into the cache. Purge the cache to make sure the loading
+     * code gets triggered. */
+    psa_purge_key(key_id);
 
     /* Prime the storage. */
     psa_status_t file_status = psa_its_get_info(uid, &info);
@@ -477,13 +490,26 @@ void load_primed_storage(int32_t owner_id,
     /* Reading attributes should work for any valid key. */
     TEST_EQUAL(psa_get_key_attributes(key_id, &attributes),
                expected_attributes_status);
-    if (expected_attributes_status == PSA_SUCCESS) {
+    if (expected_attributes_status == PSA_SUCCESS && !key_already_existed) {
         /* It's not our job here to validate the attributes, but do
          * sanity-check the attributes related to persistence. */
         TEST_ASSERT(mbedtls_svc_key_id_equal(key_id,
                                              psa_get_key_id(&attributes)));
         TEST_EQUAL(psa_get_key_lifetime(&attributes),
                    PSA_KEY_LIFETIME_PERSISTENT);
+    }
+
+    /* Extract the key material from the file.
+     * We assume that the file uses the standard key representation in
+     * storage, which is always the case at the time of writing.
+     * If the file is truncated, there is no key material, and we just
+     * declare an empty buffer here.
+     */
+    const uint8_t *payload = NULL;
+    size_t payload_length = 0;
+    if (content->len >= persistent_key_payload_offset) {
+        payload = content->x + persistent_key_payload_offset;
+        payload_length = content->len - persistent_key_payload_offset;
     }
 
     /* Exporting should work for a valid key that has export permission. */
@@ -497,26 +523,45 @@ void load_primed_storage(int32_t owner_id,
                               key_data, key_data_size, &key_data_length),
                expected_export_status);
     if (expected_export_status == PSA_SUCCESS) {
-        TEST_ASSERT(key_data_length != 0);
+        if (key_already_existed) {
+            /* The key already existed. We don't know what it is,
+             * but check that it is not what we put in storage. */
+            TEST_ASSERT(key_data_length != payload_length ||
+                        memcmp(key_data, payload, payload_length));
+        } else {
+            TEST_MEMORY_COMPARE(key_data, key_data_length,
+                                payload, payload_length);
+        }
     }
     /* Assert that the data length is sensible even if export failed.
      * This reduces the risk of memory corruption if an application
      * doesn't check the return status of export(). */
     TEST_LE_U(key_data_length, key_data_size);
 
-    /* Destroying the key should work even for malformed content.
-     * But it should not work for reserved file IDs. */
-    TEST_EQUAL(psa_destroy_key(key_id), expected_destroy_status);
-    if (uid == 0) {
-        /* Invalid file UID. No point in asserting anything about the file. */
-    } else if (expected_destroy_status == PSA_SUCCESS) {
-        file_status = psa_its_get_info(uid, &info);
-        if (key_id_arg == 0) {
-            /* psa_destroy_key(0) is defined as a no-op, so it should not
-             * affect the file. */
-            TEST_EQUAL(file_status, PSA_SUCCESS);
-        } else {
-            TEST_EQUAL(file_status, PSA_ERROR_DOES_NOT_EXIST);
+    if (key_already_existed) {
+        /* There was a key with the key ID under test, for example a key
+         * used by the PSA RNG. Don't disrupt whatever is using that key.
+         * Pure the key cache: this is necessary if the key was a built-in
+         * key which got loaded into the cache by the get_attributes and
+         * export calls above, otherwise PSA_DONE() would legitimately
+         * complain about a non-empty cache.
+         */
+        psa_purge_key(key_id);
+    } else {
+        /* Destroying the key should work even for malformed content.
+         * But it should not work for reserved file IDs. */
+        TEST_EQUAL(psa_destroy_key(key_id), expected_destroy_status);
+        if (uid == 0) {
+            /* Invalid file UID. No point in asserting anything about the file. */
+        } else if (expected_destroy_status == PSA_SUCCESS) {
+            file_status = psa_its_get_info(uid, &info);
+            if (key_id_arg == 0) {
+                /* psa_destroy_key(0) is defined as a no-op, so it should not
+                 * affect the file. */
+                TEST_EQUAL(file_status, PSA_SUCCESS);
+            } else {
+                TEST_EQUAL(file_status, PSA_ERROR_DOES_NOT_EXIST);
+            }
         }
     }
 
