@@ -17,22 +17,12 @@ psed() {
 }
 
 #### .gitignore processing ####
-
-GITIGNORES=$(find . -name ".gitignore")
-for GITIGNORE in $GITIGNORES; do
-        psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' $GITIGNORE
-        psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' $GITIGNORE
-        psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' $GITIGNORE
+for GITIGNORE in $(git ls-files --recurse-submodules -- '*.gitignore'); do
+        psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' "$GITIGNORE"
+        psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
+        psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
 done
 
 #### Build scripts ####
-
-# GEN_FILES defaults on (non-empty) in development, off (empty) in releases
-    r=''
-
-psed "s/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1$r/" Makefile */Makefile
-
-# GEN_FILES defaults on in development, off in releases
-    r='OFF'
-
-psed "/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *\"[^\"]*\"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1$r/" CMakeLists.txt
+psed '/[Oo][Ff][Ff] in development/! s/^\( *GEN_FILES[ ?:]*= *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' Makefile library/Makefile
+psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' CMakeLists.txt tf-psa-crypto/CMakeLists.txt
