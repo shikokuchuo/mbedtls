@@ -34,5 +34,6 @@ for GITIGNORE in $(git ls-files --recurse-submodules -- '*.gitignore'); do
 done
 
 #### Build scripts ####
-psed '/[Oo][Ff][Ff] in development/! s/^\( *GEN_FILES[ ?:]*= *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' Makefile library/Makefile
-psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' CMakeLists.txt tf-psa-crypto/CMakeLists.txt
+psed 's/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1/' Makefile */Makefile
+psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' CMakeLists.txt
+
