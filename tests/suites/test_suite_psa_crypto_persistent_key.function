@@ -568,7 +568,11 @@ void load_primed_storage(int32_t owner_id,
 exit:
     psa_reset_key_attributes(&attributes);
     PSA_DONE();
-    psa_its_remove(uid);
+    if (!KEY_ID_IN_RESERVED_FILE_ID_RANGE(key_id_arg)) {
+        /* The key ID corresponds to a reserved file (e.g. transaction
+         * log or entropy seed). Don't corrupt that file. */
+        psa_its_remove(uid);
+    }
     mbedtls_free(key_data);
 }
 /* END_CASE */
