@@ -1268,6 +1268,35 @@ cleanup:
     return 0;
 }
 
+/* Generate random A and B such that A^-1 = B mod N */
+static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
+                                     mbedtls_mpi *A,
+                                     mbedtls_mpi *B,
+                                     int (*f_rng)(void *, unsigned char *, size_t),
+                                     void *p_rng)
+{
+    int ret, count = 0;
+    mbedtls_mpi G;
+
+    mbedtls_mpi_init(&G);
+
+    mbedtls_mpi_lset(&G, 0);
+    do {
+        if (count++ > 10) {
+            ret = MBEDTLS_ERR_RSA_RNG_FAILED;
+            goto cleanup;
+        }
+
+        MBEDTLS_MPI_CHK(mbedtls_mpi_random(A, 1, &ctx->N, f_rng, p_rng));
+        MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, B, A, &ctx->N));
+    } while (mbedtls_mpi_cmp_int(&G, 1) != 0);
+
+cleanup:
+    mbedtls_mpi_free(&G);
+
+    return ret;
+}
+
 /*
  * Generate or update blinding values, see section 10 of:
  *  KOCHER, Paul C. Timing attacks on implementations of Diffie-Hellman, RSA,
@@ -1277,10 +1306,7 @@ cleanup:
 static int rsa_prepare_blinding(mbedtls_rsa_context *ctx,
                                 int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
 {
-    int ret, count = 0;
-    mbedtls_mpi R;
-
-    mbedtls_mpi_init(&R);
+    int ret;
 
     if (ctx->Vf.p != NULL) {
         /* We already have blinding values, just update them by squaring */
@@ -1288,30 +1314,17 @@ static int rsa_prepare_blinding(mbedtls_rsa_context *ctx,
         MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&ctx->Vi, &ctx->Vi, &ctx->N));
         MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&ctx->Vf, &ctx->Vf, &ctx->Vf));
         MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&ctx->Vf, &ctx->Vf, &ctx->N));
-
         goto cleanup;
     }
 
     /* Unblinding value: Vf = random number, invertible mod N */
-    mbedtls_mpi_lset(&R, 0);
-    do {
-        if (count++ > 10) {
-            ret = MBEDTLS_ERR_RSA_RNG_FAILED;
-            goto cleanup;
-        }
-
-        MBEDTLS_MPI_CHK(mbedtls_mpi_random(&ctx->Vf, 1, &ctx->N, f_rng, p_rng));
-        MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&R, &ctx->Vi, &ctx->Vf, &ctx->N));
-    } while (mbedtls_mpi_cmp_int(&R, 1) != 0);
+    MBEDTLS_MPI_CHK(rsa_gen_rand_with_inverse(ctx, &ctx->Vf, &ctx->Vi, f_rng, p_rng));
 
     /* Blinding value: Vi = Vf^(-e) mod N
      * (Vi already contains Vf^-1 at this point) */
     MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(&ctx->Vi, &ctx->Vi, &ctx->E, &ctx->N, &ctx->RN));
 
-
 cleanup:
-    mbedtls_mpi_free(&R);
-
     return ret;
 }
 
