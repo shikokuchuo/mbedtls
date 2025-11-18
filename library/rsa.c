@@ -1268,6 +1268,38 @@ cleanup:
     return 0;
 }
 
+#if !defined(MBEDTLS_RSA_NO_CRT)
+/*
+ * Compute T such that T = TP mod P and T = TP mod Q.
+ * (This is the Chinese Remainder Theorem - CRT.)
+ *
+ * WARNING: uses TP as a temporary, so its value is lost!
+ */
+static int rsa_apply_crt(mbedtls_mpi *T,
+                         mbedtls_mpi *TP,
+                         const mbedtls_mpi *TQ,
+                         const mbedtls_rsa_context *ctx)
+{
+    int ret;
+
+    /*
+     * T = (TP - TQ) * (Q^-1 mod P) mod P
+     */
+    MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(T, TP, TQ));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(TP, T, &ctx->QP));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(T, TP, &ctx->P));
+
+    /*
+     * T = TQ + T * Q
+     */
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(TP, T, &ctx->Q));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(T, TQ, TP));
+
+cleanup:
+    return ret;
+}
+#endif
+
 /* Generate random A and B such that A^-1 = B mod N */
 static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
                                      mbedtls_mpi *A,
@@ -1524,19 +1556,7 @@ int mbedtls_rsa_private(mbedtls_rsa_context *ctx,
 
     MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(&TP, &T, &DP_blind, &ctx->P, &ctx->RP));
     MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(&TQ, &T, &DQ_blind, &ctx->Q, &ctx->RQ));
-
-    /*
-     * T = (TP - TQ) * (Q^-1 mod P) mod P
-     */
-    MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(&T, &TP, &TQ));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&TP, &T, &ctx->QP));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&T, &TP, &ctx->P));
-
-    /*
-     * T = TQ + T * Q
-     */
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&TP, &T, &ctx->Q));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&T, &TQ, &TP));
+    MBEDTLS_MPI_CHK(rsa_apply_crt(&T, &TP, &TQ, ctx));
 #endif /* MBEDTLS_RSA_NO_CRT */
 
     /* Verify the result to prevent glitching attacks. */
