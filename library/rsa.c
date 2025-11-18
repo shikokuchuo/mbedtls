@@ -1307,6 +1307,7 @@ static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
                                      int (*f_rng)(void *, unsigned char *, size_t),
                                      void *p_rng)
 {
+#if defined(MBEDTLS_RSA_NO_CRT)
     int ret, count = 0;
     mbedtls_mpi G;
 
@@ -1327,6 +1328,31 @@ cleanup:
     mbedtls_mpi_free(&G);
 
     return ret;
+#else
+    int ret;
+    mbedtls_mpi Ap, Aq, Bp, Bq;
+
+    mbedtls_mpi_init(&Ap); mbedtls_mpi_init(&Aq);
+    mbedtls_mpi_init(&Bp); mbedtls_mpi_init(&Bq);
+
+    /* Generate Ap in [1, P) and compute Bp = Ap^-1 mod P */
+    MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Ap, 1, &ctx->P, f_rng, p_rng));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(NULL, &Bp, &Ap, &ctx->P));
+
+    /* Generate Ap in [1, Q) and compute Bq = Aq^-1 mod P */
+    MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Aq, 1, &ctx->Q, f_rng, p_rng));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(NULL, &Bq, &Aq, &ctx->Q));
+
+    /* Reconstruct A and B */
+    MBEDTLS_MPI_CHK(rsa_apply_crt(A, &Ap, &Aq, ctx));
+    MBEDTLS_MPI_CHK(rsa_apply_crt(B, &Bp, &Bq, ctx));
+
+cleanup:
+    mbedtls_mpi_free(&Ap); mbedtls_mpi_free(&Aq);
+    mbedtls_mpi_free(&Bp); mbedtls_mpi_free(&Bq);
+
+    return ret;
+#endif
 }
 
 /*
