@@ -1307,7 +1307,7 @@ static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
                                      void *p_rng)
 {
 #if defined(MBEDTLS_RSA_NO_CRT)
-    int ret, count = 0;
+    int ret;
     mbedtls_mpi G;
 
     mbedtls_mpi_init(&G);
@@ -1317,7 +1317,7 @@ static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
 
     if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
         /* This happens if we're unlucky enough to draw a multiple of P or Q,
-         * of it one of them is not a prime and G is one of its factors. */
+         * or if one of them is not a prime and G is one of its factors. */
         ret = MBEDTLS_ERR_RSA_RNG_FAILED;
         goto cleanup;
     }
