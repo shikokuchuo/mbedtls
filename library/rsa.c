@@ -1101,7 +1101,6 @@ int mbedtls_rsa_gen_key(mbedtls_rsa_context *ctx,
          * if it exists (FIPS 186-4 §B.3.1 criterion 2(a)) */
         ret = mbedtls_rsa_deduce_private_exponent(&ctx->P, &ctx->Q, &ctx->E, &ctx->D);
         if (ret == MBEDTLS_ERR_MPI_NOT_ACCEPTABLE) {
-            mbedtls_mpi_lset(&ctx->D, 0); /* needed for the next call */
             continue;
         }
         if (ret != 0) {
