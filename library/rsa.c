@@ -1313,16 +1313,15 @@ static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
 
     mbedtls_mpi_init(&G);
 
-    mbedtls_mpi_lset(&G, 0);
-    do {
-        if (count++ > 10) {
-            ret = MBEDTLS_ERR_RSA_RNG_FAILED;
-            goto cleanup;
-        }
+    MBEDTLS_MPI_CHK(mbedtls_mpi_random(A, 1, &ctx->N, f_rng, p_rng));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, B, A, &ctx->N));
 
-        MBEDTLS_MPI_CHK(mbedtls_mpi_random(A, 1, &ctx->N, f_rng, p_rng));
-        MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, B, A, &ctx->N));
-    } while (mbedtls_mpi_cmp_int(&G, 1) != 0);
+    if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
+        /* This happens if we're unlucky enough to draw a multiple of P or Q,
+         * of it one of them is not a prime and G is one of its factors. */
+        ret = MBEDTLS_ERR_RSA_RNG_FAILED;
+        goto cleanup;
+    }
 
 cleanup:
     mbedtls_mpi_free(&G);
@@ -1330,18 +1329,29 @@ cleanup:
     return ret;
 #else
     int ret;
-    mbedtls_mpi Ap, Aq, Bp, Bq;
+    mbedtls_mpi Ap, Aq, Bp, Bq, G;
 
     mbedtls_mpi_init(&Ap); mbedtls_mpi_init(&Aq);
     mbedtls_mpi_init(&Bp); mbedtls_mpi_init(&Bq);
+    mbedtls_mpi_init(&G);
 
     /* Generate Ap in [1, P) and compute Bp = Ap^-1 mod P */
     MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Ap, 1, &ctx->P, f_rng, p_rng));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(NULL, &Bp, &Ap, &ctx->P));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, &Bp, &Ap, &ctx->P));
+    if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
+        /* This can only happen if P was not a prime. */
+        ret = MBEDTLS_ERR_RSA_RNG_FAILED;
+        goto cleanup;
+    }
 
     /* Generate Ap in [1, Q) and compute Bq = Aq^-1 mod P */
     MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Aq, 1, &ctx->Q, f_rng, p_rng));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(NULL, &Bq, &Aq, &ctx->Q));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, &Bq, &Aq, &ctx->Q));
+    if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
+        /* This can only happen if Q was not a prime. */
+        ret = MBEDTLS_ERR_RSA_RNG_FAILED;
+        goto cleanup;
+    }
 
     /* Reconstruct A and B */
     MBEDTLS_MPI_CHK(rsa_apply_crt(A, &Ap, &Aq, ctx));
@@ -1350,6 +1360,7 @@ cleanup:
 cleanup:
     mbedtls_mpi_free(&Ap); mbedtls_mpi_free(&Aq);
     mbedtls_mpi_free(&Bp); mbedtls_mpi_free(&Bq);
+    mbedtls_mpi_free(&G);
 
     return ret;
 #endif
