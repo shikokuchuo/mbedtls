@@ -1271,28 +1271,26 @@ cleanup:
 /*
  * Compute T such that T = TP mod P and T = TQ mod Q.
  * (This is the Chinese Remainder Theorem - CRT.)
- *
- * WARNING: uses TP as a temporary, so its value is lost!
  */
 static int rsa_apply_crt(mbedtls_mpi *T,
-                         mbedtls_mpi *TP,
+                         const mbedtls_mpi *TP,
                          const mbedtls_mpi *TQ,
                          const mbedtls_rsa_context *ctx)
 {
     int ret;
 
     /*
-     * T = (TP - TQ) * (Q^-1 mod P) mod P
+     * Set T = ((TP - TQ) * (Q^-1 mod P) mod P) * Q + TQ
+     *
+     * That way we have both:
+     * mod P: T = (TP - TQ) * (Q^-1 * Q) + TQ = (TP - TQ) * 1 + TQ = TP
+     * mod Q: T = (...) * Q + TQ = TQ
      */
-    MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(T, TP, TQ));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(TP, T, &ctx->QP));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(T, TP, &ctx->P));
-
-    /*
-     * T = TQ + T * Q
-     */
-    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(TP, T, &ctx->Q));
-    MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(T, TQ, TP));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(T, TP, TQ));        // T = TP - TQ
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(T, T, &ctx->QP));   // T *= Q^-1 mod P
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(T, T, &ctx->P));    // T %= P
+    MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(T, T, &ctx->Q));    // T *= Q
+    MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(T, T, TQ));         // T += TQ
 
 cleanup:
     return ret;
