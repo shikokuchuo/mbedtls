@@ -1269,7 +1269,7 @@ cleanup:
 
 #if !defined(MBEDTLS_RSA_NO_CRT)
 /*
- * Compute T such that T = TP mod P and T = TP mod Q.
+ * Compute T such that T = TP mod P and T = TQ mod Q.
  * (This is the Chinese Remainder Theorem - CRT.)
  *
  * WARNING: uses TP as a temporary, so its value is lost!
@@ -1343,7 +1343,7 @@ cleanup:
         goto cleanup;
     }
 
-    /* Generate Ap in [1, Q) and compute Bq = Aq^-1 mod P */
+    /* Generate Aq in [1, Q) and compute Bq = Aq^-1 mod Q */
     MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Aq, 1, &ctx->Q, f_rng, p_rng));
     MBEDTLS_MPI_CHK(mbedtls_mpi_gcd_modinv_odd(&G, &Bq, &Aq, &ctx->Q));
     if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
