@@ -1315,7 +1315,8 @@ static int rsa_gen_rand_with_inverse(const mbedtls_rsa_context *ctx,
 
     if (mbedtls_mpi_cmp_int(&G, 1) != 0) {
         /* This happens if we're unlucky enough to draw a multiple of P or Q,
-         * or if one of them is not a prime and G is one of its factors. */
+         * or if (at least) one of them is not a prime, and we drew a multiple
+         * of one of its factors. */
         ret = MBEDTLS_ERR_RSA_RNG_FAILED;
         goto cleanup;
     }
@@ -1331,6 +1332,20 @@ cleanup:
     mbedtls_mpi_init(&Ap); mbedtls_mpi_init(&Aq);
     mbedtls_mpi_init(&Bp); mbedtls_mpi_init(&Bq);
     mbedtls_mpi_init(&G);
+
+    /*
+     * Instead of generating A, B = A^-1 (mod N) directly, generate one Ap, Bp
+     * pair (mod P) and one pair (mod Q) and use Chinese Remainder Theorem to
+     * construct an A and B from those.
+     *
+     * This works because the CRT correspondence is a ring isomorphism between
+     * Z/NZ (integers mod N) and Z/PZ x Z/QZ (pairs of integers mod P and Q):
+     * - it is a bijection (one-to-one correspondence);
+     * - doing a ring operation (modular +, -, *, ^-1 when possible) on one side is
+     *   the same as doing it on the other side.
+     * So, drawing uniformly at random an invertible A mod N is the same as
+     * drawing uniformly at random pairs of invertible Ap mod P, Aq mod Q.
+     */
 
     /* Generate Ap in [1, P) and compute Bp = Ap^-1 mod P */
     MBEDTLS_MPI_CHK(mbedtls_mpi_random(&Ap, 1, &ctx->P, f_rng, p_rng));
