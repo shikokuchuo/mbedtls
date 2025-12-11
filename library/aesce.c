@@ -5,10 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#include "common.h"
-
-#if defined(MBEDTLS_AESCE_C)
-
 #if defined(__clang__) &&  (__clang_major__ >= 4)
 
 /* Ideally, we would simply use MBEDTLS_ARCH_IS_ARMV8_A in the following #if,
@@ -41,6 +37,10 @@
 #endif
 
 #endif /* defined(__clang__) &&  (__clang_major__ >= 4) */
+
+#include "common.h"
+
+#if defined(MBEDTLS_AESCE_C)
 
 #include <string.h>
 
