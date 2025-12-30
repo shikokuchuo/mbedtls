@@ -14,16 +14,12 @@ set(src_crypto
     aes.c
     aesni.c
     aesce.c
-    aria.c
     asn1parse.c
     asn1write.c
     base64.c
     bignum.c
     bignum_core.c
-    bignum_mod.c
-    bignum_mod_raw.c
     block_cipher.c
-    camellia.c
     ccm.c
     chacha20.c
     chachapoly.c
@@ -36,21 +32,16 @@ set(src_crypto
     dhm.c
     ecdh.c
     ecdsa.c
-    ecjpake.c
     ecp.c
     ecp_curves.c
-    ecp_curves_new.c
     entropy.c
     entropy_poll.c
     error.c
     gcm.c
     hkdf.c
     hmac_drbg.c
-    lmots.c
-    lms.c
     md.c
     md5.c
-    memory_buffer_alloc.c
     nist_kw.c
     oid.c
     padlock.c
@@ -81,13 +72,11 @@ set(src_crypto
     psa_crypto_storage.c
     psa_its_file.c
     psa_util.c
-    ripemd160.c
     rsa.c
     rsa_alt_helpers.c
     sha1.c
     sha256.c
     sha512.c
-    sha3.c
     threading.c
     timing.c
     version.c
@@ -107,9 +96,6 @@ set(src_x509
 )
 
 set(src_tls
-    debug.c
-    mps_reader.c
-    mps_trace.c
     net_sockets.c
     ssl_cache.c
     ssl_ciphersuites.c

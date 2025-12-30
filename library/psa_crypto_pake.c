@@ -15,7 +15,9 @@
 #include "psa_crypto_pake.h"
 #include "psa_crypto_slot_management.h"
 
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_JPAKE)
 #include <mbedtls/ecjpake.h>
+#endif
 #include "psa_util_internal.h"
 
 #include <mbedtls/platform.h>
