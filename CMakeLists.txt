@@ -18,7 +18,7 @@
 
 # We specify a minimum requirement of 3.10.2, but for now use 3.5.1 here
 # until our infrastructure catches up.
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 include(CMakePackageConfigHelpers)
 
@@ -67,6 +67,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_COLOR_MAKEFILE OFF)
 set(CMAKE_INSTALL_MESSAGE NEVER)
+set(CMAKE_STATIC_LIBRARY_SUFFIX ".b")
 
 option(UNSAFE_BUILD "Allow unsafe builds. These builds ARE NOT SECURE." OFF)
 

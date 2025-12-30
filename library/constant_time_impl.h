@@ -16,11 +16,6 @@
 #include "mbedtls/bignum.h"
 #endif
 
-#if defined(MBEDTLS_COMPILER_IS_GCC) && (__GNUC__ > 4)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wredundant-decls"
-#endif
-
 #if defined(MBEDTLS_HAVE_ASM) && defined(__GNUC__) && (!defined(__ARMCC_VERSION) || \
     __ARMCC_VERSION >= 6000000)
 #define MBEDTLS_CT_ASM
