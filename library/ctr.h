@@ -12,16 +12,9 @@
 
 #include "common.h"
 
-/**
- * \brief               Increment a big-endian 16-byte value.
- *                      This is quite performance-sensitive for AES-CTR and CTR-DRBG.
- *
- * \param n             A 16-byte value to be incremented.
- */
 static inline void mbedtls_ctr_increment_counter(uint8_t n[16])
 {
-    // The 32-bit version seems to perform about the same as a 64-bit version
-    // on 64-bit architectures, so no need to define a 64-bit version.
+
     for (int i = 3;; i--) {
         uint32_t x = MBEDTLS_GET_UINT32_BE(n, i << 2);
         x += 1;
@@ -32,4 +25,4 @@ static inline void mbedtls_ctr_increment_counter(uint8_t n[16])
     }
 }
 
-#endif /* MBEDTLS_CTR_H */
+#endif

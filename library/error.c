@@ -170,7 +170,6 @@
 #include "mbedtls/x509.h"
 #endif
 
-
 const char *mbedtls_high_level_strerr(int error_code)
 {
     int high_level_error_code;
@@ -179,11 +178,10 @@ const char *mbedtls_high_level_strerr(int error_code)
         error_code = -error_code;
     }
 
-    /* Extract the high-level part from the error code. */
     high_level_error_code = error_code & 0xFF80;
 
     switch (high_level_error_code) {
-    /* Begin Auto-Generated Code. */
+
     #if defined(MBEDTLS_CIPHER_C)
         case -(MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE):
             return( "CIPHER - The selected feature is not available" );
@@ -199,7 +197,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "CIPHER - Authentication failed (for AEAD modes)" );
         case -(MBEDTLS_ERR_CIPHER_INVALID_CONTEXT):
             return( "CIPHER - The context is invalid. For example, because it was freed" );
-#endif /* MBEDTLS_CIPHER_C */
+#endif
 
 #if defined(MBEDTLS_DHM_C)
         case -(MBEDTLS_ERR_DHM_BAD_INPUT_DATA):
@@ -222,7 +220,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "DHM - Read or write of file failed" );
         case -(MBEDTLS_ERR_DHM_SET_GROUP_FAILED):
             return( "DHM - Setting the modulus and generator failed" );
-#endif /* MBEDTLS_DHM_C */
+#endif
 
 #if defined(MBEDTLS_ECP_C)
         case -(MBEDTLS_ERR_ECP_BAD_INPUT_DATA):
@@ -243,7 +241,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "ECP - The buffer contains a valid signature followed by more data" );
         case -(MBEDTLS_ERR_ECP_IN_PROGRESS):
             return( "ECP - Operation in progress, call again with the same parameters to continue" );
-#endif /* MBEDTLS_ECP_C */
+#endif
 
 #if defined(MBEDTLS_MD_C)
         case -(MBEDTLS_ERR_MD_FEATURE_UNAVAILABLE):
@@ -254,7 +252,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "MD - Failed to allocate memory" );
         case -(MBEDTLS_ERR_MD_FILE_IO_ERROR):
             return( "MD - Opening or reading of file failed" );
-#endif /* MBEDTLS_MD_C */
+#endif
 
 #if defined(MBEDTLS_PEM_PARSE_C) || defined(MBEDTLS_PEM_WRITE_C)
         case -(MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT):
@@ -275,7 +273,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PEM - Unavailable feature, e.g. hashing/encryption combination" );
         case -(MBEDTLS_ERR_PEM_BAD_INPUT_DATA):
             return( "PEM - Bad input parameters to function" );
-#endif /* MBEDTLS_PEM_PARSE_C || MBEDTLS_PEM_WRITE_C */
+#endif
 
 #if defined(MBEDTLS_PK_C)
         case -(MBEDTLS_ERR_PK_ALLOC_FAILED):
@@ -308,7 +306,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PK - The buffer contains a valid signature followed by more data" );
         case -(MBEDTLS_ERR_PK_BUFFER_TOO_SMALL):
             return( "PK - The output buffer is too small" );
-#endif /* MBEDTLS_PK_C */
+#endif
 
 #if defined(MBEDTLS_PKCS12_C)
         case -(MBEDTLS_ERR_PKCS12_BAD_INPUT_DATA):
@@ -319,7 +317,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PKCS12 - PBE ASN.1 data not as expected" );
         case -(MBEDTLS_ERR_PKCS12_PASSWORD_MISMATCH):
             return( "PKCS12 - Given private key password does not allow for correct decryption" );
-#endif /* MBEDTLS_PKCS12_C */
+#endif
 
 #if defined(MBEDTLS_PKCS5_C)
         case -(MBEDTLS_ERR_PKCS5_BAD_INPUT_DATA):
@@ -330,7 +328,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PKCS5 - Requested encryption or digest alg not available" );
         case -(MBEDTLS_ERR_PKCS5_PASSWORD_MISMATCH):
             return( "PKCS5 - Given private key password does not allow for correct decryption" );
-#endif /* MBEDTLS_PKCS5_C */
+#endif
 
 #if defined(MBEDTLS_PKCS7_C)
         case -(MBEDTLS_ERR_PKCS7_INVALID_FORMAT):
@@ -357,7 +355,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PKCS7 - Verification Failed" );
         case -(MBEDTLS_ERR_PKCS7_CERT_DATE_INVALID):
             return( "PKCS7 - The PKCS #7 date issued/expired dates are invalid" );
-#endif /* MBEDTLS_PKCS7_C */
+#endif
 
 #if defined(MBEDTLS_RSA_C)
         case -(MBEDTLS_ERR_RSA_BAD_INPUT_DATA):
@@ -378,7 +376,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "RSA - The output buffer for decryption is not large enough" );
         case -(MBEDTLS_ERR_RSA_RNG_FAILED):
             return( "RSA - The random generator failed to generate non-zeros" );
-#endif /* MBEDTLS_RSA_C */
+#endif
 
 #if defined(MBEDTLS_SSL_TLS_C)
         case -(MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS):
@@ -481,7 +479,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "SSL - Invalid value in SSL config" );
         case -(MBEDTLS_ERR_SSL_CERTIFICATE_VERIFICATION_WITHOUT_HOSTNAME):
             return( "SSL - Attempt to verify a certificate without an expected hostname. This is usually insecure.  In TLS clients, when a client authenticates a server through its certificate, the client normally checks three things: - the certificate chain must be valid; - the chain must start from a trusted CA; - the certificate must cover the server name that is expected by the client.  Omitting any of these checks is generally insecure, and can allow a malicious server to impersonate a legitimate server.  The third check may be safely skipped in some unusual scenarios, such as networks where eavesdropping is a risk but not active attacks, or a private PKI where the client equally trusts all servers that are accredited by the root CA.  You should call mbedtls_ssl_set_hostname() with the expected server name before starting a TLS handshake on a client (unless the client is set up to only use PSK-based authentication, which does not rely on the host name). If you have determined that server name verification is not required for security in your scenario, call mbedtls_ssl_set_hostname() with \\p NULL as the server name.  This error is raised if all of the following conditions are met:  - A TLS client is configured with the authentication mode #MBEDTLS_SSL_VERIFY_REQUIRED (default). - Certificate authentication is enabled. - The client does not call mbedtls_ssl_set_hostname(). - The configuration option #MBEDTLS_SSL_CLI_ALLOW_WEAK_CERTIFICATE_VERIFICATION_WITHOUT_HOSTNAME is not enabled" );
-#endif /* MBEDTLS_SSL_TLS_C */
+#endif
 
 #if defined(MBEDTLS_X509_USE_C) || defined(MBEDTLS_X509_CREATE_C)
         case -(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE):
@@ -524,8 +522,7 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "X509 - Destination buffer is too small" );
         case -(MBEDTLS_ERR_X509_FATAL_ERROR):
             return( "X509 - A fatal error occurred, eg the chain is too long or the vrfy callback failed" );
-#endif /* MBEDTLS_X509_USE_C || MBEDTLS_X509_CREATE_C */
-        /* End Auto-Generated Code. */
+#endif
 
         default:
             break;
@@ -542,11 +539,10 @@ const char *mbedtls_low_level_strerr(int error_code)
         error_code = -error_code;
     }
 
-    /* Extract the low-level part from the error code. */
     low_level_error_code = error_code & ~0xFF80;
 
     switch (low_level_error_code) {
-    /* Begin Auto-Generated Code. */
+
     #if defined(MBEDTLS_AES_C)
         case -(MBEDTLS_ERR_AES_INVALID_KEY_LENGTH):
             return( "AES - Invalid key length" );
@@ -554,14 +550,14 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "AES - Invalid data input length" );
         case -(MBEDTLS_ERR_AES_BAD_INPUT_DATA):
             return( "AES - Invalid input data" );
-#endif /* MBEDTLS_AES_C */
+#endif
 
 #if defined(MBEDTLS_ARIA_C)
         case -(MBEDTLS_ERR_ARIA_BAD_INPUT_DATA):
             return( "ARIA - Bad input data" );
         case -(MBEDTLS_ERR_ARIA_INVALID_INPUT_LENGTH):
             return( "ARIA - Invalid data input length" );
-#endif /* MBEDTLS_ARIA_C */
+#endif
 
 #if defined(MBEDTLS_ASN1_PARSE_C)
         case -(MBEDTLS_ERR_ASN1_OUT_OF_DATA):
@@ -578,14 +574,14 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "ASN1 - Memory allocation failed" );
         case -(MBEDTLS_ERR_ASN1_BUF_TOO_SMALL):
             return( "ASN1 - Buffer too small when writing ASN.1 data structure" );
-#endif /* MBEDTLS_ASN1_PARSE_C */
+#endif
 
 #if defined(MBEDTLS_BASE64_C)
         case -(MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL):
             return( "BASE64 - Output buffer too small" );
         case -(MBEDTLS_ERR_BASE64_INVALID_CHARACTER):
             return( "BASE64 - Invalid character in input" );
-#endif /* MBEDTLS_BASE64_C */
+#endif
 
 #if defined(MBEDTLS_BIGNUM_C)
         case -(MBEDTLS_ERR_MPI_FILE_IO_ERROR):
@@ -604,33 +600,33 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "BIGNUM - The input arguments are not acceptable" );
         case -(MBEDTLS_ERR_MPI_ALLOC_FAILED):
             return( "BIGNUM - Memory allocation failed" );
-#endif /* MBEDTLS_BIGNUM_C */
+#endif
 
 #if defined(MBEDTLS_CAMELLIA_C)
         case -(MBEDTLS_ERR_CAMELLIA_BAD_INPUT_DATA):
             return( "CAMELLIA - Bad input data" );
         case -(MBEDTLS_ERR_CAMELLIA_INVALID_INPUT_LENGTH):
             return( "CAMELLIA - Invalid data input length" );
-#endif /* MBEDTLS_CAMELLIA_C */
+#endif
 
 #if defined(MBEDTLS_CCM_C)
         case -(MBEDTLS_ERR_CCM_BAD_INPUT):
             return( "CCM - Bad input parameters to the function" );
         case -(MBEDTLS_ERR_CCM_AUTH_FAILED):
             return( "CCM - Authenticated decryption failed" );
-#endif /* MBEDTLS_CCM_C */
+#endif
 
 #if defined(MBEDTLS_CHACHA20_C)
         case -(MBEDTLS_ERR_CHACHA20_BAD_INPUT_DATA):
             return( "CHACHA20 - Invalid input parameter(s)" );
-#endif /* MBEDTLS_CHACHA20_C */
+#endif
 
 #if defined(MBEDTLS_CHACHAPOLY_C)
         case -(MBEDTLS_ERR_CHACHAPOLY_BAD_STATE):
             return( "CHACHAPOLY - The requested operation is not permitted in the current state" );
         case -(MBEDTLS_ERR_CHACHAPOLY_AUTH_FAILED):
             return( "CHACHAPOLY - Authenticated decryption failed: data was not authentic" );
-#endif /* MBEDTLS_CHACHAPOLY_C */
+#endif
 
 #if defined(MBEDTLS_CTR_DRBG_C)
         case -(MBEDTLS_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED):
@@ -641,12 +637,12 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "CTR_DRBG - The input (entropy + additional data) is too large" );
         case -(MBEDTLS_ERR_CTR_DRBG_FILE_IO_ERROR):
             return( "CTR_DRBG - Read or write error in file" );
-#endif /* MBEDTLS_CTR_DRBG_C */
+#endif
 
 #if defined(MBEDTLS_DES_C)
         case -(MBEDTLS_ERR_DES_INVALID_INPUT_LENGTH):
             return( "DES - The data input has an invalid length" );
-#endif /* MBEDTLS_DES_C */
+#endif
 
 #if defined(MBEDTLS_ENTROPY_C)
         case -(MBEDTLS_ERR_ENTROPY_SOURCE_FAILED):
@@ -659,21 +655,21 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "ENTROPY - No strong sources have been added to poll" );
         case -(MBEDTLS_ERR_ENTROPY_FILE_IO_ERROR):
             return( "ENTROPY - Read/write error in file" );
-#endif /* MBEDTLS_ENTROPY_C */
+#endif
 
 #if defined(MBEDTLS_ERROR_C)
         case -(MBEDTLS_ERR_ERROR_GENERIC_ERROR):
             return( "ERROR - Generic error" );
         case -(MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED):
             return( "ERROR - This is a bug in the library" );
-#endif /* MBEDTLS_ERROR_C */
+#endif
 
 #if defined(MBEDTLS_PLATFORM_C)
         case -(MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED):
             return( "PLATFORM - Hardware accelerator failed" );
         case -(MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED):
             return( "PLATFORM - The requested feature is not supported by the platform" );
-#endif /* MBEDTLS_PLATFORM_C */
+#endif
 
 #if defined(MBEDTLS_GCM_C)
         case -(MBEDTLS_ERR_GCM_AUTH_FAILED):
@@ -682,12 +678,12 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "GCM - Bad input parameters to function" );
         case -(MBEDTLS_ERR_GCM_BUFFER_TOO_SMALL):
             return( "GCM - An output buffer is too small" );
-#endif /* MBEDTLS_GCM_C */
+#endif
 
 #if defined(MBEDTLS_HKDF_C)
         case -(MBEDTLS_ERR_HKDF_BAD_INPUT_DATA):
             return( "HKDF - Bad input parameters to function" );
-#endif /* MBEDTLS_HKDF_C */
+#endif
 
 #if defined(MBEDTLS_HMAC_DRBG_C)
         case -(MBEDTLS_ERR_HMAC_DRBG_REQUEST_TOO_BIG):
@@ -698,7 +694,7 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "HMAC_DRBG - Read/write error in file" );
         case -(MBEDTLS_ERR_HMAC_DRBG_ENTROPY_SOURCE_FAILED):
             return( "HMAC_DRBG - The entropy source failed" );
-#endif /* MBEDTLS_HMAC_DRBG_C */
+#endif
 
 #if defined(MBEDTLS_LMS_C)
         case -(MBEDTLS_ERR_LMS_BAD_INPUT_DATA):
@@ -711,7 +707,7 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "LMS - LMS failed to allocate space for a private key" );
         case -(MBEDTLS_ERR_LMS_BUFFER_TOO_SMALL):
             return( "LMS - Input/output buffer is too small to contain requited data" );
-#endif /* MBEDTLS_LMS_C */
+#endif
 
 #if defined(MBEDTLS_NET_C)
         case -(MBEDTLS_ERR_NET_SOCKET_FAILED):
@@ -740,47 +736,46 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "NET - Polling the net context failed" );
         case -(MBEDTLS_ERR_NET_BAD_INPUT_DATA):
             return( "NET - Input invalid" );
-#endif /* MBEDTLS_NET_C */
+#endif
 
 #if defined(MBEDTLS_OID_C)
         case -(MBEDTLS_ERR_OID_NOT_FOUND):
             return( "OID - OID is not found" );
         case -(MBEDTLS_ERR_OID_BUF_TOO_SMALL):
             return( "OID - output buffer is too small" );
-#endif /* MBEDTLS_OID_C */
+#endif
 
 #if defined(MBEDTLS_POLY1305_C)
         case -(MBEDTLS_ERR_POLY1305_BAD_INPUT_DATA):
             return( "POLY1305 - Invalid input parameter(s)" );
-#endif /* MBEDTLS_POLY1305_C */
+#endif
 
 #if defined(MBEDTLS_SHA1_C)
         case -(MBEDTLS_ERR_SHA1_BAD_INPUT_DATA):
             return( "SHA1 - SHA-1 input data was malformed" );
-#endif /* MBEDTLS_SHA1_C */
+#endif
 
 #if defined(MBEDTLS_SHA256_C)
         case -(MBEDTLS_ERR_SHA256_BAD_INPUT_DATA):
             return( "SHA256 - SHA-256 input data was malformed" );
-#endif /* MBEDTLS_SHA256_C */
+#endif
 
 #if defined(MBEDTLS_SHA3_C)
         case -(MBEDTLS_ERR_SHA3_BAD_INPUT_DATA):
             return( "SHA3 - SHA-3 input data was malformed" );
-#endif /* MBEDTLS_SHA3_C */
+#endif
 
 #if defined(MBEDTLS_SHA512_C)
         case -(MBEDTLS_ERR_SHA512_BAD_INPUT_DATA):
             return( "SHA512 - SHA-512 input data was malformed" );
-#endif /* MBEDTLS_SHA512_C */
+#endif
 
 #if defined(MBEDTLS_THREADING_C)
         case -(MBEDTLS_ERR_THREADING_BAD_INPUT_DATA):
             return( "THREADING - Bad input parameters to function" );
         case -(MBEDTLS_ERR_THREADING_MUTEX_ERROR):
             return( "THREADING - Locking / unlocking / free failed with error code" );
-#endif /* MBEDTLS_THREADING_C */
-        /* End Auto-Generated Code. */
+#endif
 
         default:
             break;
@@ -809,7 +804,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
     if (ret & 0xFF80) {
         use_ret = ret & 0xFF80;
 
-        // Translate high level error code.
         high_level_error_description = mbedtls_high_level_strerr(ret);
 
         if (high_level_error_description == NULL) {
@@ -819,12 +813,11 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         }
 
 #if defined(MBEDTLS_SSL_TLS_C)
-        // Early return in case of a fatal error - do not try to translate low
-        // level code.
+
         if (use_ret == -(MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE)) {
             return;
         }
-#endif /* MBEDTLS_SSL_TLS_C */
+#endif
     }
 
     use_ret = ret & ~0xFF80;
@@ -833,9 +826,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         return;
     }
 
-    // If high level code is present, make a concatenation between both
-    // error strings.
-    //
     len = strlen(buf);
 
     if (len > 0) {
@@ -849,7 +839,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
         buflen -= len + 3;
     }
 
-    // Translate low level error code.
     low_level_error_description = mbedtls_low_level_strerr(ret);
 
     if (low_level_error_description == NULL) {
@@ -859,11 +848,8 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
     }
 }
 
-#else /* MBEDTLS_ERROR_C */
+#else
 
-/*
- * Provide a dummy implementation when MBEDTLS_ERROR_C is not defined
- */
 void mbedtls_strerror(int ret, char *buf, size_t buflen)
 {
     ((void) ret);
@@ -873,6 +859,6 @@ void mbedtls_strerror(int ret, char *buf, size_t buflen)
     }
 }
 
-#endif /* MBEDTLS_ERROR_C */
+#endif
 
-#endif /* MBEDTLS_ERROR_C || MBEDTLS_ERROR_STRERROR_DUMMY */
+#endif

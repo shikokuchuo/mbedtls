@@ -1,7 +1,4 @@
 /*
- *  PSA MAC layer on top of Mbed TLS software crypto
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -42,12 +39,6 @@ static psa_status_t psa_hmac_setup_internal(
 
     hmac->alg = hash_alg;
 
-    /* Sanity checks on block_size, to guarantee that there won't be a buffer
-     * overflow below. This should never trigger if the hash algorithm
-     * is implemented correctly. */
-    /* The size checks against the ipad and opad buffers cannot be written
-     * `block_size > sizeof( ipad ) || block_size > sizeof( hmac->opad )`
-     * because that triggers -Wlogical-op on GCC 7.3. */
     if (block_size > sizeof(ipad)) {
         return PSA_ERROR_NOT_SUPPORTED;
     }
@@ -65,23 +56,16 @@ static psa_status_t psa_hmac_setup_internal(
             goto cleanup;
         }
     }
-    /* A 0-length key is not commonly used in HMAC when used as a MAC,
-     * but it is permitted. It is common when HMAC is used in HKDF, for
-     * example. Don't call `memcpy` in the 0-length because `key` could be
-     * an invalid pointer which would make the behavior undefined. */
+
     else if (key_length != 0) {
         memcpy(ipad, key, key_length);
     }
 
-    /* ipad contains the key followed by garbage. Xor and fill with 0x36
-     * to create the ipad value. */
     for (i = 0; i < key_length; i++) {
         ipad[i] ^= 0x36;
     }
     memset(ipad + key_length, 0x36, block_size - key_length);
 
-    /* Copy the key material from ipad to opad, flipping the requisite bits,
-     * and filling the rest of opad with the requisite constant. */
     for (i = 0; i < key_length; i++) {
         hmac->opad[i] = ipad[i] ^ 0x36 ^ 0x5C;
     }
@@ -123,7 +107,6 @@ static psa_status_t psa_hmac_finish_internal(
     if (status != PSA_SUCCESS) {
         return status;
     }
-    /* From here on, tmp needs to be wiped. */
 
     status = psa_hash_setup(&hmac->hash_ctx, hash_alg);
     if (status != PSA_SUCCESS) {
@@ -151,7 +134,7 @@ exit:
     mbedtls_platform_zeroize(tmp, hash_size);
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC)
 static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
@@ -161,8 +144,7 @@ static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
 #if defined(PSA_WANT_KEY_TYPE_DES)
-    /* Mbed TLS CMAC does not accept 3DES with only two keys, nor does it accept
-     * to do CMAC with pure DES, so return NOT_SUPPORTED here. */
+
     if (psa_get_key_type(attributes) == PSA_KEY_TYPE_DES &&
         (psa_get_key_bits(attributes) == 64 ||
          psa_get_key_bits(attributes) == 128)) {
@@ -192,13 +174,11 @@ static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
 exit:
     return mbedtls_to_psa_error(ret);
 }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC)
 
-/* Initialize this driver's MAC operation structure. Once this function has been
- * called, mbedtls_psa_mac_abort can run and will do the right thing. */
 static psa_status_t mac_init(
     mbedtls_psa_mac_operation_t *operation,
     psa_algorithm_t alg)
@@ -212,14 +192,14 @@ static psa_status_t mac_init(
         mbedtls_cipher_init(&operation->ctx.cmac);
         status = PSA_SUCCESS;
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
-        /* We'll set up the hash operation later in psa_hmac_setup_internal. */
+
         operation->ctx.hmac.alg = 0;
         status = PSA_SUCCESS;
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
     {
         (void) operation;
         status = PSA_ERROR_NOT_SUPPORTED;
@@ -234,24 +214,21 @@ static psa_status_t mac_init(
 psa_status_t mbedtls_psa_mac_abort(mbedtls_psa_mac_operation_t *operation)
 {
     if (operation->alg == 0) {
-        /* The object has (apparently) been initialized but it is not
-         * in use. It's ok to call abort on such an object, and there's
-         * nothing to do. */
+
         return PSA_SUCCESS;
     } else
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC)
     if (PSA_ALG_FULL_LENGTH_MAC(operation->alg) == PSA_ALG_CMAC) {
         mbedtls_cipher_free(&operation->ctx.cmac);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
         psa_hmac_abort_internal(&operation->ctx.hmac);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
     {
-        /* Sanity check (shouldn't happen: operation->alg should
-         * always have been initialized to a valid value). */
+
         goto bad_state;
     }
 
@@ -260,10 +237,7 @@ psa_status_t mbedtls_psa_mac_abort(mbedtls_psa_mac_operation_t *operation)
     return PSA_SUCCESS;
 
 bad_state:
-    /* If abort is called on an uninitialized object, we can't trust
-     * anything. Wipe the object in case it contains confidential data.
-     * This may result in a memory leak if a pointer gets overwritten,
-     * but it's too late to do anything about this. */
+
     memset(operation, 0, sizeof(*operation));
     return PSA_ERROR_BAD_STATE;
 }
@@ -276,7 +250,6 @@ static psa_status_t psa_mac_setup(mbedtls_psa_mac_operation_t *operation,
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    /* A context must be freshly initialized before it can be set up. */
     if (operation->alg != 0) {
         return PSA_ERROR_BAD_STATE;
     }
@@ -288,12 +261,11 @@ static psa_status_t psa_mac_setup(mbedtls_psa_mac_operation_t *operation,
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC)
     if (PSA_ALG_FULL_LENGTH_MAC(alg) == PSA_ALG_CMAC) {
-        /* Key buffer size for CMAC is dictated by the key bits set on the
-         * attributes, and previously validated by the core on key import. */
+
         (void) key_buffer_size;
         status = cmac_setup(operation, attributes, key_buffer);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(alg)) {
         status = psa_hmac_setup_internal(&operation->ctx.hmac,
@@ -301,7 +273,7 @@ static psa_status_t psa_mac_setup(mbedtls_psa_mac_operation_t *operation,
                                          key_buffer_size,
                                          PSA_ALG_HMAC_GET_HASH(alg));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
     {
         (void) attributes;
         (void) key_buffer;
@@ -353,16 +325,15 @@ psa_status_t mbedtls_psa_mac_update(
             mbedtls_cipher_cmac_update(&operation->ctx.cmac,
                                        input, input_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
         return psa_hmac_update_internal(&operation->ctx.hmac,
                                         input, input_length);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
     {
-        /* This shouldn't happen if `operation` was initialized by
-         * a setup function. */
+
         (void) input;
         (void) input_length;
         return PSA_ERROR_BAD_STATE;
@@ -383,16 +354,15 @@ static psa_status_t psa_mac_finish_internal(
         mbedtls_platform_zeroize(tmp, sizeof(tmp));
         return mbedtls_to_psa_error(ret);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
         return psa_hmac_finish_internal(&operation->ctx.hmac,
                                         mac, mac_size);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC */
+#endif
     {
-        /* This shouldn't happen if `operation` was initialized by
-         * a setup function. */
+
         (void) operation;
         (void) mac;
         (void) mac_size;
@@ -432,7 +402,6 @@ psa_status_t mbedtls_psa_mac_verify_finish(
         return PSA_ERROR_BAD_STATE;
     }
 
-    /* Consistency check: requested MAC length fits our local buffer */
     if (mac_length > sizeof(actual_mac)) {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
@@ -465,14 +434,7 @@ psa_status_t mbedtls_psa_mac_compute(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
     mbedtls_psa_mac_operation_t operation = MBEDTLS_PSA_MAC_OPERATION_INIT;
-    /* Make sure the whole operation is zeroed.
-     * PSA_MAC_OPERATION_INIT does not necessarily do it fully,
-     * since one field is a union and initializing a union does not
-     * necessarily initialize all of its members.
-     * In multipart operations, this is done in the API functions,
-     * before driver dispatch, since it needs to be done before calling
-     * the driver entry point. Here, we bypass the multipart API,
-     * so it's our job. */
+
     memset(&operation, 0, sizeof(operation));
 
     status = psa_mac_setup(&operation,
@@ -500,6 +462,6 @@ exit:
     return status;
 }
 
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_HMAC || MBEDTLS_PSA_BUILTIN_ALG_CMAC */
+#endif
 
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif

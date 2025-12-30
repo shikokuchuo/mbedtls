@@ -1,8 +1,3 @@
-/**
- * \file ssl_debug_helpers.h
- *
- * \brief Automatically generated helper functions for debugging
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
@@ -17,7 +12,6 @@
 
 #include "mbedtls/ssl.h"
 #include "ssl_misc.h"
-
 
 const char *mbedtls_ssl_states_str(mbedtls_ssl_states in);
 
@@ -52,7 +46,7 @@ void mbedtls_ssl_print_extension(const mbedtls_ssl_context *ssl,
 void mbedtls_ssl_print_ticket_flags(const mbedtls_ssl_context *ssl,
                                     int level, const char *file, int line,
                                     unsigned int flags);
-#endif /* MBEDTLS_SSL_PROTO_TLS1_3 && MBEDTLS_SSL_SESSION_TICKETS */
+#endif
 
 #define MBEDTLS_SSL_PRINT_EXTS(level, hs_msg_type, extensions_mask)            \
     mbedtls_ssl_print_extensions(ssl, level, __FILE__, __LINE__,       \
@@ -78,6 +72,6 @@ void mbedtls_ssl_print_ticket_flags(const mbedtls_ssl_context *ssl,
 #define MBEDTLS_SSL_PRINT_TICKET_FLAGS(level, flags)
 #endif
 
-#endif /* MBEDTLS_DEBUG_C */
+#endif
 
-#endif /* MBEDTLS_SSL_DEBUG_HELPERS_H */
+#endif

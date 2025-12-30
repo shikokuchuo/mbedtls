@@ -4,12 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  DES, on which TDES is based, was originally designed by Horst Feistel
- *  at IBM in 1974, and was adopted as a standard by NIST (formerly NBS).
- *
- *  http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf
- */
 
 #include "common.h"
 
@@ -25,9 +19,6 @@
 
 #if !defined(MBEDTLS_DES_ALT)
 
-/*
- * Expanded DES S-boxes
- */
 static const uint32_t SB1[64] =
 {
     0x01010400, 0x00000000, 0x00010000, 0x01010404,
@@ -188,9 +179,6 @@ static const uint32_t SB8[64] =
     0x00001040, 0x00040040, 0x10000000, 0x10041000
 };
 
-/*
- * PC1: left and right halves bit-swap
- */
 static const uint32_t LHs[16] =
 {
     0x00000000, 0x00000001, 0x00000100, 0x00000101,
@@ -207,9 +195,6 @@ static const uint32_t RHs[16] =
     0x00000101, 0x01000101, 0x00010101, 0x01010101,
 };
 
-/*
- * Initial Permutation macro
- */
 #define DES_IP(X, Y)                                                       \
     do                                                                    \
     {                                                                     \
@@ -222,9 +207,6 @@ static const uint32_t RHs[16] =
         (X) = (((X) << 1) | ((X) >> 31)) & 0xFFFFFFFF;                    \
     } while (0)
 
-/*
- * Final Permutation macro
- */
 #define DES_FP(X, Y)                                                       \
     do                                                                    \
     {                                                                     \
@@ -237,9 +219,6 @@ static const uint32_t RHs[16] =
         T = (((X) >>  4) ^ (Y)) & 0x0F0F0F0F; (Y) ^= T; (X) ^= (T <<  4); \
     } while (0)
 
-/*
- * DES round macro
- */
 #define DES_ROUND(X, Y)                              \
     do                                              \
     {                                               \
@@ -318,9 +297,6 @@ void mbedtls_des_key_set_parity(unsigned char key[MBEDTLS_DES_KEY_SIZE])
     }
 }
 
-/*
- * Check the given key's parity, returns 1 on failure, 0 on SUCCESS
- */
 int mbedtls_des_key_check_key_parity(const unsigned char key[MBEDTLS_DES_KEY_SIZE])
 {
     int i;
@@ -333,27 +309,6 @@ int mbedtls_des_key_check_key_parity(const unsigned char key[MBEDTLS_DES_KEY_SIZ
 
     return 0;
 }
-
-/*
- * Table of weak and semi-weak keys
- *
- * Source: http://en.wikipedia.org/wiki/Weak_key
- *
- * Weak:
- * Alternating ones + zeros (0x0101010101010101)
- * Alternating 'F' + 'E' (0xFEFEFEFEFEFEFEFE)
- * '0xE0E0E0E0F1F1F1F1'
- * '0x1F1F1F1F0E0E0E0E'
- *
- * Semi-weak:
- * 0x011F011F010E010E and 0x1F011F010E010E01
- * 0x01E001E001F101F1 and 0xE001E001F101F101
- * 0x01FE01FE01FE01FE and 0xFE01FE01FE01FE01
- * 0x1FE01FE00EF10EF1 and 0xE01FE01FF10EF10E
- * 0x1FFE1FFE0EFE0EFE and 0xFE1FFE1FFE0EFE0E
- * 0xE0FEE0FEF1FEF1FE and 0xFEE0FEE0FEF1FEF1
- *
- */
 
 #define WEAK_KEY_COUNT 16
 
@@ -400,9 +355,6 @@ void mbedtls_des_setkey(uint32_t SK[32], const unsigned char key[MBEDTLS_DES_KEY
     X = MBEDTLS_GET_UINT32_BE(key, 0);
     Y = MBEDTLS_GET_UINT32_BE(key, 4);
 
-    /*
-     * Permuted Choice 1
-     */
     T =  ((Y >>  4) ^ X) & 0x0F0F0F0F;  X ^= T; Y ^= (T <<  4);
     T =  ((Y) ^ X) & 0x10101010;  X ^= T; Y ^= (T);
 
@@ -419,9 +371,6 @@ void mbedtls_des_setkey(uint32_t SK[32], const unsigned char key[MBEDTLS_DES_KEY
     X &= 0x0FFFFFFF;
     Y &= 0x0FFFFFFF;
 
-    /*
-     * calculate subkeys
-     */
     for (i = 0; i < 16; i++) {
         if (i < 2 || i == 8 || i == 15) {
             X = ((X <<  1) | (X >> 27)) & 0x0FFFFFFF;
@@ -456,11 +405,8 @@ void mbedtls_des_setkey(uint32_t SK[32], const unsigned char key[MBEDTLS_DES_KEY
                 | ((Y <<  2) & 0x00000004) | ((Y >> 21) & 0x00000002);
     }
 }
-#endif /* !MBEDTLS_DES_SETKEY_ALT */
+#endif
 
-/*
- * DES key schedule (56-bit, encryption)
- */
 int mbedtls_des_setkey_enc(mbedtls_des_context *ctx, const unsigned char key[MBEDTLS_DES_KEY_SIZE])
 {
     mbedtls_des_setkey(ctx->sk, key);
@@ -468,9 +414,6 @@ int mbedtls_des_setkey_enc(mbedtls_des_context *ctx, const unsigned char key[MBE
     return 0;
 }
 
-/*
- * DES key schedule (56-bit, decryption)
- */
 int mbedtls_des_setkey_dec(mbedtls_des_context *ctx, const unsigned char key[MBEDTLS_DES_KEY_SIZE])
 {
     int i;
@@ -509,9 +452,6 @@ static void des3_set2key(uint32_t esk[96],
     }
 }
 
-/*
- * Triple-DES key schedule (112-bit, encryption)
- */
 int mbedtls_des3_set2key_enc(mbedtls_des3_context *ctx,
                              const unsigned char key[MBEDTLS_DES_KEY_SIZE * 2])
 {
@@ -523,9 +463,6 @@ int mbedtls_des3_set2key_enc(mbedtls_des3_context *ctx,
     return 0;
 }
 
-/*
- * Triple-DES key schedule (112-bit, decryption)
- */
 int mbedtls_des3_set2key_dec(mbedtls_des3_context *ctx,
                              const unsigned char key[MBEDTLS_DES_KEY_SIZE * 2])
 {
@@ -559,9 +496,6 @@ static void des3_set3key(uint32_t esk[96],
     }
 }
 
-/*
- * Triple-DES key schedule (168-bit, encryption)
- */
 int mbedtls_des3_set3key_enc(mbedtls_des3_context *ctx,
                              const unsigned char key[MBEDTLS_DES_KEY_SIZE * 3])
 {
@@ -573,9 +507,6 @@ int mbedtls_des3_set3key_enc(mbedtls_des3_context *ctx,
     return 0;
 }
 
-/*
- * Triple-DES key schedule (168-bit, decryption)
- */
 int mbedtls_des3_set3key_dec(mbedtls_des3_context *ctx,
                              const unsigned char key[MBEDTLS_DES_KEY_SIZE * 3])
 {
@@ -587,9 +518,6 @@ int mbedtls_des3_set3key_dec(mbedtls_des3_context *ctx,
     return 0;
 }
 
-/*
- * DES-ECB block encryption/decryption
- */
 #if !defined(MBEDTLS_DES_CRYPT_ECB_ALT)
 int mbedtls_des_crypt_ecb(mbedtls_des_context *ctx,
                           const unsigned char input[8],
@@ -617,12 +545,10 @@ int mbedtls_des_crypt_ecb(mbedtls_des_context *ctx,
 
     return 0;
 }
-#endif /* !MBEDTLS_DES_CRYPT_ECB_ALT */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-/*
- * DES-CBC buffer encryption/decryption
- */
+
 int mbedtls_des_crypt_cbc(mbedtls_des_context *ctx,
                           int mode,
                           size_t length,
@@ -651,7 +577,7 @@ int mbedtls_des_crypt_cbc(mbedtls_des_context *ctx,
             output += 8;
             length -= 8;
         }
-    } else { /* MBEDTLS_DES_DECRYPT */
+    } else {
         while (length > 0) {
             memcpy(temp, input, 8);
             ret = mbedtls_des_crypt_ecb(ctx, input, output);
@@ -673,11 +599,8 @@ int mbedtls_des_crypt_cbc(mbedtls_des_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
-/*
- * 3DES-ECB block encryption/decryption
- */
 #if !defined(MBEDTLS_DES3_CRYPT_ECB_ALT)
 int mbedtls_des3_crypt_ecb(mbedtls_des3_context *ctx,
                            const unsigned char input[8],
@@ -715,12 +638,10 @@ int mbedtls_des3_crypt_ecb(mbedtls_des3_context *ctx,
 
     return 0;
 }
-#endif /* !MBEDTLS_DES3_CRYPT_ECB_ALT */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-/*
- * 3DES-CBC buffer encryption/decryption
- */
+
 int mbedtls_des3_crypt_cbc(mbedtls_des3_context *ctx,
                            int mode,
                            size_t length,
@@ -749,7 +670,7 @@ int mbedtls_des3_crypt_cbc(mbedtls_des3_context *ctx,
             output += 8;
             length -= 8;
         }
-    } else { /* MBEDTLS_DES_DECRYPT */
+    } else {
         while (length > 0) {
             memcpy(temp, input, 8);
             ret = mbedtls_des3_crypt_ecb(ctx, input, output);
@@ -771,16 +692,12 @@ int mbedtls_des3_crypt_cbc(mbedtls_des3_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
-#endif /* !MBEDTLS_DES_ALT */
+#endif
 
 #if defined(MBEDTLS_SELF_TEST)
-/*
- * DES and 3DES test vectors from:
- *
- * http://csrc.nist.gov/groups/STM/cavp/documents/des/tripledes-vectors.zip
- */
+
 static const unsigned char des3_test_keys[24] =
 {
     0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
@@ -826,11 +743,8 @@ static const unsigned char des3_test_cbc_enc[3][8] =
     { 0x60, 0x1A, 0x76, 0x8F, 0xA1, 0xF9, 0x66, 0xF1 },
     { 0xA1, 0x50, 0x0F, 0x99, 0xB2, 0xCD, 0x64, 0x76 }
 };
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
-/*
- * Checkup routine
- */
 int mbedtls_des_self_test(int verbose)
 {
     int i, j, u, v, ret = 0;
@@ -844,9 +758,7 @@ int mbedtls_des_self_test(int verbose)
 
     mbedtls_des_init(&ctx);
     mbedtls_des3_init(&ctx3);
-    /*
-     * ECB mode
-     */
+
     for (i = 0; i < 6; i++) {
         u = i >> 1;
         v = i  & 1;
@@ -924,9 +836,7 @@ int mbedtls_des_self_test(int verbose)
     }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-    /*
-     * CBC mode
-     */
+
     for (i = 0; i < 6; i++) {
         u = i >> 1;
         v = i  & 1;
@@ -1021,7 +931,7 @@ int mbedtls_des_self_test(int verbose)
             mbedtls_printf("passed\n");
         }
     }
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
     if (verbose != 0) {
         mbedtls_printf("\n");
@@ -1037,6 +947,6 @@ exit:
     return ret;
 }
 
-#endif /* MBEDTLS_SELF_TEST */
+#endif
 
-#endif /* MBEDTLS_DES_C */
+#endif

@@ -4,12 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The AES block cipher was designed by Vincent Rijmen and Joan Daemen.
- *
- *  https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/aes-development/rijndael-ammended.pdf
- *  http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf
- */
 
 #include "common.h"
 
@@ -55,10 +49,6 @@
 #include "mbedtls/platform.h"
 #include "ctr.h"
 
-/*
- * This is a convenience shorthand macro to check if we need reverse S-box and
- * reverse tables. It's private and only defined in this file.
- */
 #if (!defined(MBEDTLS_AES_DECRYPT_ALT) || \
     (!defined(MBEDTLS_AES_SETKEY_DEC_ALT) && !defined(MBEDTLS_AES_USE_HARDWARE_ONLY))) && \
     !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
@@ -72,9 +62,7 @@ static int aes_padlock_ace = -1;
 #endif
 
 #if defined(MBEDTLS_AES_ROM_TABLES)
-/*
- * Forward S-box
- */
+
 MBEDTLS_MAYBE_UNUSED static const unsigned char FSb[256] =
 {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
@@ -111,9 +99,6 @@ MBEDTLS_MAYBE_UNUSED static const unsigned char FSb[256] =
     0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 };
 
-/*
- * Forward tables
- */
 #define FT \
 \
     V(A5, 63, 63, C6), V(84, 7C, 7C, F8), V(99, 77, 77, EE), V(8D, 7B, 7B, F6), \
@@ -199,9 +184,6 @@ MBEDTLS_MAYBE_UNUSED static const uint32_t FT3[256] = { FT };
 
 #undef FT
 
-/*
- * Reverse S-box
- */
 MBEDTLS_MAYBE_UNUSED static const unsigned char RSb[256] =
 {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38,
@@ -238,9 +220,6 @@ MBEDTLS_MAYBE_UNUSED static const unsigned char RSb[256] =
     0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
 };
 
-/*
- * Reverse tables
- */
 #define RT \
 \
     V(50, A7, F4, 51), V(53, 65, 41, 7E), V(C3, A4, 17, 1A), V(96, 5E, 27, 3A), \
@@ -308,7 +287,6 @@ MBEDTLS_MAYBE_UNUSED static const unsigned char RSb[256] =
     V(71, 01, A8, 39), V(DE, B3, 0C, 08), V(9C, E4, B4, D8), V(90, C1, 56, 64), \
     V(61, 84, CB, 7B), V(70, B6, 32, D5), V(74, 5C, 6C, 48), V(42, 57, B8, D0)
 
-
 #define V(a, b, c, d) 0x##a##b##c##d
 MBEDTLS_MAYBE_UNUSED static const uint32_t RT0[256] = { RT };
 #undef V
@@ -327,9 +305,6 @@ MBEDTLS_MAYBE_UNUSED static const uint32_t RT3[256] = { RT };
 
 #undef RT
 
-/*
- * Round constants
- */
 MBEDTLS_MAYBE_UNUSED static const uint32_t round_constants[10] =
 {
     0x00000001, 0x00000002, 0x00000004, 0x00000008,
@@ -337,20 +312,14 @@ MBEDTLS_MAYBE_UNUSED static const uint32_t round_constants[10] =
     0x0000001B, 0x00000036
 };
 
-#else /* MBEDTLS_AES_ROM_TABLES */
+#else
 
-/*
- * Forward S-box & tables
- */
 MBEDTLS_MAYBE_UNUSED static unsigned char FSb[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t FT0[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t FT1[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t FT2[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t FT3[256];
 
-/*
- * Reverse S-box & tables
- */
 MBEDTLS_MAYBE_UNUSED static unsigned char RSb[256];
 
 MBEDTLS_MAYBE_UNUSED static uint32_t RT0[256];
@@ -358,14 +327,8 @@ MBEDTLS_MAYBE_UNUSED static uint32_t RT1[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t RT2[256];
 MBEDTLS_MAYBE_UNUSED static uint32_t RT3[256];
 
-/*
- * Round constants
- */
 MBEDTLS_MAYBE_UNUSED static uint32_t round_constants[10];
 
-/*
- * Tables generation code
- */
 #define ROTL8(x) (((x) << 8) & 0xFFFFFFFF) | ((x) >> 24)
 #define XTIME(x) (((x) << 1) ^ (((x) & 0x80) ? 0x1B : 0x00))
 #define MUL(x, y) (((x) && (y)) ? pow[(log[(x)]+log[(y)]) % 255] : 0)
@@ -379,26 +342,17 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
     uint8_t pow[256];
     uint8_t log[256];
 
-    /*
-     * compute pow and log tables over GF(2^8)
-     */
     for (i = 0, x = 1; i < 256; i++) {
         pow[i] = x;
         log[x] = (uint8_t) i;
         x ^= XTIME(x);
     }
 
-    /*
-     * calculate the round constants
-     */
     for (i = 0, x = 1; i < 10; i++) {
         round_constants[i] = x;
         x = XTIME(x);
     }
 
-    /*
-     * generate the forward and reverse S-boxes
-     */
     FSb[0x00] = 0x63;
 #if defined(MBEDTLS_AES_NEED_REVERSE_TABLES)
     RSb[0x63] = 0x00;
@@ -419,9 +373,6 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
 #endif
     }
 
-    /*
-     * generate the forward and reverse tables
-     */
     for (i = 0; i < 256; i++) {
         x = FSb[i];
         y = XTIME(x);
@@ -436,7 +387,7 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
         FT1[i] = ROTL8(FT0[i]);
         FT2[i] = ROTL8(FT1[i]);
         FT3[i] = ROTL8(FT2[i]);
-#endif /* !MBEDTLS_AES_FEWER_TABLES */
+#endif
 
 #if defined(MBEDTLS_AES_NEED_REVERSE_TABLES)
         x = RSb[i];
@@ -450,14 +401,14 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
         RT1[i] = ROTL8(RT0[i]);
         RT2[i] = ROTL8(RT1[i]);
         RT3[i] = ROTL8(RT2[i]);
-#endif /* !MBEDTLS_AES_FEWER_TABLES */
-#endif /* MBEDTLS_AES_NEED_REVERSE_TABLES */
+#endif
+#endif
     }
 }
 
 #undef ROTL8
 
-#endif /* MBEDTLS_AES_ROM_TABLES */
+#endif
 
 #if defined(MBEDTLS_AES_FEWER_TABLES)
 
@@ -475,7 +426,7 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
 #define AES_FT2(idx) ROTL16(FT0[idx])
 #define AES_FT3(idx) ROTL24(FT0[idx])
 
-#else /* MBEDTLS_AES_FEWER_TABLES */
+#else
 
 #define AES_RT0(idx) RT0[idx]
 #define AES_RT1(idx) RT1[idx]
@@ -487,7 +438,7 @@ MBEDTLS_MAYBE_UNUSED static void aes_gen_tables(void)
 #define AES_FT2(idx) FT2[idx]
 #define AES_FT3(idx) FT3[idx]
 
-#endif /* MBEDTLS_AES_FEWER_TABLES */
+#endif
 
 void mbedtls_aes_init(mbedtls_aes_context *ctx)
 {
@@ -519,14 +470,8 @@ void mbedtls_aes_xts_free(mbedtls_aes_xts_context *ctx)
     mbedtls_aes_free(&ctx->crypt);
     mbedtls_aes_free(&ctx->tweak);
 }
-#endif /* MBEDTLS_CIPHER_MODE_XTS */
+#endif
 
-/* Some implementations need the round keys to be aligned.
- * Return an offset to be added to buf, such that (buf + offset) is
- * correctly aligned.
- * Note that the offset is in units of elements of buf, i.e. 32-bit words,
- * i.e. an offset of 1 means 4 bytes and so on.
- */
 #if (defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)) ||        \
     (defined(MBEDTLS_AESNI_C) && MBEDTLS_AESNI_HAVE_CODE == 2)
 #define MAY_NEED_TO_ALIGN
@@ -553,25 +498,21 @@ MBEDTLS_MAYBE_UNUSED static unsigned mbedtls_aes_rk_offset(uint32_t *buf)
 #endif
 
     if (align_16_bytes) {
-        /* These implementations needs 16-byte alignment
-         * for the round key array. */
+
         unsigned delta = ((uintptr_t) buf & 0x0000000fU) / 4;
         if (delta == 0) {
             return 0;
         } else {
-            return 4 - delta; // 16 bytes = 4 uint32_t
+            return 4 - delta;
         }
     }
-#else /* MAY_NEED_TO_ALIGN */
+#else
     (void) buf;
-#endif /* MAY_NEED_TO_ALIGN */
+#endif
 
     return 0;
 }
 
-/*
- * AES key schedule (encryption)
- */
 #if !defined(MBEDTLS_AES_SETKEY_ENC_ALT)
 int mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx, const unsigned char *key,
                            unsigned int keybits)
@@ -583,7 +524,7 @@ int mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx, const unsigned char *key,
 #if !defined(MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH)
         case 192: ctx->nr = 12; break;
         case 256: ctx->nr = 14; break;
-#endif /* !MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH */
+#endif
         default: return MBEDTLS_ERR_AES_INVALID_KEY_LENGTH;
     }
 
@@ -672,17 +613,14 @@ int mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx, const unsigned char *key,
                 RK[15] = RK[7] ^ RK[14];
             }
             break;
-#endif /* !MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH */
+#endif
     }
 
     return 0;
-#endif /* !MBEDTLS_AES_USE_HARDWARE_ONLY */
+#endif
 }
-#endif /* !MBEDTLS_AES_SETKEY_ENC_ALT */
+#endif
 
-/*
- * AES key schedule (decryption)
- */
 #if !defined(MBEDTLS_AES_SETKEY_DEC_ALT) && !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
 int mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx, const unsigned char *key,
                            unsigned int keybits)
@@ -694,13 +632,11 @@ int mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx, const unsigned char *key,
     mbedtls_aes_context cty;
     uint32_t *RK;
 
-
     mbedtls_aes_init(&cty);
 
     ctx->rk_offset = mbedtls_aes_rk_offset(ctx->buf);
     RK = ctx->buf + ctx->rk_offset;
 
-    /* Also checks keybits */
     if ((ret = mbedtls_aes_setkey_enc(&cty, key, keybits)) != 0) {
         goto exit;
     }
@@ -746,13 +682,13 @@ int mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx, const unsigned char *key,
     *RK++ = *SK++;
     *RK++ = *SK++;
     *RK++ = *SK++;
-#endif /* !MBEDTLS_AES_USE_HARDWARE_ONLY */
+#endif
 exit:
     mbedtls_aes_free(&cty);
 
     return ret;
 }
-#endif /* !MBEDTLS_AES_SETKEY_DEC_ALT && !MBEDTLS_BLOCK_CIPHER_NO_DECRYPT */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
 static int mbedtls_aes_xts_decode_keys(const unsigned char *key,
@@ -793,13 +729,11 @@ int mbedtls_aes_xts_setkey_enc(mbedtls_aes_xts_context *ctx,
         return ret;
     }
 
-    /* Set the tweak key. Always set tweak key for the encryption mode. */
     ret = mbedtls_aes_setkey_enc(&ctx->tweak, key2, key2bits);
     if (ret != 0) {
         return ret;
     }
 
-    /* Set crypt key for encryption. */
     return mbedtls_aes_setkey_enc(&ctx->crypt, key1, key1bits);
 }
 
@@ -817,16 +751,14 @@ int mbedtls_aes_xts_setkey_dec(mbedtls_aes_xts_context *ctx,
         return ret;
     }
 
-    /* Set the tweak key. Always set tweak key for encryption. */
     ret = mbedtls_aes_setkey_enc(&ctx->tweak, key2, key2bits);
     if (ret != 0) {
         return ret;
     }
 
-    /* Set crypt key for decryption. */
     return mbedtls_aes_setkey_dec(&ctx->crypt, key1, key1bits);
 }
-#endif /* MBEDTLS_CIPHER_MODE_XTS */
+#endif
 
 #define AES_FROUND(X0, X1, X2, X3, Y0, Y1, Y2, Y3)                 \
     do                                                      \
@@ -876,9 +808,6 @@ int mbedtls_aes_xts_setkey_dec(mbedtls_aes_xts_context *ctx,
                AES_RT3(MBEDTLS_BYTE_3(Y0));     \
     } while (0)
 
-/*
- * AES-ECB block encryption
- */
 #if !defined(MBEDTLS_AES_ENCRYPT_ALT)
 int mbedtls_internal_aes_encrypt(mbedtls_aes_context *ctx,
                                  const unsigned char input[16],
@@ -936,11 +865,8 @@ int mbedtls_internal_aes_encrypt(mbedtls_aes_context *ctx,
 
     return 0;
 }
-#endif /* !MBEDTLS_AES_ENCRYPT_ALT */
+#endif
 
-/*
- * AES-ECB block decryption
- */
 #if !defined(MBEDTLS_AES_DECRYPT_ALT) && !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
 int mbedtls_internal_aes_decrypt(mbedtls_aes_context *ctx,
                                  const unsigned char input[16],
@@ -998,29 +924,19 @@ int mbedtls_internal_aes_decrypt(mbedtls_aes_context *ctx,
 
     return 0;
 }
-#endif /* !MBEDTLS_AES_DECRYPT_ALT && !MBEDTLS_BLOCK_CIPHER_NO_DECRYPT */
+#endif
 
-/* VIA Padlock and our intrinsics-based implementation of AESNI require
- * the round keys to be aligned on a 16-byte boundary. We take care of this
- * before creating them, but the AES context may have moved (this can happen
- * if the library is called from a language with managed memory), and in later
- * calls it might have a different alignment with respect to 16-byte memory.
- * So we may need to realign.
- */
 MBEDTLS_MAYBE_UNUSED static void aes_maybe_realign(mbedtls_aes_context *ctx)
 {
     unsigned new_offset = mbedtls_aes_rk_offset(ctx->buf);
     if (new_offset != ctx->rk_offset) {
-        memmove(ctx->buf + new_offset,     // new address
-                ctx->buf + ctx->rk_offset, // current address
-                (ctx->nr + 1) * 16);       // number of round keys * bytes per rk
+        memmove(ctx->buf + new_offset,
+                ctx->buf + ctx->rk_offset,
+                (ctx->nr + 1) * 16);
         ctx->rk_offset = new_offset;
     }
 }
 
-/*
- * AES-ECB block encryption/decryption
- */
 int mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
                           int mode,
                           const unsigned char input[16],
@@ -1061,14 +977,11 @@ int mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
     {
         return mbedtls_internal_aes_encrypt(ctx, input, output);
     }
-#endif /* !MBEDTLS_AES_USE_HARDWARE_ONLY */
+#endif
 }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
 
-/*
- * AES-CBC buffer encryption/decryption
- */
 int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
                           int mode,
                           size_t length,
@@ -1083,7 +996,6 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
         return MBEDTLS_ERR_AES_BAD_INPUT_DATA;
     }
 
-    /* Nothing to do if length is zero. */
     if (length == 0) {
         return 0;
     }
@@ -1098,9 +1010,6 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
             return 0;
         }
 
-        // If padlock data misaligned, we just fall back to
-        // unaccelerated mode
-        //
     }
 #endif
 
@@ -1113,9 +1022,7 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
             if (ret != 0) {
                 goto exit;
             }
-            /* Avoid using the NEON implementation of mbedtls_xor. Because of the dependency on
-             * the result for the next block in CBC, and the cost of transferring that data from
-             * NEON registers, NEON is slower on aarch64. */
+
             mbedtls_xor_no_simd(output, output, iv, 16);
 
             memcpy(iv, temp, 16);
@@ -1145,20 +1052,12 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
 
 typedef unsigned char mbedtls_be128[16];
 
-/*
- * GF(2^128) multiplication function
- *
- * This function multiplies a field element by x in the polynomial field
- * representation. It uses 64-bit word operations to gain speed but compensates
- * for machine endianness and hence works correctly on both big and little
- * endian machines.
- */
 #if defined(MBEDTLS_AESCE_C) || defined(MBEDTLS_AESNI_C)
 MBEDTLS_OPTIMIZE_FOR_PERFORMANCE
 #endif
@@ -1177,12 +1076,6 @@ static inline void mbedtls_gf128mul_x_ble(unsigned char r[16],
     MBEDTLS_PUT_UINT64_LE(rb, r, 8);
 }
 
-/*
- * AES-XTS buffer encryption/decryption
- *
- * Use of MBEDTLS_OPTIMIZE_FOR_PERFORMANCE here and for mbedtls_gf128mul_x_ble()
- * is a 3x performance improvement for gcc -Os, if we have hardware AES support.
- */
 #if defined(MBEDTLS_AESCE_C) || defined(MBEDTLS_AESNI_C)
 MBEDTLS_OPTIMIZE_FOR_PERFORMANCE
 #endif
@@ -1204,17 +1097,14 @@ int mbedtls_aes_crypt_xts(mbedtls_aes_xts_context *ctx,
         return MBEDTLS_ERR_AES_BAD_INPUT_DATA;
     }
 
-    /* Data units must be at least 16 bytes long. */
     if (length < 16) {
         return MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH;
     }
 
-    /* NIST SP 800-38E disallows data units larger than 2**20 blocks. */
     if (length > (1 << 20) * 16) {
         return MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH;
     }
 
-    /* Compute the tweak. */
     ret = mbedtls_aes_crypt_ecb(&ctx->tweak, MBEDTLS_AES_ENCRYPT,
                                 data_unit, tweak);
     if (ret != 0) {
@@ -1223,11 +1113,7 @@ int mbedtls_aes_crypt_xts(mbedtls_aes_xts_context *ctx,
 
     while (blocks--) {
         if (MBEDTLS_UNLIKELY(leftover && (mode == MBEDTLS_AES_DECRYPT) && blocks == 0)) {
-            /* We are on the last block in a decrypt operation that has
-             * leftover bytes, so we need to use the next tweak for this block,
-             * and this tweak for the leftover bytes. Save the current tweak for
-             * the leftovers and then update the current tweak for use on this,
-             * the last full block. */
+
             memcpy(prev_tweak, tweak, sizeof(tweak));
             mbedtls_gf128mul_x_ble(tweak, tweak);
         }
@@ -1241,7 +1127,6 @@ int mbedtls_aes_crypt_xts(mbedtls_aes_xts_context *ctx,
 
         mbedtls_xor(output, tmp, tweak, 16);
 
-        /* Update the tweak for the next block. */
         mbedtls_gf128mul_x_ble(tweak, tweak);
 
         output += 16;
@@ -1249,26 +1134,18 @@ int mbedtls_aes_crypt_xts(mbedtls_aes_xts_context *ctx,
     }
 
     if (leftover) {
-        /* If we are on the leftover bytes in a decrypt operation, we need to
-         * use the previous tweak for these bytes (as saved in prev_tweak). */
+
         unsigned char *t = mode == MBEDTLS_AES_DECRYPT ? prev_tweak : tweak;
 
-        /* We are now on the final part of the data unit, which doesn't divide
-         * evenly by 16. It's time for ciphertext stealing. */
         size_t i;
         unsigned char *prev_output = output - 16;
 
-        /* Copy ciphertext bytes from the previous block to our output for each
-         * byte of ciphertext we won't steal. */
         for (i = 0; i < leftover; i++) {
             output[i] = prev_output[i];
         }
 
-        /* Copy the remainder of the input for this final round. */
         mbedtls_xor(tmp, input, t, leftover);
 
-        /* Copy ciphertext bytes from the previous block for input in this
-         * round. */
         mbedtls_xor(tmp + i, prev_output + i, t + i, 16 - i);
 
         ret = mbedtls_aes_crypt_ecb(&ctx->crypt, mode, tmp, tmp);
@@ -1276,19 +1153,15 @@ int mbedtls_aes_crypt_xts(mbedtls_aes_xts_context *ctx,
             return ret;
         }
 
-        /* Write the result back to the previous block, overriding the previous
-         * output we copied. */
         mbedtls_xor(prev_output, tmp, t, 16);
     }
 
     return 0;
 }
-#endif /* MBEDTLS_CIPHER_MODE_XTS */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-/*
- * AES-CFB128 buffer encryption/decryption
- */
+
 int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
                              int mode,
                              size_t length,
@@ -1348,9 +1221,6 @@ exit:
     return ret;
 }
 
-/*
- * AES-CFB8 buffer encryption/decryption
- */
 int mbedtls_aes_crypt_cfb8(mbedtls_aes_context *ctx,
                            int mode,
                            size_t length,
@@ -1389,12 +1259,10 @@ int mbedtls_aes_crypt_cfb8(mbedtls_aes_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_CFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_OFB)
-/*
- * AES-OFB (Output Feedback Mode) buffer encryption/decryption
- */
+
 int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
                           size_t length,
                           size_t *iv_off,
@@ -1428,12 +1296,10 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_OFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-/*
- * AES-CTR buffer encryption/decryption
- */
+
 int mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
                           size_t length,
                           size_t *nc_off,
@@ -1466,12 +1332,11 @@ int mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
             n = (length - i);
         }
         mbedtls_xor(&output[i], &input[i], &stream_block[offset], n);
-        // offset might be non-zero for the last block, but in that case, we don't use it again
+
         offset = 0;
         i += n;
     }
 
-    // capture offset for future resumption
     *nc_off = (*nc_off + length) % 16;
 
     ret = 0;
@@ -1479,16 +1344,12 @@ int mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
 exit:
     return ret;
 }
-#endif /* MBEDTLS_CIPHER_MODE_CTR */
+#endif
 
-#endif /* !MBEDTLS_AES_ALT */
+#endif
 
 #if defined(MBEDTLS_SELF_TEST)
-/*
- * AES test vectors from:
- *
- * http://csrc.nist.gov/archive/aes/rijndael/rijndael-vals.zip
- */
+
 #if !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
 static const unsigned char aes_test_ecb_dec[][16] =
 {
@@ -1539,14 +1400,10 @@ static const unsigned char aes_test_cbc_enc[][16] =
       0x6F, 0xCD, 0x88, 0xB2, 0xCC, 0x89, 0x8F, 0xF0 }
 #endif
 };
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-/*
- * AES-CFB128 test vectors from:
- *
- * http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
- */
+
 static const unsigned char aes_test_cfb128_key[][32] =
 {
     { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
@@ -1609,14 +1466,10 @@ static const unsigned char aes_test_cfb128_ct[][64] =
       0x20, 0x31, 0x62, 0x3D, 0x55, 0xB1, 0xE4, 0x71 }
 #endif
 };
-#endif /* MBEDTLS_CIPHER_MODE_CFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_OFB)
-/*
- * AES-OFB test vectors from:
- *
- * https://csrc.nist.gov/publications/detail/sp/800-38a/final
- */
+
 static const unsigned char aes_test_ofb_key[][32] =
 {
     { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
@@ -1679,14 +1532,9 @@ static const unsigned char aes_test_ofb_ct[][64] =
       0x53, 0x8f, 0x5a, 0x8b, 0xe7, 0x40, 0xe4, 0x84 }
 #endif
 };
-#endif /* MBEDTLS_CIPHER_MODE_OFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-/*
- * AES-CTR test vectors from:
- *
- * http://www.faqs.org/rfcs/rfc3686.html
- */
 
 static const unsigned char aes_test_ctr_key[][16] =
 {
@@ -1741,16 +1589,10 @@ static const unsigned char aes_test_ctr_ct[][48] =
 
 static const int aes_test_ctr_len[3] =
 { 16, 32, 36 };
-#endif /* MBEDTLS_CIPHER_MODE_CTR */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
-/*
- * AES-XTS test vectors from:
- *
- * IEEE P1619/D16 Annex B
- * https://web.archive.org/web/20150629024421/http://grouper.ieee.org/groups/1619/email/pdf00086.pdf
- * (Archived from original at http://grouper.ieee.org/groups/1619/email/pdf00086.pdf)
- */
+
 static const unsigned char aes_test_xts_key[][32] =
 {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1809,11 +1651,8 @@ static const unsigned char aes_test_xts_data_unit[][16] =
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
 };
 
-#endif /* MBEDTLS_CIPHER_MODE_XTS */
+#endif
 
-/*
- * Checkup routine
- */
 int mbedtls_aes_self_test(int verbose)
 {
     int ret = 0, i, j, u, mode;
@@ -1847,7 +1686,7 @@ int mbedtls_aes_self_test(int verbose)
     if (verbose != 0) {
 #if defined(MBEDTLS_AES_ALT)
         mbedtls_printf("  AES note: alternative implementation.\n");
-#else /* MBEDTLS_AES_ALT */
+#else
 #if defined(MBEDTLS_AESNI_HAVE_CODE)
 #if MBEDTLS_AESNI_HAVE_CODE == 1
         mbedtls_printf("  AES note: AESNI code present (assembly implementation).\n");
@@ -1875,12 +1714,9 @@ int mbedtls_aes_self_test(int verbose)
             mbedtls_printf("  AES note: built-in implementation.\n");
 #endif
         }
-#endif /* MBEDTLS_AES_ALT */
+#endif
     }
 
-    /*
-     * ECB mode
-     */
     {
         static const int num_tests =
             sizeof(aes_test_ecb_enc) / sizeof(*aes_test_ecb_enc);
@@ -1916,11 +1752,6 @@ int mbedtls_aes_self_test(int verbose)
                 aes_tests = aes_test_ecb_enc[u];
             }
 
-            /*
-             * AES-192 is an optional feature that may be unavailable when
-             * there is an alternative underlying implementation i.e. when
-             * MBEDTLS_AES_ALT is defined.
-             */
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && keybits == 192) {
                 mbedtls_printf("skipped\n");
                 continue;
@@ -1951,9 +1782,7 @@ int mbedtls_aes_self_test(int verbose)
     }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-    /*
-     * CBC mode
-     */
+
     {
         static const int num_tests =
             sizeof(aes_test_cbc_dec) / sizeof(*aes_test_cbc_dec);
@@ -1980,11 +1809,6 @@ int mbedtls_aes_self_test(int verbose)
                 aes_tests = aes_test_cbc_enc[u];
             }
 
-            /*
-             * AES-192 is an optional feature that may be unavailable when
-             * there is an alternative underlying implementation i.e. when
-             * MBEDTLS_AES_ALT is defined.
-             */
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && keybits == 192) {
                 mbedtls_printf("skipped\n");
                 continue;
@@ -2022,12 +1846,10 @@ int mbedtls_aes_self_test(int verbose)
             mbedtls_printf("\n");
         }
     }
-#endif /* MBEDTLS_CIPHER_MODE_CBC */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-    /*
-     * CFB128 mode
-     */
+
     {
         static const int num_tests =
             sizeof(aes_test_cfb128_key) / sizeof(*aes_test_cfb128_key);
@@ -2047,11 +1869,7 @@ int mbedtls_aes_self_test(int verbose)
 
             offset = 0;
             ret = mbedtls_aes_setkey_enc(&ctx, key, keybits);
-            /*
-             * AES-192 is an optional feature that may be unavailable when
-             * there is an alternative underlying implementation i.e. when
-             * MBEDTLS_AES_ALT is defined.
-             */
+
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && keybits == 192) {
                 mbedtls_printf("skipped\n");
                 continue;
@@ -2086,12 +1904,10 @@ int mbedtls_aes_self_test(int verbose)
             mbedtls_printf("\n");
         }
     }
-#endif /* MBEDTLS_CIPHER_MODE_CFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_OFB)
-    /*
-     * OFB mode
-     */
+
     {
         static const int num_tests =
             sizeof(aes_test_ofb_key) / sizeof(*aes_test_ofb_key);
@@ -2111,11 +1927,7 @@ int mbedtls_aes_self_test(int verbose)
 
             offset = 0;
             ret = mbedtls_aes_setkey_enc(&ctx, key, keybits);
-            /*
-             * AES-192 is an optional feature that may be unavailable when
-             * there is an alternative underlying implementation i.e. when
-             * MBEDTLS_AES_ALT is defined.
-             */
+
             if (ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && keybits == 192) {
                 mbedtls_printf("skipped\n");
                 continue;
@@ -2150,12 +1962,10 @@ int mbedtls_aes_self_test(int verbose)
             mbedtls_printf("\n");
         }
     }
-#endif /* MBEDTLS_CIPHER_MODE_OFB */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-    /*
-     * CTR mode
-     */
+
     {
         static const int num_tests =
             sizeof(aes_test_ctr_key) / sizeof(*aes_test_ctr_key);
@@ -2207,12 +2017,10 @@ int mbedtls_aes_self_test(int verbose)
     if (verbose != 0) {
         mbedtls_printf("\n");
     }
-#endif /* MBEDTLS_CIPHER_MODE_CTR */
+#endif
 
 #if defined(MBEDTLS_CIPHER_MODE_XTS)
-    /*
-     * XTS mode
-     */
+
     {
         static const int num_tests =
             sizeof(aes_test_xts_key) / sizeof(*aes_test_xts_key);
@@ -2252,7 +2060,6 @@ int mbedtls_aes_self_test(int verbose)
                 aes_tests = aes_test_xts_ct32[u];
             }
 
-
             ret = mbedtls_aes_crypt_xts(&ctx_xts, mode, len, data_unit,
                                         buf, buf);
             if (ret != 0) {
@@ -2275,7 +2082,7 @@ int mbedtls_aes_self_test(int verbose)
 
         mbedtls_aes_xts_free(&ctx_xts);
     }
-#endif /* MBEDTLS_CIPHER_MODE_XTS */
+#endif
 
     ret = 0;
 
@@ -2289,6 +2096,6 @@ exit:
     return ret;
 }
 
-#endif /* MBEDTLS_SELF_TEST */
+#endif
 
-#endif /* MBEDTLS_AES_C */
+#endif

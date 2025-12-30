@@ -1,7 +1,4 @@
 /*
- *  PSA ITS simulator over stdio files.
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -30,22 +27,18 @@
 #define PSA_ITS_STORAGE_FILENAME_PATTERN "%08x%08x"
 #define PSA_ITS_STORAGE_SUFFIX ".psa_its"
 #define PSA_ITS_STORAGE_FILENAME_LENGTH         \
-    (sizeof(PSA_ITS_STORAGE_PREFIX) - 1 +    /*prefix without terminating 0*/ \
-     16 +  /*UID (64-bit number in hex)*/                               \
-     sizeof(PSA_ITS_STORAGE_SUFFIX) - 1 +    /*suffix without terminating 0*/ \
-     1 /*terminating null byte*/)
+    (sizeof(PSA_ITS_STORAGE_PREFIX) - 1 +     \
+     16 +                                 \
+     sizeof(PSA_ITS_STORAGE_SUFFIX) - 1 +     \
+     1 )
 #define PSA_ITS_STORAGE_TEMP \
     PSA_ITS_STORAGE_PREFIX "tempfile" PSA_ITS_STORAGE_SUFFIX
 
-/* The maximum value of psa_storage_info_t.size */
 #define PSA_ITS_MAX_SIZE 0xffffffff
 
 #define PSA_ITS_MAGIC_STRING "PSA\0ITS\0"
 #define PSA_ITS_MAGIC_LENGTH 8
 
-/* As rename fails on Windows if the new filepath already exists,
- * use MoveFileExA with the MOVEFILE_REPLACE_EXISTING flag instead.
- * Returns 0 on success, nonzero on failure. */
 #if defined(_WIN32)
 #define rename_replace_existing(oldpath, newpath) \
     (!MoveFileExA(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
@@ -61,8 +54,7 @@ typedef struct {
 
 static void psa_its_fill_filename(psa_storage_uid_t uid, char *filename)
 {
-    /* Break up the UID into two 32-bit pieces so as not to rely on
-     * long long support in snprintf. */
+
     mbedtls_snprintf(filename, PSA_ITS_STORAGE_FILENAME_LENGTH,
                      "%s" PSA_ITS_STORAGE_FILENAME_PATTERN "%s",
                      PSA_ITS_STORAGE_PREFIX,
@@ -86,7 +78,6 @@ static psa_status_t psa_its_read_file(psa_storage_uid_t uid,
         return PSA_ERROR_DOES_NOT_EXIST;
     }
 
-    /* Ensure no stdio buffering of secrets, as such buffers cannot be wiped. */
     mbedtls_setbuf(*p_stream, NULL);
 
     n = fread(&header, 1, sizeof(header), *p_stream);
@@ -198,7 +189,6 @@ psa_status_t psa_its_set(psa_storage_uid_t uid,
         goto exit;
     }
 
-    /* Ensure no stdio buffering of secrets, as such buffers cannot be wiped. */
     mbedtls_setbuf(stream, NULL);
 
     status = PSA_ERROR_INSUFFICIENT_STORAGE;
@@ -226,11 +216,7 @@ exit:
             status = PSA_ERROR_STORAGE_FAILURE;
         }
     }
-    /* The temporary file may still exist, but only in failure cases where
-     * we're already reporting an error. So there's nothing we can do on
-     * failure. If the function succeeded, and in some error cases, the
-     * temporary file doesn't exist and so remove() is expected to fail.
-     * Thus we just ignore the return status of remove(). */
+
     (void) remove(PSA_ITS_STORAGE_TEMP);
     return status;
 }
@@ -251,4 +237,4 @@ psa_status_t psa_its_remove(psa_storage_uid_t uid)
     return PSA_SUCCESS;
 }
 
-#endif /* MBEDTLS_PSA_ITS_FILE_C */
+#endif

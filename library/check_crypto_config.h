@@ -1,16 +1,6 @@
-/**
- * \file check_crypto_config.h
- *
- * \brief Consistency checks for PSA configuration options
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
- */
-
-/*
- * It is recommended to include this file from your crypto_config.h
- * in order to catch dependency issues early.
  */
 
 #ifndef MBEDTLS_CHECK_CRYPTO_CONFIG_H
@@ -105,8 +95,8 @@
 #warning "PSA_WANT_KEY_TYPE_ECC_KEY_PAIR is deprecated and will be removed in a \
     future version of Mbed TLS. Please switch to new PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_xxx \
     symbols, where xxx can be: USE, IMPORT, EXPORT, GENERATE, DERIVE"
-#endif /* MBEDTLS_DEPRECATED_WARNING */
-#endif /* PSA_WANT_KEY_TYPE_ECC_KEY_PAIR */
+#endif
+#endif
 
 #if defined(PSA_WANT_KEY_TYPE_RSA_KEY_PAIR)
 #if defined(MBEDTLS_DEPRECATED_REMOVED)
@@ -117,8 +107,8 @@
 #warning "PSA_WANT_KEY_TYPE_RSA_KEY_PAIR is deprecated and will be removed in a \
     future version of Mbed TLS. Please switch to new PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_xxx \
     symbols, where xxx can be: USE, IMPORT, EXPORT, GENERATE, DERIVE"
-#endif /* MBEDTLS_DEPRECATED_WARNING */
-#endif /* PSA_WANT_KEY_TYPE_RSA_KEY_PAIR */
+#endif
+#endif
 
 #if defined(PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_DERIVE)
 #error "PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_DERIVE defined, but feature is not supported"
@@ -138,4 +128,4 @@
 #error "PSA_WANT_ALG_TLS12_ECJPAKE_TO_PMS defined, but not all prerequisites"
 #endif
 
-#endif /* MBEDTLS_CHECK_CRYPTO_CONFIG_H */
+#endif

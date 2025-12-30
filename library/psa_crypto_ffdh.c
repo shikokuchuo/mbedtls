@@ -1,7 +1,4 @@
 /*
- *  PSA FFDH layer on top of Mbed TLS crypto
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -10,10 +7,6 @@
 
 #if defined(MBEDTLS_PSA_CRYPTO_C)
 
-/* This header is only needed because it defines
- * MBEDTLS_DHM_RFC7919_FFDHEXXXX_[P|G]_BIN symbols that are used in
- * mbedtls_psa_ffdh_set_prime_generator(). Apart from that, this module
- * only uses bignum functions for arithmetic. */
 #include <mbedtls/dhm.h>
 
 #include <psa/crypto.h>
@@ -46,31 +39,31 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
         MBEDTLS_DHM_RFC7919_FFDHE2048_P_BIN;
     static const unsigned char dhm_G_2048[] =
         MBEDTLS_DHM_RFC7919_FFDHE2048_G_BIN;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_2048 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_3072)
     static const unsigned char dhm_P_3072[] =
         MBEDTLS_DHM_RFC7919_FFDHE3072_P_BIN;
     static const unsigned char dhm_G_3072[] =
         MBEDTLS_DHM_RFC7919_FFDHE3072_G_BIN;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_3072 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_4096)
     static const unsigned char dhm_P_4096[] =
         MBEDTLS_DHM_RFC7919_FFDHE4096_P_BIN;
     static const unsigned char dhm_G_4096[] =
         MBEDTLS_DHM_RFC7919_FFDHE4096_G_BIN;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_4096 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_6144)
     static const unsigned char dhm_P_6144[] =
         MBEDTLS_DHM_RFC7919_FFDHE6144_P_BIN;
     static const unsigned char dhm_G_6144[] =
         MBEDTLS_DHM_RFC7919_FFDHE6144_G_BIN;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_6144 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_8192)
     static const unsigned char dhm_P_8192[] =
         MBEDTLS_DHM_RFC7919_FFDHE8192_P_BIN;
     static const unsigned char dhm_G_8192[] =
         MBEDTLS_DHM_RFC7919_FFDHE8192_G_BIN;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_8192 */
+#endif
 
     switch (key_size) {
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_2048)
@@ -80,7 +73,7 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
             dhm_size_P = sizeof(dhm_P_2048);
             dhm_size_G = sizeof(dhm_G_2048);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_2048 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_3072)
         case sizeof(dhm_P_3072):
             dhm_P = dhm_P_3072;
@@ -88,7 +81,7 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
             dhm_size_P = sizeof(dhm_P_3072);
             dhm_size_G = sizeof(dhm_G_3072);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_3072 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_4096)
         case sizeof(dhm_P_4096):
             dhm_P = dhm_P_4096;
@@ -96,7 +89,7 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
             dhm_size_P = sizeof(dhm_P_4096);
             dhm_size_G = sizeof(dhm_G_4096);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_4096 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_6144)
         case sizeof(dhm_P_6144):
             dhm_P = dhm_P_6144;
@@ -104,7 +97,7 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
             dhm_size_P = sizeof(dhm_P_6144);
             dhm_size_G = sizeof(dhm_G_6144);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_6144 */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_DH_RFC7919_8192)
         case sizeof(dhm_P_8192):
             dhm_P = dhm_P_8192;
@@ -112,7 +105,7 @@ static psa_status_t mbedtls_psa_ffdh_set_prime_generator(size_t key_size,
             dhm_size_P = sizeof(dhm_P_8192);
             dhm_size_G = sizeof(dhm_G_8192);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_DH_RFC7919_8192 */
+#endif
         default:
             return PSA_ERROR_INVALID_ARGUMENT;
     }
@@ -133,10 +126,7 @@ cleanup:
 
     return PSA_SUCCESS;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_EXPORT ||
-          MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE ||
-          MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_PUBLIC_KEY ||
-          MBEDTLS_PSA_BUILTIN_ALG_FFDH */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_EXPORT) || \
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_PUBLIC_KEY)
@@ -194,8 +184,7 @@ cleanup:
 
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_EXPORT ||
-          MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_PUBLIC_KEY */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE)
 psa_status_t mbedtls_psa_ffdh_generate_key(
@@ -214,9 +203,6 @@ psa_status_t mbedtls_psa_ffdh_generate_key(
         goto cleanup;
     }
 
-    /* RFC7919: Traditional finite field Diffie-Hellman has each peer choose their
-        secret exponent from the range [2, P-2].
-        Select random value in range [3, P-1] and decrease it by 1. */
     MBEDTLS_MPI_CHK(mbedtls_mpi_random(&X, 3, &P, mbedtls_psa_get_random,
                                        MBEDTLS_PSA_RANDOM_STATE));
     MBEDTLS_MPI_CHK(mbedtls_mpi_sub_int(&X, &X, 1));
@@ -231,7 +217,7 @@ cleanup:
 
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_IMPORT)
 psa_status_t mbedtls_psa_ffdh_import_key(
@@ -251,7 +237,7 @@ psa_status_t mbedtls_psa_ffdh_import_key(
 
     return PSA_SUCCESS;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_IMPORT */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_FFDH)
 psa_status_t mbedtls_psa_ffdh_key_agreement(
@@ -295,7 +281,6 @@ psa_status_t mbedtls_psa_ffdh_key_agreement(
     MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&GY, peer_key,
                                             peer_key_length));
 
-    /* Calculate shared secret public key: K = G^(XY) mod P = GY^X mod P */
     MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(&K, &GY, &X, &P, NULL));
 
     MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&K, shared_secret,
@@ -316,6 +301,6 @@ cleanup:
 
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_FFDH */
+#endif
 
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif

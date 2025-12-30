@@ -22,9 +22,6 @@
 
 #include "mbedtls/platform.h"
 
-/*
- * ASN.1 DER decoding routines
- */
 int mbedtls_asn1_get_len(unsigned char **p,
                          const unsigned char *end,
                          size_t *len)
@@ -74,7 +71,7 @@ int mbedtls_asn1_get_tag(unsigned char **p,
 
     return mbedtls_asn1_get_len(p, end, len);
 }
-#endif /* MBEDTLS_ASN1_PARSE_C || MBEDTLS_X509_CREATE_C || MBEDTLS_PSA_UTIL_HAVE_ECDSA */
+#endif
 
 #if defined(MBEDTLS_ASN1_PARSE_C)
 int mbedtls_asn1_get_bool(unsigned char **p,
@@ -109,26 +106,19 @@ static int asn1_get_tagged_int(unsigned char **p,
         return ret;
     }
 
-    /*
-     * len==0 is malformed (0 must be represented as 020100 for INTEGER,
-     * or 0A0100 for ENUMERATED tags
-     */
     if (len == 0) {
         return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
     }
-    /* This is a cryptography library. Reject negative integers. */
+
     if ((**p & 0x80) != 0) {
         return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
     }
 
-    /* Skip leading zeros. */
     while (len > 0 && **p == 0) {
         ++(*p);
         --len;
     }
 
-    /* Reject integers that don't fit in an int. This code assumes that
-     * the int type has no padding bit. */
     if (len > sizeof(int)) {
         return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
     }
@@ -177,32 +167,28 @@ int mbedtls_asn1_get_mpi(unsigned char **p,
 
     return ret;
 }
-#endif /* MBEDTLS_BIGNUM_C */
+#endif
 
 int mbedtls_asn1_get_bitstring(unsigned char **p, const unsigned char *end,
                                mbedtls_asn1_bitstring *bs)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
-    /* Certificate type is a single byte bitstring */
     if ((ret = mbedtls_asn1_get_tag(p, end, &bs->len, MBEDTLS_ASN1_BIT_STRING)) != 0) {
         return ret;
     }
 
-    /* Check length, subtract one for actual bit string length */
     if (bs->len < 1) {
         return MBEDTLS_ERR_ASN1_OUT_OF_DATA;
     }
     bs->len -= 1;
 
-    /* Get number of unused bits, ensure unused bits <= 7 */
     bs->unused_bits = **p;
     if (bs->unused_bits > 7) {
         return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
     }
     (*p)++;
 
-    /* Get actual bitstring */
     bs->p = *p;
     *p += bs->len;
 
@@ -213,10 +199,6 @@ int mbedtls_asn1_get_bitstring(unsigned char **p, const unsigned char *end,
     return 0;
 }
 
-/*
- * Traverse an ASN.1 "SEQUENCE OF <tag>"
- * and call a callback for each entry found.
- */
 int mbedtls_asn1_traverse_sequence_of(
     unsigned char **p,
     const unsigned char *end,
@@ -229,7 +211,6 @@ int mbedtls_asn1_traverse_sequence_of(
     int ret;
     size_t len;
 
-    /* Get main sequence tag */
     if ((ret = mbedtls_asn1_get_tag(p, end, &len,
                                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
         return ret;
@@ -265,9 +246,6 @@ int mbedtls_asn1_traverse_sequence_of(
     return 0;
 }
 
-/*
- * Get a bit string without unused bits
- */
 int mbedtls_asn1_get_bitstring_null(unsigned char **p, const unsigned char *end,
                                     size_t *len)
 {
@@ -333,9 +311,6 @@ static int asn1_get_sequence_of_cb(void *ctx,
     return 0;
 }
 
-/*
- *  Parses and splits an ASN.1 "SEQUENCE OF <tag>"
- */
 int mbedtls_asn1_get_sequence_of(unsigned char **p,
                                  const unsigned char *end,
                                  mbedtls_asn1_sequence *cur,
@@ -428,7 +403,7 @@ void mbedtls_asn1_free_named_data(mbedtls_asn1_named_data *cur)
 
     mbedtls_platform_zeroize(cur, sizeof(mbedtls_asn1_named_data));
 }
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
+#endif
 
 void mbedtls_asn1_free_named_data_list(mbedtls_asn1_named_data **head)
 {
@@ -465,4 +440,4 @@ const mbedtls_asn1_named_data *mbedtls_asn1_find_named_data(const mbedtls_asn1_n
     return list;
 }
 
-#endif /* MBEDTLS_ASN1_PARSE_C */
+#endif

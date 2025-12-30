@@ -1,17 +1,3 @@
-/**
- * \file mbedtls/config_adjust_psa_from_legacy.h
- * \brief Adjust PSA configuration: construct PSA configuration from legacy
- *
- * This is an internal header. Do not include it directly.
- *
- * When MBEDTLS_PSA_CRYPTO_CONFIG is disabled, we automatically enable
- * cryptographic mechanisms through the PSA interface when the corresponding
- * legacy mechanism is enabled. In many cases, this just enables the PSA
- * wrapper code around the legacy implementation, but we also do this for
- * some mechanisms where PSA has its own independent implementation so
- * that high-level modules that can use either cryptographic API have the
- * same feature set in both cases.
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
@@ -26,12 +12,7 @@
     "If you're trying to fix a complaint from check_config.h, just remove " \
     "it from your configuration file: since Mbed TLS 3.0, it is included " \
     "automatically at the right point."
-#endif /* */
-
-/*
- * Ensure PSA_WANT_* defines are setup properly if MBEDTLS_PSA_CRYPTO_CONFIG
- * is not defined
- */
+#endif
 
 #if defined(MBEDTLS_CCM_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_CCM 1
@@ -39,50 +20,47 @@
 #if defined(MBEDTLS_CIPHER_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_CCM_STAR_NO_TAG 1
 #define PSA_WANT_ALG_CCM_STAR_NO_TAG 1
-#endif /* MBEDTLS_CIPHER_C */
-#endif /* MBEDTLS_CCM_C */
+#endif
+#endif
 
 #if defined(MBEDTLS_CMAC_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_CMAC 1
 #define PSA_WANT_ALG_CMAC 1
-#endif /* MBEDTLS_CMAC_C */
+#endif
 
 #if defined(MBEDTLS_ECDH_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_ECDH 1
 #define PSA_WANT_ALG_ECDH 1
-#endif /* MBEDTLS_ECDH_C */
+#endif
 
 #if defined(MBEDTLS_ECDSA_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_ECDSA 1
 #define PSA_WANT_ALG_ECDSA 1
 #define PSA_WANT_ALG_ECDSA_ANY 1
 
-// Only add in DETERMINISTIC support if ECDSA is also enabled
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
 #define MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA 1
 #define PSA_WANT_ALG_DETERMINISTIC_ECDSA 1
-#endif /* MBEDTLS_ECDSA_DETERMINISTIC */
+#endif
 
-#endif /* MBEDTLS_ECDSA_C */
+#endif
 
 #if defined(MBEDTLS_ECP_C)
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_BASIC 1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT 1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT 1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE 1
-/* Normally we wouldn't enable this because it's not implemented in ecp.c,
- * but since it used to be available any time ECP_C was enabled, let's enable
- * it anyway for the sake of backwards compatibility */
+
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_BASIC 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE 1
-/* See comment for PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_DERIVE above. */
+
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_DERIVE 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY 1
 #define PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY 1
-#endif /* MBEDTLS_ECP_C */
+#endif
 
 #if defined(MBEDTLS_DHM_C)
 #define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_BASIC 1
@@ -107,17 +85,13 @@
 #define MBEDTLS_PSA_BUILTIN_DH_RFC7919_4096 1
 #define MBEDTLS_PSA_BUILTIN_DH_RFC7919_6144 1
 #define MBEDTLS_PSA_BUILTIN_DH_RFC7919_8192 1
-#endif /* MBEDTLS_DHM_C */
+#endif
 
 #if defined(MBEDTLS_GCM_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_GCM 1
 #define PSA_WANT_ALG_GCM 1
-#endif /* MBEDTLS_GCM_C */
+#endif
 
-/* Enable PSA HKDF algorithm if mbedtls HKDF is supported.
- * PSA HKDF EXTRACT and PSA HKDF EXPAND have minimal cost when
- * PSA HKDF is enabled, so enable both algorithms together
- * with PSA HKDF. */
 #if defined(MBEDTLS_HKDF_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define PSA_WANT_ALG_HMAC 1
@@ -127,7 +101,7 @@
 #define PSA_WANT_ALG_HKDF_EXTRACT 1
 #define MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXPAND 1
 #define PSA_WANT_ALG_HKDF_EXPAND 1
-#endif /* MBEDTLS_HKDF_C */
+#endif
 
 #define MBEDTLS_PSA_BUILTIN_ALG_HMAC 1
 #define PSA_WANT_ALG_HMAC 1
@@ -138,7 +112,7 @@
 #define PSA_WANT_ALG_TLS12_PRF 1
 #define MBEDTLS_PSA_BUILTIN_ALG_TLS12_PSK_TO_MS 1
 #define PSA_WANT_ALG_TLS12_PSK_TO_MS 1
-#endif /* MBEDTLS_MD_C */
+#endif
 
 #if defined(MBEDTLS_MD5_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_MD5 1
@@ -163,17 +137,17 @@
 #define MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_SIGN 1
 #define PSA_WANT_ALG_RSA_PKCS1V15_SIGN 1
 #define PSA_WANT_ALG_RSA_PKCS1V15_SIGN_RAW 1
-#endif /* MBEDTLS_PKCS1_V15 */
+#endif
 #if defined(MBEDTLS_PKCS1_V21)
 #define MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP 1
 #define PSA_WANT_ALG_RSA_OAEP 1
 #define MBEDTLS_PSA_BUILTIN_ALG_RSA_PSS 1
 #define PSA_WANT_ALG_RSA_PSS 1
-#endif /* MBEDTLS_PKCS1_V21 */
+#endif
 #if defined(MBEDTLS_GENPRIME)
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_GENERATE 1
 #define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE 1
-#endif /* MBEDTLS_GENPRIME */
+#endif
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_BASIC 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_IMPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_EXPORT 1
@@ -182,7 +156,7 @@
 #define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_EXPORT 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_PUBLIC_KEY 1
 #define PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY 1
-#endif /* MBEDTLS_RSA_C */
+#endif
 
 #if defined(MBEDTLS_SHA1_C)
 #define MBEDTLS_PSA_BUILTIN_ALG_SHA_1 1
@@ -248,7 +222,7 @@
 #if defined(MBEDTLS_CHACHA20_C)
 #define PSA_WANT_KEY_TYPE_CHACHA20 1
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_CHACHA20 1
-/* ALG_STREAM_CIPHER requires CIPHER_C in order to be supported in PSA */
+
 #if defined(MBEDTLS_CIPHER_C)
 #define PSA_WANT_ALG_STREAM_CIPHER 1
 #define MBEDTLS_PSA_BUILTIN_ALG_STREAM_CIPHER 1
@@ -345,7 +319,6 @@
 #define PSA_WANT_ECC_SECP_K1_192 1
 #endif
 
-/* SECP224K1 is buggy via the PSA API (https://github.com/Mbed-TLS/mbedtls/issues/3541) */
 #if 0 && defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED)
 #define MBEDTLS_PSA_BUILTIN_ECC_SECP_K1_224 1
 #define PSA_WANT_ECC_SECP_K1_224 1
@@ -356,4 +329,4 @@
 #define PSA_WANT_ECC_SECP_K1_256 1
 #endif
 
-#endif /* MBEDTLS_CONFIG_ADJUST_PSA_FROM_LEGACY_H */
+#endif

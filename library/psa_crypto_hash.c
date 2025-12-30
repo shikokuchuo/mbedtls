@@ -1,7 +1,4 @@
 /*
- *  PSA hashing layer on top of Mbed TLS software crypto
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -23,9 +20,7 @@ psa_status_t mbedtls_psa_hash_abort(
 {
     switch (operation->alg) {
         case 0:
-            /* The object has (apparently) been initialized but it is not
-             * in use. It's ok to call abort on such an object, and there's
-             * nothing to do. */
+
             break;
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_MD5)
         case PSA_ALG_MD5:
@@ -94,7 +89,6 @@ psa_status_t mbedtls_psa_hash_setup(
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 
-    /* A context must be freshly initialized before it can be set up. */
     if (operation->alg != 0) {
         return PSA_ERROR_BAD_STATE;
     }
@@ -347,12 +341,8 @@ psa_status_t mbedtls_psa_hash_finish(
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t actual_hash_length = PSA_HASH_LENGTH(operation->alg);
 
-    /* Fill the output buffer with something that isn't a valid hash
-     * (barring an attack on the hash and deliberately-crafted input),
-     * in case the caller doesn't check the return status properly. */
     *hash_length = hash_size;
-    /* If hash_size is 0 then hash may be NULL and then the
-     * call to memset would have undefined behavior. */
+
     if (hash_size != 0) {
         memset(hash, '!', hash_size);
     }
@@ -465,6 +455,6 @@ exit:
     }
 
 }
-#endif /* MBEDTLS_PSA_BUILTIN_HASH */
+#endif
 
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif

@@ -5,12 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-/*
- *  The NIST SP 800-90A DRBGs are described in the following publication.
- *  http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf
- *  References below are based on rev. 1 (January 2012).
- */
-
 #include "common.h"
 
 #if defined(MBEDTLS_HMAC_DRBG_C)
@@ -27,9 +21,6 @@
 
 #include "mbedtls/platform.h"
 
-/*
- * HMAC_DRBG context initialization
- */
 void mbedtls_hmac_drbg_init(mbedtls_hmac_drbg_context *ctx)
 {
     memset(ctx, 0, sizeof(mbedtls_hmac_drbg_context));
@@ -37,9 +28,6 @@ void mbedtls_hmac_drbg_init(mbedtls_hmac_drbg_context *ctx)
     ctx->reseed_interval = MBEDTLS_HMAC_DRBG_RESEED_INTERVAL;
 }
 
-/*
- * HMAC_DRBG update, using optional additional data (10.1.2.2)
- */
 int mbedtls_hmac_drbg_update(mbedtls_hmac_drbg_context *ctx,
                              const unsigned char *additional,
                              size_t add_len)
@@ -51,7 +39,7 @@ int mbedtls_hmac_drbg_update(mbedtls_hmac_drbg_context *ctx,
     int ret = MBEDTLS_ERR_MD_BAD_INPUT_DATA;
 
     for (sep[0] = 0; sep[0] < rounds; sep[0]++) {
-        /* Step 1 or 4 */
+
         if ((ret = mbedtls_md_hmac_reset(&ctx->md_ctx)) != 0) {
             goto exit;
         }
@@ -73,7 +61,6 @@ int mbedtls_hmac_drbg_update(mbedtls_hmac_drbg_context *ctx,
             goto exit;
         }
 
-        /* Step 2 or 5 */
         if ((ret = mbedtls_md_hmac_starts(&ctx->md_ctx, K, md_len)) != 0) {
             goto exit;
         }
@@ -91,9 +78,6 @@ exit:
     return ret;
 }
 
-/*
- * Simplified HMAC_DRBG initialisation (for use with deterministic ECDSA)
- */
 int mbedtls_hmac_drbg_seed_buf(mbedtls_hmac_drbg_context *ctx,
                                const mbedtls_md_info_t *md_info,
                                const unsigned char *data, size_t data_len)
@@ -108,11 +92,6 @@ int mbedtls_hmac_drbg_seed_buf(mbedtls_hmac_drbg_context *ctx,
     mbedtls_mutex_init(&ctx->mutex);
 #endif
 
-    /*
-     * Set initial working state.
-     * Use the V memory location, which is currently all 0, to initialize the
-     * MD context with an all-zero key. Then set V to its initial value.
-     */
     if ((ret = mbedtls_md_hmac_starts(&ctx->md_ctx, ctx->V,
                                       mbedtls_md_get_size(md_info))) != 0) {
         return ret;
@@ -126,11 +105,6 @@ int mbedtls_hmac_drbg_seed_buf(mbedtls_hmac_drbg_context *ctx,
     return 0;
 }
 
-/*
- * Internal function used both for seeding and reseeding the DRBG.
- * Comments starting with arabic numbers refer to section 10.1.2.4
- * of SP800-90A, while roman numbers refer to section 9.2.
- */
 static int hmac_drbg_reseed_core(mbedtls_hmac_drbg_context *ctx,
                                  const unsigned char *additional, size_t len,
                                  int use_nonce)
@@ -148,7 +122,6 @@ static int hmac_drbg_reseed_core(mbedtls_hmac_drbg_context *ctx,
             total_entropy_len = ctx->entropy_len * 3 / 2;
         }
 
-        /* III. Check input length */
         if (len > MBEDTLS_HMAC_DRBG_MAX_INPUT ||
             total_entropy_len + len > MBEDTLS_HMAC_DRBG_MAX_SEED_INPUT) {
             return MBEDTLS_ERR_HMAC_DRBG_INPUT_TOO_BIG;
@@ -157,23 +130,14 @@ static int hmac_drbg_reseed_core(mbedtls_hmac_drbg_context *ctx,
 
     memset(seed, 0, MBEDTLS_HMAC_DRBG_MAX_SEED_INPUT);
 
-    /* IV. Gather entropy_len bytes of entropy for the seed */
     if ((ret = ctx->f_entropy(ctx->p_entropy,
                               seed, ctx->entropy_len)) != 0) {
         return MBEDTLS_ERR_HMAC_DRBG_ENTROPY_SOURCE_FAILED;
     }
     seedlen += ctx->entropy_len;
 
-    /* For initial seeding, allow adding of nonce generated
-     * from the entropy source. See Sect 8.6.7 in SP800-90A. */
     if (use_nonce) {
-        /* Note: We don't merge the two calls to f_entropy() in order
-         *       to avoid requesting too much entropy from f_entropy()
-         *       at once. Specifically, if the underlying digest is not
-         *       SHA-1, 3 / 2 * entropy_len is at least 36 Bytes, which
-         *       is larger than the maximum of 32 Bytes that our own
-         *       entropy source implementation can emit in a single
-         *       call in configurations disabling SHA-512. */
+
         if ((ret = ctx->f_entropy(ctx->p_entropy,
                                   seed + seedlen,
                                   ctx->entropy_len / 2)) != 0) {
@@ -183,42 +147,29 @@ static int hmac_drbg_reseed_core(mbedtls_hmac_drbg_context *ctx,
         seedlen += ctx->entropy_len / 2;
     }
 
-
-    /* 1. Concatenate entropy and additional data if any */
     if (additional != NULL && len != 0) {
         memcpy(seed + seedlen, additional, len);
         seedlen += len;
     }
 
-    /* 2. Update state */
     if ((ret = mbedtls_hmac_drbg_update(ctx, seed, seedlen)) != 0) {
         goto exit;
     }
 
-    /* 3. Reset reseed_counter */
     ctx->reseed_counter = 1;
 
 exit:
-    /* 4. Done */
+
     mbedtls_platform_zeroize(seed, seedlen);
     return ret;
 }
 
-/*
- * HMAC_DRBG reseeding: 10.1.2.4 + 9.2
- */
 int mbedtls_hmac_drbg_reseed(mbedtls_hmac_drbg_context *ctx,
                              const unsigned char *additional, size_t len)
 {
     return hmac_drbg_reseed_core(ctx, additional, len, 0);
 }
 
-/*
- * HMAC_DRBG initialisation (10.1.2.3 + 9.1)
- *
- * The nonce is not passed as a separate parameter but extracted
- * from the entropy source as suggested in 8.6.7.
- */
 int mbedtls_hmac_drbg_seed(mbedtls_hmac_drbg_context *ctx,
                            const mbedtls_md_info_t *md_info,
                            int (*f_entropy)(void *, unsigned char *, size_t),
@@ -233,18 +184,12 @@ int mbedtls_hmac_drbg_seed(mbedtls_hmac_drbg_context *ctx,
         return ret;
     }
 
-    /* The mutex is initialized iff the md context is set up. */
 #if defined(MBEDTLS_THREADING_C)
     mbedtls_mutex_init(&ctx->mutex);
 #endif
 
     md_size = mbedtls_md_get_size(md_info);
 
-    /*
-     * Set initial working state.
-     * Use the V memory location, which is currently all 0, to initialize the
-     * MD context with an all-zero key. Then set V to its initial value.
-     */
     if ((ret = mbedtls_md_hmac_starts(&ctx->md_ctx, ctx->V, md_size)) != 0) {
         return ret;
     }
@@ -254,55 +199,36 @@ int mbedtls_hmac_drbg_seed(mbedtls_hmac_drbg_context *ctx,
     ctx->p_entropy = p_entropy;
 
     if (ctx->entropy_len == 0) {
-        /*
-         * See SP800-57 5.6.1 (p. 65-66) for the security strength provided by
-         * each hash function, then according to SP800-90A rev1 10.1 table 2,
-         * min_entropy_len (in bits) is security_strength.
-         *
-         * (This also matches the sizes used in the NIST test vectors.)
-         */
-        ctx->entropy_len = md_size <= 20 ? 16 : /* 160-bits hash -> 128 bits */
-                           md_size <= 28 ? 24 : /* 224-bits hash -> 192 bits */
-                           32;  /* better (256+) -> 256 bits */
+
+        ctx->entropy_len = md_size <= 20 ? 16 :
+                           md_size <= 28 ? 24 :
+                           32;
     }
 
     if ((ret = hmac_drbg_reseed_core(ctx, custom, len,
-                                     1 /* add nonce */)) != 0) {
+                                     1 )) != 0) {
         return ret;
     }
 
     return 0;
 }
 
-/*
- * Set prediction resistance
- */
 void mbedtls_hmac_drbg_set_prediction_resistance(mbedtls_hmac_drbg_context *ctx,
                                                  int resistance)
 {
     ctx->prediction_resistance = resistance;
 }
 
-/*
- * Set entropy length grabbed for seeding
- */
 void mbedtls_hmac_drbg_set_entropy_len(mbedtls_hmac_drbg_context *ctx, size_t len)
 {
     ctx->entropy_len = len;
 }
 
-/*
- * Set reseed interval
- */
 void mbedtls_hmac_drbg_set_reseed_interval(mbedtls_hmac_drbg_context *ctx, int interval)
 {
     ctx->reseed_interval = interval;
 }
 
-/*
- * HMAC_DRBG random function with optional additional data:
- * 10.1.2.5 (arabic) + 9.3 (Roman)
- */
 int mbedtls_hmac_drbg_random_with_add(void *p_rng,
                                       unsigned char *output, size_t out_len,
                                       const unsigned char *additional, size_t add_len)
@@ -313,28 +239,24 @@ int mbedtls_hmac_drbg_random_with_add(void *p_rng,
     size_t left = out_len;
     unsigned char *out = output;
 
-    /* II. Check request length */
     if (out_len > MBEDTLS_HMAC_DRBG_MAX_REQUEST) {
         return MBEDTLS_ERR_HMAC_DRBG_REQUEST_TOO_BIG;
     }
 
-    /* III. Check input length */
     if (add_len > MBEDTLS_HMAC_DRBG_MAX_INPUT) {
         return MBEDTLS_ERR_HMAC_DRBG_INPUT_TOO_BIG;
     }
 
-    /* 1. (aka VII and IX) Check reseed counter and PR */
-    if (ctx->f_entropy != NULL && /* For no-reseeding instances */
+    if (ctx->f_entropy != NULL &&
         (ctx->prediction_resistance == MBEDTLS_HMAC_DRBG_PR_ON ||
          ctx->reseed_counter > ctx->reseed_interval)) {
         if ((ret = mbedtls_hmac_drbg_reseed(ctx, additional, add_len)) != 0) {
             return ret;
         }
 
-        add_len = 0; /* VII.4 */
+        add_len = 0;
     }
 
-    /* 2. Use additional data if any */
     if (additional != NULL && add_len != 0) {
         if ((ret = mbedtls_hmac_drbg_update(ctx,
                                             additional, add_len)) != 0) {
@@ -342,7 +264,6 @@ int mbedtls_hmac_drbg_random_with_add(void *p_rng,
         }
     }
 
-    /* 3, 4, 5. Generate bytes */
     while (left != 0) {
         size_t use_len = left > md_len ? md_len : left;
 
@@ -362,23 +283,18 @@ int mbedtls_hmac_drbg_random_with_add(void *p_rng,
         left -= use_len;
     }
 
-    /* 6. Update */
     if ((ret = mbedtls_hmac_drbg_update(ctx,
                                         additional, add_len)) != 0) {
         goto exit;
     }
 
-    /* 7. Update reseed counter */
     ctx->reseed_counter++;
 
 exit:
-    /* 8. Done */
+
     return ret;
 }
 
-/*
- * HMAC_DRBG random function
- */
 int mbedtls_hmac_drbg_random(void *p_rng, unsigned char *output, size_t out_len)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -401,10 +317,6 @@ int mbedtls_hmac_drbg_random(void *p_rng, unsigned char *output, size_t out_len)
     return ret;
 }
 
-/*
- *  This function resets HMAC_DRBG context to the state immediately
- *  after initial call of mbedtls_hmac_drbg_init().
- */
 void mbedtls_hmac_drbg_free(mbedtls_hmac_drbg_context *ctx)
 {
     if (ctx == NULL) {
@@ -412,7 +324,7 @@ void mbedtls_hmac_drbg_free(mbedtls_hmac_drbg_context *ctx)
     }
 
 #if defined(MBEDTLS_THREADING_C)
-    /* The mutex is initialized iff the md context is set up. */
+
     if (ctx->md_ctx.md_info != NULL) {
         mbedtls_mutex_free(&ctx->mutex);
     }
@@ -433,7 +345,6 @@ int mbedtls_hmac_drbg_write_seed_file(mbedtls_hmac_drbg_context *ctx, const char
         return MBEDTLS_ERR_HMAC_DRBG_FILE_IO_ERROR;
     }
 
-    /* Ensure no stdio buffering of secrets, as such buffers cannot be wiped. */
     mbedtls_setbuf(f, NULL);
 
     if ((ret = mbedtls_hmac_drbg_random(ctx, buf, sizeof(buf))) != 0) {
@@ -466,7 +377,6 @@ int mbedtls_hmac_drbg_update_seed_file(mbedtls_hmac_drbg_context *ctx, const cha
         return MBEDTLS_ERR_HMAC_DRBG_FILE_IO_ERROR;
     }
 
-    /* Ensure no stdio buffering of secrets, as such buffers cannot be wiped. */
     mbedtls_setbuf(f, NULL);
 
     n = fread(buf, 1, sizeof(buf), f);
@@ -493,13 +403,12 @@ exit:
     }
     return mbedtls_hmac_drbg_write_seed_file(ctx, path);
 }
-#endif /* MBEDTLS_FS_IO */
-
+#endif
 
 #if defined(MBEDTLS_SELF_TEST)
 
 #if !defined(MBEDTLS_MD_CAN_SHA1)
-/* Dummy checkup routine */
+
 int mbedtls_hmac_drbg_self_test(int verbose)
 {
     (void) verbose;
@@ -509,7 +418,6 @@ int mbedtls_hmac_drbg_self_test(int verbose)
 
 #define OUTPUT_LEN  80
 
-/* From a NIST PR=true test vector */
 static const unsigned char entropy_pr[] = {
     0xa0, 0xc9, 0xab, 0x58, 0xf1, 0xe2, 0xe5, 0xa4, 0xde, 0x3e, 0xbd, 0x4f,
     0xf7, 0x3e, 0x9c, 0x5b, 0x64, 0xef, 0xd8, 0xca, 0x02, 0x8c, 0xf8, 0x11,
@@ -527,7 +435,6 @@ static const unsigned char result_pr[OUTPUT_LEN] = {
     0xe1, 0x5c, 0x02, 0x9b, 0x44, 0xaf, 0x03, 0x44
 };
 
-/* From a NIST PR=false test vector */
 static const unsigned char entropy_nopr[] = {
     0x79, 0x34, 0x9b, 0xbf, 0x7c, 0xdd, 0xa5, 0x79, 0x95, 0x57, 0x86, 0x66,
     0x21, 0xc9, 0x13, 0x83, 0x11, 0x46, 0x73, 0x3a, 0xbf, 0x8c, 0x35, 0xc8,
@@ -544,7 +451,6 @@ static const unsigned char result_nopr[OUTPUT_LEN] = {
     0xe8, 0x5f, 0x13, 0x0f, 0xc8, 0xa4, 0x59, 0xb7
 };
 
-/* "Entropy" from buffer */
 static size_t test_offset;
 static int hmac_drbg_self_test_entropy(void *data,
                                        unsigned char *buf, size_t len)
@@ -562,9 +468,6 @@ static int hmac_drbg_self_test_entropy(void *data,
         return 1;                        \
     }
 
-/*
- * Checkup routine for HMAC_DRBG with SHA-1
- */
 int mbedtls_hmac_drbg_self_test(int verbose)
 {
     mbedtls_hmac_drbg_context ctx;
@@ -573,9 +476,6 @@ int mbedtls_hmac_drbg_self_test(int verbose)
 
     mbedtls_hmac_drbg_init(&ctx);
 
-    /*
-     * PR = True
-     */
     if (verbose != 0) {
         mbedtls_printf("  HMAC_DRBG (PR = True) : ");
     }
@@ -596,9 +496,6 @@ int mbedtls_hmac_drbg_self_test(int verbose)
         mbedtls_printf("passed\n");
     }
 
-    /*
-     * PR = False
-     */
     if (verbose != 0) {
         mbedtls_printf("  HMAC_DRBG (PR = False) : ");
     }
@@ -627,7 +524,7 @@ int mbedtls_hmac_drbg_self_test(int verbose)
 
     return 0;
 }
-#endif /* MBEDTLS_MD_CAN_SHA1 */
-#endif /* MBEDTLS_SELF_TEST */
+#endif
+#endif
 
-#endif /* MBEDTLS_HMAC_DRBG_C */
+#endif

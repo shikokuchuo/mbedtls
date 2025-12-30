@@ -5,15 +5,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- * Definition of Key Wrapping:
- * https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf
- * RFC 3394 "Advanced Encryption Standard (AES) Key Wrap Algorithm"
- * RFC 5649 "Advanced Encryption Standard (AES) Key Wrap with Padding Algorithm"
- *
- * Note: RFC 3394 defines different methodology for intermediate operations for
- * the wrapping and unwrapping operation than the definition in NIST SP 800-38F.
- */
 
 #include "common.h"
 
@@ -35,14 +26,10 @@
 #define KW_SEMIBLOCK_LENGTH    8
 #define MIN_SEMIBLOCKS_COUNT   3
 
-/*! The 64-bit default integrity check value (ICV) for KW mode. */
 static const unsigned char NIST_KW_ICV1[] = { 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6 };
-/*! The 32-bit default integrity check value (ICV) for KWP mode. */
+
 static const  unsigned char NIST_KW_ICV2[] = { 0xA6, 0x59, 0x59, 0xA6 };
 
-/*
- * Initialize context
- */
 void mbedtls_nist_kw_init(mbedtls_nist_kw_context *ctx)
 {
     memset(ctx, 0, sizeof(mbedtls_nist_kw_context));
@@ -68,15 +55,6 @@ int mbedtls_nist_kw_setkey(mbedtls_nist_kw_context *ctx,
         return MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA;
     }
 
-    /*
-     * SP 800-38F currently defines AES cipher as the only block cipher allowed:
-     * "For KW and KWP, the underlying block cipher shall be approved, and the
-     *  block size shall be 128 bits. Currently, the AES block cipher, with key
-     *  lengths of 128, 192, or 256 bits, is the only block cipher that fits
-     *  this profile."
-     *  Currently we don't support other 128 bit block ciphers for key wrapping,
-     *  such as Camellia and Aria.
-     */
     if (cipher != MBEDTLS_CIPHER_ID_AES) {
         return MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE;
     }
@@ -97,9 +75,6 @@ int mbedtls_nist_kw_setkey(mbedtls_nist_kw_context *ctx,
     return 0;
 }
 
-/*
- * Free context
- */
 void mbedtls_nist_kw_free(mbedtls_nist_kw_context *ctx)
 {
     if (ctx == NULL) {
@@ -110,10 +85,6 @@ void mbedtls_nist_kw_free(mbedtls_nist_kw_context *ctx)
     mbedtls_platform_zeroize(ctx, sizeof(mbedtls_nist_kw_context));
 }
 
-/*
- * Helper function for Xoring the uint64_t "t" with the encrypted A.
- * Defined in NIST SP 800-38F section 6.1
- */
 static void calc_a_xor_t(unsigned char A[KW_SEMIBLOCK_LENGTH], uint64_t t)
 {
     size_t i = 0;
@@ -122,10 +93,6 @@ static void calc_a_xor_t(unsigned char A[KW_SEMIBLOCK_LENGTH], uint64_t t)
     }
 }
 
-/*
- * KW-AE as defined in SP 800-38F section 6.2
- * KWP-AE as defined in SP 800-38F section 6.3
- */
 int mbedtls_nist_kw_wrap(mbedtls_nist_kw_context *ctx,
                          mbedtls_nist_kw_mode_t mode,
                          const unsigned char *input, size_t in_len,
@@ -140,18 +107,12 @@ int mbedtls_nist_kw_wrap(mbedtls_nist_kw_context *ctx,
     unsigned char inbuff[KW_SEMIBLOCK_LENGTH * 2];
 
     *out_len = 0;
-    /*
-     * Generate the String to work on
-     */
+
     if (mode == MBEDTLS_KW_MODE_KW) {
         if (out_size < in_len + KW_SEMIBLOCK_LENGTH) {
             return MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA;
         }
 
-        /*
-         * According to SP 800-38F Table 1, the plaintext length for KW
-         * must be between 2 to 2^54-1 semiblocks inclusive.
-         */
         if (in_len < 16 ||
 #if SIZE_MAX > 0x1FFFFFFFFFFFFF8
             in_len > 0x1FFFFFFFFFFFFF8 ||
@@ -171,10 +132,6 @@ int mbedtls_nist_kw_wrap(mbedtls_nist_kw_context *ctx,
             return MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA;
         }
 
-        /*
-         * According to SP 800-38F Table 1, the plaintext length for KWP
-         * must be between 1 and 2^32-1 octets inclusive.
-         */
         if (in_len < 1
 #if SIZE_MAX > 0xFFFFFFFF
             || in_len > 0xFFFFFFFF
@@ -206,15 +163,11 @@ int mbedtls_nist_kw_wrap(mbedtls_nist_kw_context *ctx,
         unsigned char *R2 = output + KW_SEMIBLOCK_LENGTH;
         unsigned char *A = output;
 
-        /*
-         * Do the wrapping function W, as defined in RFC 3394 section 2.2.1
-         */
         if (semiblocks < MIN_SEMIBLOCKS_COUNT) {
             ret = MBEDTLS_ERR_CIPHER_BAD_INPUT_DATA;
             goto cleanup;
         }
 
-        /* Calculate intermediate values */
         for (t = 1; t <= s; t++) {
             memcpy(inbuff, A, KW_SEMIBLOCK_LENGTH);
             memcpy(inbuff + KW_SEMIBLOCK_LENGTH, R2, KW_SEMIBLOCK_LENGTH);
@@ -249,14 +202,6 @@ cleanup:
     return ret;
 }
 
-/*
- * W-1 function as defined in RFC 3394 section 2.2.2
- * This function assumes the following:
- * 1. Output buffer is at least of size ( semiblocks - 1 ) * KW_SEMIBLOCK_LENGTH.
- * 2. The input buffer is of size semiblocks * KW_SEMIBLOCK_LENGTH.
- * 3. Minimal number of semiblocks is 3.
- * 4. A is a buffer to hold the first semiblock of the input buffer.
- */
 static int unwrap(mbedtls_nist_kw_context *ctx,
                   const unsigned char *input, size_t semiblocks,
                   unsigned char A[KW_SEMIBLOCK_LENGTH],
@@ -279,7 +224,6 @@ static int unwrap(mbedtls_nist_kw_context *ctx,
     memmove(output, input + KW_SEMIBLOCK_LENGTH, (semiblocks - 1) * KW_SEMIBLOCK_LENGTH);
     R = output + (semiblocks - 2) * KW_SEMIBLOCK_LENGTH;
 
-    /* Calculate intermediate values */
     for (t = s; t >= 1; t--) {
         calc_a_xor_t(A, t);
 
@@ -294,7 +238,6 @@ static int unwrap(mbedtls_nist_kw_context *ctx,
 
         memcpy(A, outbuff, KW_SEMIBLOCK_LENGTH);
 
-        /* Set R as LSB64 of outbuff */
         memcpy(R, outbuff + KW_SEMIBLOCK_LENGTH, KW_SEMIBLOCK_LENGTH);
 
         if (R == output) {
@@ -316,10 +259,6 @@ cleanup:
     return ret;
 }
 
-/*
- * KW-AD as defined in SP 800-38F section 6.2
- * KWP-AD as defined in SP 800-38F section 6.3
- */
 int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
                            mbedtls_nist_kw_mode_t mode,
                            const unsigned char *input, size_t in_len,
@@ -336,10 +275,7 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
     }
 
     if (mode == MBEDTLS_KW_MODE_KW) {
-        /*
-         * According to SP 800-38F Table 1, the ciphertext length for KW
-         * must be between 3 to 2^54 semiblocks inclusive.
-         */
+
         if (in_len < 24 ||
 #if SIZE_MAX > 0x200000000000000
             in_len > 0x200000000000000 ||
@@ -354,7 +290,6 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
             goto cleanup;
         }
 
-        /* Check ICV in "constant-time" */
         diff = mbedtls_ct_memcmp(NIST_KW_ICV1, A, KW_SEMIBLOCK_LENGTH);
 
         if (diff != 0) {
@@ -365,10 +300,7 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
     } else if (mode == MBEDTLS_KW_MODE_KWP) {
         size_t padlen = 0;
         uint32_t Plen;
-        /*
-         * According to SP 800-38F Table 1, the ciphertext length for KWP
-         * must be between 2 to 2^29 semiblocks inclusive.
-         */
+
         if (in_len < KW_SEMIBLOCK_LENGTH * 2 ||
 #if SIZE_MAX > 0x100000000
             in_len > 0x100000000 ||
@@ -390,7 +322,7 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
             mbedtls_platform_zeroize(outbuff, sizeof(outbuff));
             *out_len = KW_SEMIBLOCK_LENGTH;
         } else {
-            /* in_len >=  KW_SEMIBLOCK_LENGTH * 3 */
+
             ret = unwrap(ctx, input, in_len / KW_SEMIBLOCK_LENGTH,
                          A, output, out_len);
             if (ret != 0) {
@@ -398,7 +330,6 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
             }
         }
 
-        /* Check ICV in "constant-time" */
         diff = mbedtls_ct_memcmp(NIST_KW_ICV2, A, KW_SEMIBLOCK_LENGTH / 2);
 
         if (diff != 0) {
@@ -407,17 +338,11 @@ int mbedtls_nist_kw_unwrap(mbedtls_nist_kw_context *ctx,
 
         Plen = MBEDTLS_GET_UINT32_BE(A, KW_SEMIBLOCK_LENGTH / 2);
 
-        /*
-         * Plen is the length of the plaintext, when the input is valid.
-         * If Plen is larger than the plaintext and padding, padlen will be
-         * larger than 8, because of the type wrap around.
-         */
         padlen = in_len - KW_SEMIBLOCK_LENGTH - Plen;
         ret = mbedtls_ct_error_if(mbedtls_ct_uint_gt(padlen, 7),
                                   MBEDTLS_ERR_CIPHER_AUTH_FAILED, ret);
         padlen &= 7;
 
-        /* Check padding in "constant-time" */
         const uint8_t zero[KW_SEMIBLOCK_LENGTH] = { 0 };
         diff = mbedtls_ct_memcmp_partial(
             &output[*out_len - KW_SEMIBLOCK_LENGTH], zero,
@@ -449,14 +374,10 @@ cleanup:
     return ret;
 }
 
-#endif /* !MBEDTLS_NIST_KW_ALT */
+#endif
 
 #if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_AES_C)
 
-/*
- * Test vectors taken from NIST
- * https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#KW
- */
 static const unsigned int key_len[] = {
     16,
 #if !defined(MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH)
@@ -590,9 +511,6 @@ int mbedtls_nist_kw_self_test(int verbose)
     int ret = 0;
     mbedtls_nist_kw_init(&ctx);
 
-    /*
-     * KW mode
-     */
     {
         static const int num_tests = sizeof(kw_key) / sizeof(*kw_key);
 
@@ -652,9 +570,6 @@ int mbedtls_nist_kw_self_test(int verbose)
         }
     }
 
-    /*
-     * KWP mode
-     */
     {
         static const int num_tests = sizeof(kwp_key) / sizeof(*kwp_key);
 
@@ -724,6 +639,6 @@ end:
     return ret;
 }
 
-#endif /* MBEDTLS_SELF_TEST && MBEDTLS_AES_C */
+#endif
 
-#endif /* MBEDTLS_NIST_KW_C */
+#endif

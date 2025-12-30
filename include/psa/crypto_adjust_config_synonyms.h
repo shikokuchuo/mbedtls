@@ -1,13 +1,3 @@
-/**
- * \file psa/crypto_adjust_config_synonyms.h
- * \brief Adjust PSA configuration: enable quasi-synonyms
- *
- * This is an internal header. Do not include it directly.
- *
- * When two features require almost the same code, we automatically enable
- * both when either one is requested, to reduce the combinatorics of
- * possible configurations.
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
@@ -22,11 +12,7 @@
     "If you're trying to fix a complaint from check_config.h, just remove " \
     "it from your configuration file: since Mbed TLS 3.0, it is included " \
     "automatically at the right point."
-#endif /* */
-
-/****************************************************************/
-/* De facto synonyms */
-/****************************************************************/
+#endif
 
 #if defined(PSA_WANT_ALG_ECDSA_ANY) && !defined(PSA_WANT_ALG_ECDSA)
 #define PSA_WANT_ALG_ECDSA PSA_WANT_ALG_ECDSA_ANY
@@ -46,4 +32,4 @@
 #define PSA_WANT_ALG_RSA_PSS_ANY_SALT PSA_WANT_ALG_RSA_PSS
 #endif
 
-#endif /* PSA_CRYPTO_ADJUST_CONFIG_SYNONYMS_H */
+#endif

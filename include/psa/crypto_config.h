@@ -1,34 +1,7 @@
-/**
- * \file psa/crypto_config.h
- * \brief PSA crypto configuration options (set of defines)
- *
- */
 #if defined(MBEDTLS_PSA_CRYPTO_CONFIG)
-/**
- * When #MBEDTLS_PSA_CRYPTO_CONFIG is enabled in mbedtls_config.h,
- * this file determines which cryptographic mechanisms are enabled
- * through the PSA Cryptography API (\c psa_xxx() functions).
- *
- * To enable a cryptographic mechanism, uncomment the definition of
- * the corresponding \c PSA_WANT_xxx preprocessor symbol.
- * To disable a cryptographic mechanism, comment out the definition of
- * the corresponding \c PSA_WANT_xxx preprocessor symbol.
- * The names of cryptographic mechanisms correspond to values
- * defined in psa/crypto_values.h, with the prefix \c PSA_WANT_ instead
- * of \c PSA_.
- *
- * Note that many cryptographic mechanisms involve two symbols: one for
- * the key type (\c PSA_WANT_KEY_TYPE_xxx) and one for the algorithm
- * (\c PSA_WANT_ALG_xxx). Mechanisms with additional parameters may involve
- * additional symbols.
- */
+
 #else
-/**
- * When \c MBEDTLS_PSA_CRYPTO_CONFIG is disabled in mbedtls_config.h,
- * this file is not used, and cryptographic mechanisms are supported
- * through the PSA API if and only if they are supported through the
- * mbedtls_xxx API.
- */
+
 #endif
 /*
  *  Copyright The Mbed TLS Contributors
@@ -89,8 +62,7 @@
 #define PSA_WANT_ECC_SECP_K1_256                1
 #define PSA_WANT_ECC_SECP_R1_192                1
 #define PSA_WANT_ECC_SECP_R1_224                1
-/* For secp256r1, consider enabling #MBEDTLS_PSA_P256M_DRIVER_ENABLED
- * (see the description in mbedtls/mbedtls_config.h for details). */
+
 #define PSA_WANT_ECC_SECP_R1_256                1
 #define PSA_WANT_ECC_SECP_R1_384                1
 #define PSA_WANT_ECC_SECP_R1_521                1
@@ -110,20 +82,13 @@
 #define PSA_WANT_KEY_TYPE_CAMELLIA              1
 #define PSA_WANT_KEY_TYPE_CHACHA20              1
 #define PSA_WANT_KEY_TYPE_DES                   1
-//#define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR          1 /* Deprecated */
+
 #define PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY        1
 #define PSA_WANT_KEY_TYPE_DH_PUBLIC_KEY         1
 #define PSA_WANT_KEY_TYPE_RAW_DATA              1
-//#define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR          1 /* Deprecated */
+
 #define PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY        1
 
-/*
- * The following symbols extend and deprecate the legacy
- * PSA_WANT_KEY_TYPE_xxx_KEY_PAIR ones. They include the usage of that key in
- * the name's suffix. "_USE" is the most generic and it can be used to describe
- * a generic suport, whereas other ones add more features on top of that and
- * they are more specific.
- */
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_BASIC      1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_IMPORT   1
 #define PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_EXPORT   1
@@ -134,12 +99,10 @@
 #define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_IMPORT   1
 #define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_EXPORT   1
 #define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE 1
-//#define PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_DERIVE   1 /* Not supported */
 
 #define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_BASIC       1
 #define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_IMPORT    1
 #define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_EXPORT    1
 #define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_GENERATE  1
-//#define PSA_WANT_KEY_TYPE_DH_KEY_PAIR_DERIVE    1 /* Not supported */
 
-#endif /* PSA_CRYPTO_CONFIG_H */
+#endif

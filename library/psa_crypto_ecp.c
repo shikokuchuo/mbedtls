@@ -1,7 +1,4 @@
 /*
- *  PSA ECP layer on top of Mbed TLS crypto
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -32,11 +29,7 @@
     defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
-/* Helper function to verify if the provided EC's family and key bit size are valid.
- *
- * Note: "bits" parameter is used both as input and output and it might be updated
- *       in case provided input value is not multiple of 8 ("sloppy" bits).
- */
+
 static int check_ecc_parameters(psa_ecc_family_t family, size_t *bits)
 {
     switch (family) {
@@ -77,7 +70,7 @@ static int check_ecc_parameters(psa_ecc_family_t family, size_t *bits)
         case PSA_ECC_FAMILY_SECP_K1:
             switch (*bits) {
                 case 192:
-                /* secp224k1 is not and will not be supported in PSA (#3541). */
+
                 case 256:
                     return PSA_SUCCESS;
             }
@@ -100,37 +93,24 @@ psa_status_t mbedtls_psa_ecp_load_representation(
 
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type) &&
         PSA_KEY_TYPE_ECC_GET_FAMILY(type) != PSA_ECC_FAMILY_MONTGOMERY) {
-        /* A Weierstrass public key is represented as:
-         * - The byte 0x04;
-         * - `x_P` as a `ceiling(m/8)`-byte string, big-endian;
-         * - `y_P` as a `ceiling(m/8)`-byte string, big-endian.
-         * So its data length is 2m+1 where m is the curve size in bits.
-         */
+
         if ((data_length & 1) == 0) {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
         curve_bytes = data_length / 2;
 
-        /* Montgomery public keys are represented in compressed format, meaning
-         * their curve_bytes is equal to the amount of input. */
-
-        /* Private keys are represented in uncompressed private random integer
-         * format, meaning their curve_bytes is equal to the amount of input. */
     }
 
     if (explicit_bits) {
-        /* With an explicit bit-size, the data must have the matching length. */
+
         if (curve_bytes != PSA_BITS_TO_BYTES(curve_bits)) {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
     } else {
-        /* We need to infer the bit-size from the data. Since the only
-         * information we have is the length in bytes, the value of curve_bits
-         * at this stage is rounded up to the nearest multiple of 8. */
+
         curve_bits = PSA_BYTES_TO_BITS(curve_bytes);
     }
 
-    /* Allocate and initialize a key representation. */
     ecp = mbedtls_calloc(1, sizeof(mbedtls_ecp_keypair));
     if (ecp == NULL) {
         return PSA_ERROR_INSUFFICIENT_MEMORY;
@@ -142,7 +122,6 @@ psa_status_t mbedtls_psa_ecp_load_representation(
         goto exit;
     }
 
-    /* Load the group. */
     grp_id = mbedtls_ecc_group_from_psa(PSA_KEY_TYPE_ECC_GET_FAMILY(type),
                                         curve_bits);
     if (grp_id == MBEDTLS_ECP_DP_NONE) {
@@ -156,9 +135,8 @@ psa_status_t mbedtls_psa_ecp_load_representation(
         goto exit;
     }
 
-    /* Load the key material. */
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
-        /* Load the public value. */
+
         status = mbedtls_to_psa_error(
             mbedtls_ecp_point_read_binary(&ecp->grp, &ecp->Q,
                                           data,
@@ -167,14 +145,13 @@ psa_status_t mbedtls_psa_ecp_load_representation(
             goto exit;
         }
 
-        /* Check that the point is on the curve. */
         status = mbedtls_to_psa_error(
             mbedtls_ecp_check_pubkey(&ecp->grp, &ecp->Q));
         if (status != PSA_SUCCESS) {
             goto exit;
         }
     } else {
-        /* Load and validate the secret value. */
+
         status = mbedtls_to_psa_error(
             mbedtls_ecp_read_key(ecp->grp.id,
                                  ecp,
@@ -194,13 +171,7 @@ exit:
 
     return status;
 }
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_BASIC) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) ||
-        * defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) ||
-        * defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) ||
-        * defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH) */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) || \
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT) || \
@@ -215,7 +186,6 @@ psa_status_t mbedtls_psa_ecp_import_key(
     psa_status_t status;
     mbedtls_ecp_keypair *ecp = NULL;
 
-    /* Parse input */
     status = mbedtls_psa_ecp_load_representation(attributes->type,
                                                  attributes->bits,
                                                  data,
@@ -232,16 +202,13 @@ psa_status_t mbedtls_psa_ecp_import_key(
         *bits = ecp->grp.nbits;
     }
 
-    /* Re-export the data to PSA export format. There is currently no support
-     * for other input formats then the export format, so this is a 1-1
-     * copy operation. */
     status = mbedtls_psa_ecp_export_key(attributes->type,
                                         ecp,
                                         key_buffer,
                                         key_buffer_size,
                                         key_buffer_length);
 exit:
-    /* Always free the PK object (will also free contained ECP context) */
+
     mbedtls_ecp_keypair_free(ecp);
     mbedtls_free(ecp);
 
@@ -257,9 +224,9 @@ psa_status_t mbedtls_psa_ecp_export_key(psa_key_type_t type,
     psa_status_t status;
 
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
-        /* Check whether the public part is loaded */
+
         if (mbedtls_ecp_is_zero(&ecp->Q)) {
-            /* Calculate the public key */
+
             status = mbedtls_to_psa_error(
                 mbedtls_ecp_mul(&ecp->grp, &ecp->Q, &ecp->d, &ecp->grp.G,
                                 mbedtls_psa_get_random,
@@ -312,9 +279,7 @@ psa_status_t mbedtls_psa_ecp_export_public_key(
 
     return status;
 }
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE)
 psa_status_t mbedtls_psa_ecp_generate_key(
@@ -352,11 +317,7 @@ exit:
     mbedtls_ecp_keypair_free(&ecp);
     return mbedtls_to_psa_error(ret);
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE */
-
-/****************************************************************/
-/* ECDSA sign/verify */
-/****************************************************************/
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA)
@@ -403,7 +364,7 @@ psa_status_t mbedtls_psa_ecdsa_sign_hash(
 #else
         ret = MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE;
         goto cleanup;
-#endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
+#endif
     } else {
         (void) alg;
         MBEDTLS_MPI_CHK(mbedtls_ecdsa_sign(&ecp->grp, &r, &s, &ecp->d,
@@ -435,7 +396,6 @@ psa_status_t mbedtls_psa_ecp_load_public_part(mbedtls_ecp_keypair *ecp)
 {
     int ret = 0;
 
-    /* Check whether the public part is loaded. If not, load it. */
     if (mbedtls_ecp_is_zero(&ecp->Q)) {
         ret = mbedtls_ecp_mul(&ecp->grp, &ecp->Q,
                               &ecp->d, &ecp->grp.G,
@@ -508,12 +468,7 @@ cleanup:
     return status;
 }
 
-#endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
-        * defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
-
-/****************************************************************/
-/* ECDH Key Agreement */
-/****************************************************************/
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
 psa_status_t mbedtls_psa_key_agreement_ecdh(
@@ -588,7 +543,6 @@ exit:
     mbedtls_free(ecp);
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_ECDH */
+#endif
 
-
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif

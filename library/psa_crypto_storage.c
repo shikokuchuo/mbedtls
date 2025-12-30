@@ -1,7 +1,4 @@
 /*
- *  PSA persistent key storage
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -19,60 +16,26 @@
 
 #if defined(MBEDTLS_PSA_ITS_FILE_C)
 #include "psa_crypto_its.h"
-#else /* Native ITS implementation */
+#else
 #include "psa/error.h"
 #include "psa/internal_trusted_storage.h"
 #endif
 
 #include "mbedtls/platform.h"
 
-
-
-/****************************************************************/
-/* Key storage */
-/****************************************************************/
-
-/* Determine a file name (ITS file identifier) for the given key identifier.
- * The file name must be distinct from any file that is used for a purpose
- * other than storing a key. Currently, the only such file is the random seed
- * file whose name is PSA_CRYPTO_ITS_RANDOM_SEED_UID and whose value is
- * 0xFFFFFF52. */
 static psa_storage_uid_t psa_its_identifier_of_slot(mbedtls_svc_key_id_t key)
 {
 #if defined(MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER)
-    /* Encode the owner in the upper 32 bits. This means that if
-     * owner values are nonzero (as they are on a PSA platform),
-     * no key file will ever have a value less than 0x100000000, so
-     * the whole range 0..0xffffffff is available for non-key files. */
+
     uint32_t unsigned_owner_id = MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(key);
     return ((uint64_t) unsigned_owner_id << 32) |
            MBEDTLS_SVC_KEY_ID_GET_KEY_ID(key);
 #else
-    /* Use the key id directly as a file name.
-     * psa_is_key_id_valid() in psa_crypto_slot_management.c
-     * is responsible for ensuring that key identifiers do not have a
-     * value that is reserved for non-key files. */
+
     return key;
 #endif
 }
 
-/**
- * \brief Load persistent data for the given key slot number.
- *
- * This function reads data from a storage backend and returns the data in a
- * buffer.
- *
- * \param key               Persistent identifier of the key to be loaded. This
- *                          should be an occupied storage location.
- * \param[out] data         Buffer where the data is to be written.
- * \param data_size         Size of the \c data buffer in bytes.
- *
- * \retval #PSA_SUCCESS \emptydescription
- * \retval #PSA_ERROR_DATA_INVALID \emptydescription
- * \retval #PSA_ERROR_DATA_CORRUPT \emptydescription
- * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
- * \retval #PSA_ERROR_DOES_NOT_EXIST \emptydescription
- */
 static psa_status_t psa_crypto_storage_load(
     const mbedtls_svc_key_id_t key, uint8_t *data, size_t data_size)
 {
@@ -108,23 +71,6 @@ int psa_is_key_present_in_storage(const mbedtls_svc_key_id_t key)
     return 1;
 }
 
-/**
- * \brief Store persistent data for the given key slot number.
- *
- * This function stores the given data buffer to a persistent storage.
- *
- * \param key           Persistent identifier of the key to be stored. This
- *                      should be an unoccupied storage location.
- * \param[in] data      Buffer containing the data to be stored.
- * \param data_length   The number of bytes
- *                      that make up the data.
- *
- * \retval #PSA_SUCCESS \emptydescription
- * \retval #PSA_ERROR_INSUFFICIENT_STORAGE \emptydescription
- * \retval #PSA_ERROR_ALREADY_EXISTS \emptydescription
- * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
- * \retval #PSA_ERROR_DATA_INVALID \emptydescription
- */
 static psa_status_t psa_crypto_storage_store(const mbedtls_svc_key_id_t key,
                                              const uint8_t *data,
                                              size_t data_length)
@@ -154,10 +100,7 @@ static psa_status_t psa_crypto_storage_store(const mbedtls_svc_key_id_t key,
 
 exit:
     if (status != PSA_SUCCESS) {
-        /* Remove the file in case we managed to create it but something
-         * went wrong. It's ok if the file doesn't exist. If the file exists
-         * but the removal fails, we're already reporting an error so there's
-         * nothing else we can do. */
+
         (void) psa_its_remove(data_identifier);
     }
     return status;
@@ -186,18 +129,6 @@ psa_status_t psa_destroy_persistent_key(const mbedtls_svc_key_id_t key)
     return PSA_SUCCESS;
 }
 
-/**
- * \brief Get data length for given key slot number.
- *
- * \param key               Persistent identifier whose stored data length
- *                          is to be obtained.
- * \param[out] data_length  The number of bytes that make up the data.
- *
- * \retval #PSA_SUCCESS \emptydescription
- * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
- * \retval #PSA_ERROR_DOES_NOT_EXIST \emptydescription
- * \retval #PSA_ERROR_DATA_CORRUPT \emptydescription
- */
 static psa_status_t psa_crypto_storage_get_data_length(
     const mbedtls_svc_key_id_t key,
     size_t *data_length)
@@ -216,9 +147,6 @@ static psa_status_t psa_crypto_storage_get_data_length(
     return PSA_SUCCESS;
 }
 
-/**
- * Persistent key storage magic header.
- */
 #define PSA_KEY_STORAGE_MAGIC_HEADER "PSA\0KEY"
 #define PSA_KEY_STORAGE_MAGIC_HEADER_LENGTH (sizeof(PSA_KEY_STORAGE_MAGIC_HEADER))
 
@@ -322,7 +250,6 @@ psa_status_t psa_save_persistent_key(const psa_key_attributes_t *attr,
     uint8_t *storage_data;
     psa_status_t status;
 
-    /* All keys saved to persistent storage always have a key context */
     if (data == NULL || data_length == 0) {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
@@ -380,7 +307,6 @@ psa_status_t psa_load_persistent_key(psa_key_attributes_t *attr,
     status = psa_parse_key_data_from_storage(loaded_data, storage_data_length,
                                              data, data_length, attr);
 
-    /* All keys saved to persistent storage always have a key context */
     if (status == PSA_SUCCESS &&
         (*data == NULL || *data_length == 0)) {
         status = PSA_ERROR_STORAGE_FAILURE;
@@ -390,12 +316,6 @@ exit:
     mbedtls_zeroize_and_free(loaded_data, storage_data_length);
     return status;
 }
-
-
-
-/****************************************************************/
-/* Transactions */
-/****************************************************************/
 
 #if defined(PSA_CRYPTO_STORAGE_HAS_TRANSACTIONS)
 
@@ -407,8 +327,7 @@ psa_status_t psa_crypto_save_transaction(void)
     psa_status_t status;
     status = psa_its_get_info(PSA_CRYPTO_ITS_TRANSACTION_UID, &p_info);
     if (status == PSA_SUCCESS) {
-        /* This shouldn't happen: we're trying to start a transaction while
-         * there is still a transaction that hasn't been replayed. */
+
         return PSA_ERROR_CORRUPTION_DETECTED;
     } else if (status != PSA_ERROR_DOES_NOT_EXIST) {
         return status;
@@ -438,20 +357,12 @@ psa_status_t psa_crypto_load_transaction(void)
 psa_status_t psa_crypto_stop_transaction(void)
 {
     psa_status_t status = psa_its_remove(PSA_CRYPTO_ITS_TRANSACTION_UID);
-    /* Whether or not updating the storage succeeded, the transaction is
-     * finished now. It's too late to go back, so zero out the in-memory
-     * data. */
+
     memset(&psa_crypto_transaction, 0, sizeof(psa_crypto_transaction));
     return status;
 }
 
-#endif /* PSA_CRYPTO_STORAGE_HAS_TRANSACTIONS */
-
-
-
-/****************************************************************/
-/* Random generator state */
-/****************************************************************/
+#endif
 
 #if defined(MBEDTLS_PSA_INJECT_ENTROPY)
 psa_status_t mbedtls_psa_storage_inject_entropy(const unsigned char *seed,
@@ -462,20 +373,14 @@ psa_status_t mbedtls_psa_storage_inject_entropy(const unsigned char *seed,
 
     status = psa_its_get_info(PSA_CRYPTO_ITS_RANDOM_SEED_UID, &p_info);
 
-    if (PSA_ERROR_DOES_NOT_EXIST == status) { /* No seed exists */
+    if (PSA_ERROR_DOES_NOT_EXIST == status) {
         status = psa_its_set(PSA_CRYPTO_ITS_RANDOM_SEED_UID, seed_size, seed, 0);
     } else if (PSA_SUCCESS == status) {
-        /* You should not be here. Seed needs to be injected only once */
+
         status = PSA_ERROR_NOT_PERMITTED;
     }
     return status;
 }
-#endif /* MBEDTLS_PSA_INJECT_ENTROPY */
+#endif
 
-
-
-/****************************************************************/
-/* The end */
-/****************************************************************/
-
-#endif /* MBEDTLS_PSA_CRYPTO_STORAGE_C */
+#endif

@@ -1,7 +1,4 @@
 /*
- *  PSA AEAD entry points
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -46,9 +43,7 @@ static psa_status_t psa_aead_setup(
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
         case PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM, 0):
             operation->alg = PSA_ALG_CCM;
-            /* CCM allows the following tag lengths: 4, 6, 8, 10, 12, 14, 16.
-             * The call to mbedtls_ccm_encrypt_and_tag or
-             * mbedtls_ccm_auth_decrypt will validate the tag length. */
+
             if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->type) != 16) {
                 return PSA_ERROR_INVALID_ARGUMENT;
             }
@@ -61,14 +56,12 @@ static psa_status_t psa_aead_setup(
                 return status;
             }
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_GCM)
         case PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, 0):
             operation->alg = PSA_ALG_GCM;
-            /* GCM allows the following tag lengths: 4, 8, 12, 13, 14, 15, 16.
-             * The call to mbedtls_gcm_crypt_and_tag or
-             * mbedtls_gcm_auth_decrypt will validate the tag length. */
+
             if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->type) != 16) {
                 return PSA_ERROR_INVALID_ARGUMENT;
             }
@@ -81,12 +74,12 @@ static psa_status_t psa_aead_setup(
                 return status;
             }
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
         case PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CHACHA20_POLY1305, 0):
             operation->alg = PSA_ALG_CHACHA20_POLY1305;
-            /* We only support the default tag length. */
+
             if (alg != PSA_ALG_CHACHA20_POLY1305) {
                 return PSA_ERROR_NOT_SUPPORTED;
             }
@@ -99,7 +92,7 @@ static psa_status_t psa_aead_setup(
                 return status;
             }
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
 
         default:
             (void) status;
@@ -134,8 +127,6 @@ psa_status_t mbedtls_psa_aead_encrypt(
         goto exit;
     }
 
-    /* For all currently supported modes, the tag is at the end of the
-     * ciphertext. */
     if (ciphertext_size < (plaintext_length + operation.tag_length)) {
         status = PSA_ERROR_BUFFER_TOO_SMALL;
         goto exit;
@@ -153,7 +144,7 @@ psa_status_t mbedtls_psa_aead_encrypt(
                                         plaintext, ciphertext,
                                         tag, operation.tag_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_GCM)
     if (operation.alg == PSA_ALG_GCM) {
         status = mbedtls_to_psa_error(
@@ -165,7 +156,7 @@ psa_status_t mbedtls_psa_aead_encrypt(
                                       plaintext, ciphertext,
                                       operation.tag_length, tag));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation.alg == PSA_ALG_CHACHA20_POLY1305) {
         if (operation.tag_length != 16) {
@@ -182,7 +173,7 @@ psa_status_t mbedtls_psa_aead_encrypt(
                                                ciphertext,
                                                tag));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) tag;
         (void) nonce;
@@ -203,11 +194,6 @@ exit:
     return status;
 }
 
-/* Locate the tag in a ciphertext buffer containing the encrypted data
- * followed by the tag. Return the length of the part preceding the tag in
- * *plaintext_length. This is the size of the plaintext in modes where
- * the encrypted data has the same size as the plaintext, such as
- * CCM and GCM. */
 static psa_status_t psa_aead_unpadded_locate_tag(size_t tag_length,
                                                  const uint8_t *ciphertext,
                                                  size_t ciphertext_length,
@@ -264,7 +250,7 @@ psa_status_t mbedtls_psa_aead_decrypt(
                                      ciphertext, plaintext,
                                      tag, operation.tag_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_GCM)
     if (operation.alg == PSA_ALG_GCM) {
         status = mbedtls_to_psa_error(
@@ -276,7 +262,7 @@ psa_status_t mbedtls_psa_aead_decrypt(
                                      tag, operation.tag_length,
                                      ciphertext, plaintext));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation.alg == PSA_ALG_CHACHA20_POLY1305) {
         if (operation.tag_length != 16) {
@@ -293,7 +279,7 @@ psa_status_t mbedtls_psa_aead_decrypt(
                                             ciphertext,
                                             plaintext));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) nonce;
         (void) nonce_length;
@@ -316,8 +302,6 @@ exit:
     return status;
 }
 
-/* Set the key and algorithm for a multipart authenticated encryption
- * operation. */
 psa_status_t mbedtls_psa_aead_encrypt_setup(
     mbedtls_psa_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
@@ -337,8 +321,6 @@ psa_status_t mbedtls_psa_aead_encrypt_setup(
     return status;
 }
 
-/* Set the key and algorithm for a multipart authenticated decryption
- * operation. */
 psa_status_t mbedtls_psa_aead_decrypt_setup(
     mbedtls_psa_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
@@ -358,7 +340,6 @@ psa_status_t mbedtls_psa_aead_decrypt_setup(
     return status;
 }
 
-/* Set a nonce for the multipart AEAD operation*/
 psa_status_t mbedtls_psa_aead_set_nonce(
     mbedtls_psa_aead_operation_t *operation,
     const uint8_t *nonce,
@@ -375,7 +356,7 @@ psa_status_t mbedtls_psa_aead_set_nonce(
                                nonce,
                                nonce_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
     if (operation->alg == PSA_ALG_CCM) {
         status = mbedtls_to_psa_error(
@@ -385,14 +366,10 @@ psa_status_t mbedtls_psa_aead_set_nonce(
                                nonce,
                                nonce_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation->alg == PSA_ALG_CHACHA20_POLY1305) {
-        /* Note - ChaChaPoly allows an 8 byte nonce, but we would have to
-         * allocate a buffer in the operation, copy the nonce to it and pad
-         * it, so for now check the nonce is 12 bytes, as
-         * mbedtls_chachapoly_starts() assumes it can read 12 bytes from the
-         * passed in buffer. */
+
         if (nonce_length != 12) {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
@@ -404,7 +381,7 @@ psa_status_t mbedtls_psa_aead_set_nonce(
                                       MBEDTLS_CHACHAPOLY_ENCRYPT :
                                       MBEDTLS_CHACHAPOLY_DECRYPT));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) operation;
         (void) nonce;
@@ -416,7 +393,6 @@ psa_status_t mbedtls_psa_aead_set_nonce(
     return status;
 }
 
-/* Declare the lengths of the message and additional data for AEAD. */
 psa_status_t mbedtls_psa_aead_set_lengths(
     mbedtls_psa_aead_operation_t *operation,
     size_t ad_length,
@@ -431,16 +407,15 @@ psa_status_t mbedtls_psa_aead_set_lengths(
                                     operation->tag_length));
 
     }
-#else /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#else
     (void) operation;
     (void) ad_length;
     (void) plaintext_length;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 
     return PSA_SUCCESS;
 }
 
-/* Pass additional data to an active multipart AEAD operation. */
 psa_status_t mbedtls_psa_aead_update_ad(
     mbedtls_psa_aead_operation_t *operation,
     const uint8_t *input,
@@ -453,13 +428,13 @@ psa_status_t mbedtls_psa_aead_update_ad(
         status = mbedtls_to_psa_error(
             mbedtls_gcm_update_ad(&operation->ctx.gcm, input, input_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
     if (operation->alg == PSA_ALG_CCM) {
         status = mbedtls_to_psa_error(
             mbedtls_ccm_update_ad(&operation->ctx.ccm, input, input_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation->alg == PSA_ALG_CHACHA20_POLY1305) {
         status = mbedtls_to_psa_error(
@@ -467,7 +442,7 @@ psa_status_t mbedtls_psa_aead_update_ad(
                                           input,
                                           input_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) operation;
         (void) input;
@@ -479,8 +454,6 @@ psa_status_t mbedtls_psa_aead_update_ad(
     return status;
 }
 
-/* Encrypt or decrypt a message fragment in an active multipart AEAD
- * operation.*/
 psa_status_t mbedtls_psa_aead_update(
     mbedtls_psa_aead_operation_t *operation,
     const uint8_t *input,
@@ -502,7 +475,7 @@ psa_status_t mbedtls_psa_aead_update(
                                output, output_size,
                                &update_output_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
     if (operation->alg == PSA_ALG_CCM) {
         if (output_size < input_length) {
@@ -515,7 +488,7 @@ psa_status_t mbedtls_psa_aead_update(
                                output, output_size,
                                &update_output_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation->alg == PSA_ALG_CHACHA20_POLY1305) {
         if (output_size < input_length) {
@@ -528,7 +501,7 @@ psa_status_t mbedtls_psa_aead_update(
                                       input,
                                       output));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) operation;
         (void) input;
@@ -545,7 +518,6 @@ psa_status_t mbedtls_psa_aead_update(
     return status;
 }
 
-/* Finish encrypting a message in a multipart AEAD operation. */
 psa_status_t mbedtls_psa_aead_finish(
     mbedtls_psa_aead_operation_t *operation,
     uint8_t *ciphertext,
@@ -569,11 +541,10 @@ psa_status_t mbedtls_psa_aead_finish(
                                ciphertext, ciphertext_size, ciphertext_length,
                                tag, operation->tag_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)
     if (operation->alg == PSA_ALG_CCM) {
-        /* tag must be big enough to store a tag of size passed into set
-         * lengths. */
+
         if (tag_size < operation->tag_length) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
@@ -582,13 +553,10 @@ psa_status_t mbedtls_psa_aead_finish(
             mbedtls_ccm_finish(&operation->ctx.ccm,
                                tag, operation->tag_length));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
     if (operation->alg == PSA_ALG_CHACHA20_POLY1305) {
-        /* Belt and braces. Although the above tag_size check should have
-         * already done this, if we later start supporting smaller tag sizes
-         * for chachapoly, then passing a tag buffer smaller than 16 into here
-         * could cause a buffer overflow, so better safe than sorry. */
+
         if (tag_size < 16) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
@@ -597,7 +565,7 @@ psa_status_t mbedtls_psa_aead_finish(
             mbedtls_chachapoly_finish(&operation->ctx.chachapoly,
                                       tag));
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     {
         (void) ciphertext;
         (void) ciphertext_size;
@@ -610,8 +578,7 @@ psa_status_t mbedtls_psa_aead_finish(
     }
 
     if (status == PSA_SUCCESS) {
-        /* This will be zero for all supported algorithms currently, but left
-         * here for future support. */
+
         *ciphertext_length = finish_output_size;
         *tag_length = operation->tag_length;
     }
@@ -619,7 +586,6 @@ psa_status_t mbedtls_psa_aead_finish(
     return status;
 }
 
-/* Abort an AEAD operation */
 psa_status_t mbedtls_psa_aead_abort(
     mbedtls_psa_aead_operation_t *operation)
 {
@@ -628,17 +594,17 @@ psa_status_t mbedtls_psa_aead_abort(
         case PSA_ALG_CCM:
             mbedtls_ccm_free(&operation->ctx.ccm);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_GCM)
         case PSA_ALG_GCM:
             mbedtls_gcm_free(&operation->ctx.gcm);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305)
         case PSA_ALG_CHACHA20_POLY1305:
             mbedtls_chachapoly_free(&operation->ctx.chachapoly);
             break;
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 */
+#endif
     }
 
     operation->is_encrypt = 0;
@@ -646,4 +612,4 @@ psa_status_t mbedtls_psa_aead_abort(
     return PSA_SUCCESS;
 }
 
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif

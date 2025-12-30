@@ -4,16 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The ITU-T X.509 standard defines a certificate format for PKI.
- *
- *  http://www.ietf.org/rfc/rfc5280.txt (Certificates and CRLs)
- *  http://www.ietf.org/rfc/rfc3279.txt (Alg IDs for CRLs)
- *  http://www.ietf.org/rfc/rfc2986.txt (CSRs, aka PKCS#10)
- *
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.680-0207.pdf
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
- */
 
 #include "common.h"
 
@@ -57,9 +47,6 @@
         }                                               \
     } while (0)
 
-/*
- *  CertificateSerialNumber  ::=  INTEGER
- */
 int mbedtls_x509_get_serial(unsigned char **p, const unsigned char *end,
                             mbedtls_x509_buf *serial)
 {
@@ -88,12 +75,6 @@ int mbedtls_x509_get_serial(unsigned char **p, const unsigned char *end,
     return 0;
 }
 
-/* Get an algorithm identifier without parameters (eg for signatures)
- *
- *  AlgorithmIdentifier  ::=  SEQUENCE  {
- *       algorithm               OBJECT IDENTIFIER,
- *       parameters              ANY DEFINED BY algorithm OPTIONAL  }
- */
 int mbedtls_x509_get_alg_null(unsigned char **p, const unsigned char *end,
                               mbedtls_x509_buf *alg)
 {
@@ -106,9 +87,6 @@ int mbedtls_x509_get_alg_null(unsigned char **p, const unsigned char *end,
     return 0;
 }
 
-/*
- * Parse an algorithm identifier with (optional) parameters
- */
 int mbedtls_x509_get_alg(unsigned char **p, const unsigned char *end,
                          mbedtls_x509_buf *alg, mbedtls_x509_buf *params)
 {
@@ -121,9 +99,6 @@ int mbedtls_x509_get_alg(unsigned char **p, const unsigned char *end,
     return 0;
 }
 
-/*
- * Convert md type to string
- */
 #if !defined(MBEDTLS_X509_REMOVE_INFO) && defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
 
 static inline const char *md_type_to_string(mbedtls_md_type_t md_alg)
@@ -164,18 +139,10 @@ static inline const char *md_type_to_string(mbedtls_md_type_t md_alg)
     }
 }
 
-#endif /* !defined(MBEDTLS_X509_REMOVE_INFO) && defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT) */
+#endif
 
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
-/*
- * HashAlgorithm ::= AlgorithmIdentifier
- *
- * AlgorithmIdentifier  ::=  SEQUENCE  {
- *      algorithm               OBJECT IDENTIFIER,
- *      parameters              ANY DEFINED BY algorithm OPTIONAL  }
- *
- * For HashAlgorithm, parameters MUST be NULL or absent.
- */
+
 static int x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t *md_alg)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -184,7 +151,6 @@ static int x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t *md_
     mbedtls_x509_buf md_oid;
     size_t len;
 
-    /* Make sure we got a SEQUENCE and setup bounds */
     if (alg->tag != (MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_ALG,
                                  MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
@@ -198,7 +164,6 @@ static int x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t *md_
                                  MBEDTLS_ERR_ASN1_OUT_OF_DATA);
     }
 
-    /* Parse md_oid */
     md_oid.tag = *p;
 
     if ((ret = mbedtls_asn1_get_tag(&p, end, &md_oid.len, MBEDTLS_ASN1_OID)) != 0) {
@@ -208,12 +173,10 @@ static int x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t *md_
     md_oid.p = p;
     p += md_oid.len;
 
-    /* Get md_alg from md_oid */
     if ((ret = mbedtls_oid_get_md_alg(&md_oid, md_alg)) != 0) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_ALG, ret);
     }
 
-    /* Make sure params is absent of NULL */
     if (p == end) {
         return 0;
     }
@@ -230,18 +193,6 @@ static int x509_get_hash_alg(const mbedtls_x509_buf *alg, mbedtls_md_type_t *md_
     return 0;
 }
 
-/*
- *    RSASSA-PSS-params  ::=  SEQUENCE  {
- *       hashAlgorithm     [0] HashAlgorithm DEFAULT sha1Identifier,
- *       maskGenAlgorithm  [1] MaskGenAlgorithm DEFAULT mgf1SHA1Identifier,
- *       saltLength        [2] INTEGER DEFAULT 20,
- *       trailerField      [3] INTEGER DEFAULT 1  }
- *    -- Note that the tags in this Sequence are explicit.
- *
- * RFC 4055 (which defines use of RSASSA-PSS in PKIX) states that the value
- * of trailerField MUST be 1, and PKCS#1 v2.2 doesn't even define any other
- * option. Enforce this at parsing time.
- */
 int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
                                        mbedtls_md_type_t *md_alg, mbedtls_md_type_t *mgf_md,
                                        int *salt_len)
@@ -252,12 +203,10 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
     size_t len;
     mbedtls_x509_buf alg_id, alg_params;
 
-    /* First set everything to defaults */
     *md_alg = MBEDTLS_MD_SHA1;
     *mgf_md = MBEDTLS_MD_SHA1;
     *salt_len = 20;
 
-    /* Make sure params is a SEQUENCE and setup bounds */
     if (params->tag != (MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_ALG,
                                  MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
@@ -270,15 +219,11 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
         return 0;
     }
 
-    /*
-     * HashAlgorithm
-     */
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
                                     MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_ASN1_CONSTRUCTED |
                                     0)) == 0) {
         end2 = p + len;
 
-        /* HashAlgorithm ::= AlgorithmIdentifier (without parameters) */
         if ((ret = mbedtls_x509_get_alg_null(&p, end2, &alg_id)) != 0) {
             return ret;
         }
@@ -299,26 +244,20 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
         return 0;
     }
 
-    /*
-     * MaskGenAlgorithm
-     */
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
                                     MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_ASN1_CONSTRUCTED |
                                     1)) == 0) {
         end2 = p + len;
 
-        /* MaskGenAlgorithm ::= AlgorithmIdentifier (params = HashAlgorithm) */
         if ((ret = mbedtls_x509_get_alg(&p, end2, &alg_id, &alg_params)) != 0) {
             return ret;
         }
 
-        /* Only MFG1 is recognised for now */
         if (MBEDTLS_OID_CMP(MBEDTLS_OID_MGF1, &alg_id) != 0) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE,
                                      MBEDTLS_ERR_OID_NOT_FOUND);
         }
 
-        /* Parse HashAlgorithm */
         if ((ret = x509_get_hash_alg(&alg_params, mgf_md)) != 0) {
             return ret;
         }
@@ -335,9 +274,6 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
         return 0;
     }
 
-    /*
-     * salt_len
-     */
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
                                     MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_ASN1_CONSTRUCTED |
                                     2)) == 0) {
@@ -359,9 +295,6 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
         return 0;
     }
 
-    /*
-     * trailer_field (if present, must be 1)
-     */
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
                                     MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_ASN1_CONSTRUCTED |
                                     3)) == 0) {
@@ -392,17 +325,8 @@ int mbedtls_x509_get_rsassa_pss_params(const mbedtls_x509_buf *params,
 
     return 0;
 }
-#endif /* MBEDTLS_X509_RSASSA_PSS_SUPPORT */
+#endif
 
-/*
- *  AttributeTypeAndValue ::= SEQUENCE {
- *    type     AttributeType,
- *    value    AttributeValue }
- *
- *  AttributeType ::= OBJECT IDENTIFIER
- *
- *  AttributeValue ::= ANY DEFINED BY AttributeType
- */
 static int x509_get_attr_type_value(unsigned char **p,
                                     const unsigned char *end,
                                     mbedtls_x509_name *cur)
@@ -467,34 +391,6 @@ static int x509_get_attr_type_value(unsigned char **p,
     return 0;
 }
 
-/*
- *  Name ::= CHOICE { -- only one possibility for now --
- *       rdnSequence  RDNSequence }
- *
- *  RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
- *
- *  RelativeDistinguishedName ::=
- *    SET OF AttributeTypeAndValue
- *
- *  AttributeTypeAndValue ::= SEQUENCE {
- *    type     AttributeType,
- *    value    AttributeValue }
- *
- *  AttributeType ::= OBJECT IDENTIFIER
- *
- *  AttributeValue ::= ANY DEFINED BY AttributeType
- *
- * The data structure is optimized for the common case where each RDN has only
- * one element, which is represented as a list of AttributeTypeAndValue.
- * For the general case we still use a flat list, but we mark elements of the
- * same set so that they are "merged" together in the functions that consume
- * this list, eg mbedtls_x509_dn_gets().
- *
- * On success, this function may allocate a linked list starting at cur->next
- * that must later be free'd by the caller using mbedtls_free(). In error
- * cases, this function frees all allocated memory internally and the caller
- * has no freeing responsibilities.
- */
 int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
                           mbedtls_x509_name *cur)
 {
@@ -503,11 +399,8 @@ int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
     const unsigned char *end_set;
     mbedtls_x509_name *head = cur;
 
-    /* don't use recursion, we'd risk stack overflow if not optimized */
     while (1) {
-        /*
-         * parse SET
-         */
+
         if ((ret = mbedtls_asn1_get_tag(p, end, &set_len,
                                         MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)) != 0) {
             ret = MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_NAME, ret);
@@ -525,7 +418,6 @@ int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
                 break;
             }
 
-            /* Mark this item as being no the only one in a set */
             cur->next_merged = 1;
 
             cur->next = mbedtls_calloc(1, sizeof(mbedtls_x509_name));
@@ -538,9 +430,6 @@ int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
             cur = cur->next;
         }
 
-        /*
-         * continue until end of SEQUENCE is reached
-         */
         if (*p == end) {
             return 0;
         }
@@ -556,7 +445,7 @@ int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
     }
 
 error:
-    /* Skip the first element as we did not allocate it */
+
     mbedtls_asn1_free_named_data_list_shallow(head->next);
     head->next = NULL;
 
@@ -584,12 +473,12 @@ static int x509_date_is_valid(const mbedtls_x509_time *t)
             return MBEDTLS_ERR_X509_INVALID_DATE;
     }
 
-    if ((unsigned int) (t->day - 1) >= month_days ||      /* (1 - days in month) */
-        /* (unsigned int) (t->mon - 1) >= 12 || */  /* (1 - 12) checked above */
-        (unsigned int) t->year > 9999 ||         /* (0 - 9999) */
-        (unsigned int) t->hour > 23 ||           /* (0 - 23) */
-        (unsigned int) t->min  > 59 ||           /* (0 - 59) */
-        (unsigned int) t->sec  > 59) {           /* (0 - 59) */
+    if ((unsigned int) (t->day - 1) >= month_days ||
+
+        (unsigned int) t->year > 9999 ||
+        (unsigned int) t->hour > 23 ||
+        (unsigned int) t->min  > 59 ||
+        (unsigned int) t->sec  > 59) {
         return MBEDTLS_ERR_X509_INVALID_DATE;
     }
 
@@ -603,18 +492,11 @@ static int x509_parse2_int(const unsigned char *p)
     return (d1 < 10 && d2 < 10) ? (int) (d1 * 10 + d2) : -1;
 }
 
-/*
- * Parse an ASN1_UTC_TIME (yearlen=2) or ASN1_GENERALIZED_TIME (yearlen=4)
- * field.
- */
 static int x509_parse_time(const unsigned char *p, mbedtls_x509_time *tm,
                            size_t yearlen)
 {
     int x;
 
-    /*
-     * Parse year, month, day, hour, minute, second
-     */
     tm->year = x509_parse2_int(p);
     if (tm->year < 0) {
         return MBEDTLS_ERR_X509_INVALID_DATE;
@@ -641,11 +523,6 @@ static int x509_parse_time(const unsigned char *p, mbedtls_x509_time *tm,
     return x509_date_is_valid(tm);
 }
 
-/*
- *  Time ::= CHOICE {
- *       utcTime        UTCTime,
- *       generalTime    GeneralizedTime }
- */
 int mbedtls_x509_get_time(unsigned char **p, const unsigned char *end,
                           mbedtls_x509_time *tm)
 {
@@ -676,7 +553,6 @@ int mbedtls_x509_get_time(unsigned char **p, const unsigned char *end,
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_DATE, ret);
     }
 
-    /* len is 12 or 14 depending on year_len, plus optional trailing 'Z' */
     if (len != year_len + 10 &&
         !(len == year_len + 11 && (*p)[(len - 1)] == 'Z')) {
         return MBEDTLS_ERR_X509_INVALID_DATE;
@@ -712,9 +588,6 @@ int mbedtls_x509_get_sig(unsigned char **p, const unsigned char *end, mbedtls_x5
     return 0;
 }
 
-/*
- * Get signature algorithm from alg OID and optional parameters
- */
 int mbedtls_x509_get_sig_alg(const mbedtls_x509_buf *sig_oid, const mbedtls_x509_buf *sig_params,
                              mbedtls_md_type_t *md_alg, mbedtls_pk_type_t *pk_alg,
                              void **sig_opts)
@@ -749,9 +622,9 @@ int mbedtls_x509_get_sig_alg(const mbedtls_x509_buf *sig_oid, const mbedtls_x509
 
         *sig_opts = (void *) pss_opts;
     } else
-#endif /* MBEDTLS_X509_RSASSA_PSS_SUPPORT */
+#endif
     {
-        /* Make sure parameters are absent or NULL */
+
         if ((sig_params->tag != MBEDTLS_ASN1_NULL && sig_params->tag != 0) ||
             sig_params->len != 0) {
             return MBEDTLS_ERR_X509_INVALID_ALG;
@@ -761,19 +634,12 @@ int mbedtls_x509_get_sig_alg(const mbedtls_x509_buf *sig_oid, const mbedtls_x509
     return 0;
 }
 
-/*
- * X.509 Extensions (No parsing of extensions, pointer should
- * be either manually updated or extensions should be parsed!)
- */
 int mbedtls_x509_get_ext(unsigned char **p, const unsigned char *end,
                          mbedtls_x509_buf *ext, int tag)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len;
 
-    /* Extension structure use EXPLICIT tagging. That is, the actual
-     * `Extensions` structure is wrapped by a tag-length pair using
-     * the respective context-specific tag. */
     ret = mbedtls_asn1_get_tag(p, end, &ext->len,
                                MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_ASN1_CONSTRUCTED | tag);
     if (ret != 0) {
@@ -784,9 +650,6 @@ int mbedtls_x509_get_ext(unsigned char **p, const unsigned char *end,
     ext->p   = *p;
     end      = *p + ext->len;
 
-    /*
-     * Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
-     */
     if ((ret = mbedtls_asn1_get_tag(p, end, &len,
                                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
@@ -805,15 +668,11 @@ static char nibble_to_hex_digit(int i)
     return (i < 10) ? (i + '0') : (i - 10 + 'A');
 }
 
-/*
- * Store the name in printable form into buf; no more
- * than size characters will be written
- */
 int mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t i, j, n, asn1_len_size, asn1_tag_size, asn1_tag_len_buf_start;
-    /* 6 is enough as our asn1 write functions only write one byte for the tag and at most five bytes for the length*/
+
     unsigned char asn1_tag_len_buf[6];
     unsigned char *asn1_len_p;
     unsigned char c, merge = 0;
@@ -900,7 +759,7 @@ int mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn)
                 }
 
                 c = name->val.p[i];
-                // Special characters requiring escaping, RFC 4514 Section 2.4
+
                 if (c == '\0') {
                     return MBEDTLS_ERR_X509_INVALID_NAME;
                 } else {
@@ -938,10 +797,6 @@ int mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn)
     return (int) (size - n);
 }
 
-/*
- * Store the serial in printable form into buf; no more
- * than size characters will be written
- */
 int mbedtls_x509_serial_gets(char *buf, size_t size, const mbedtls_x509_buf *serial)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -973,9 +828,7 @@ int mbedtls_x509_serial_gets(char *buf, size_t size, const mbedtls_x509_buf *ser
 }
 
 #if !defined(MBEDTLS_X509_REMOVE_INFO)
-/*
- * Helper for writing signature algorithms
- */
+
 int mbedtls_x509_sig_alg_gets(char *buf, size_t size, const mbedtls_x509_buf *sig_oid,
                               mbedtls_pk_type_t pk_alg, mbedtls_md_type_t md_alg,
                               const void *sig_opts)
@@ -1012,15 +865,12 @@ int mbedtls_x509_sig_alg_gets(char *buf, size_t size, const mbedtls_x509_buf *si
     ((void) pk_alg);
     ((void) md_alg);
     ((void) sig_opts);
-#endif /* MBEDTLS_X509_RSASSA_PSS_SUPPORT */
+#endif
 
     return (int) (size - n);
 }
-#endif /* MBEDTLS_X509_REMOVE_INFO */
+#endif
 
-/*
- * Helper for writing "RSA key size", "EC key size", etc
- */
 int mbedtls_x509_key_size_helper(char *buf, size_t buf_size, const char *name)
 {
     char *p = buf;
@@ -1094,7 +944,7 @@ int mbedtls_x509_time_is_future(const mbedtls_x509_time *from)
     return mbedtls_x509_time_cmp(from, &now) > 0;
 }
 
-#else  /* MBEDTLS_HAVE_TIME_DATE */
+#else
 
 int mbedtls_x509_time_is_past(const mbedtls_x509_time *to)
 {
@@ -1107,22 +957,10 @@ int mbedtls_x509_time_is_future(const mbedtls_x509_time *from)
     ((void) from);
     return 0;
 }
-#endif /* MBEDTLS_HAVE_TIME_DATE */
+#endif
 
-/* Common functions for parsing CRT and CSR. */
 #if defined(MBEDTLS_X509_CRT_PARSE_C) || defined(MBEDTLS_X509_CSR_PARSE_C)
-/*
- * OtherName ::= SEQUENCE {
- *      type-id    OBJECT IDENTIFIER,
- *      value      [0] EXPLICIT ANY DEFINED BY type-id }
- *
- * HardwareModuleName ::= SEQUENCE {
- *                           hwType OBJECT IDENTIFIER,
- *                           hwSerialNum OCTET STRING }
- *
- * NOTE: we currently only parse and use otherName of type HwModuleName,
- * as defined in RFC 4108.
- */
+
 static int x509_get_other_name(const mbedtls_x509_buf *subject_alt_name,
                                mbedtls_x509_san_other_name *other_name)
 {
@@ -1135,9 +973,7 @@ static int x509_get_other_name(const mbedtls_x509_buf *subject_alt_name,
     if ((subject_alt_name->tag &
          (MBEDTLS_ASN1_TAG_CLASS_MASK | MBEDTLS_ASN1_TAG_VALUE_MASK)) !=
         (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_OTHER_NAME)) {
-        /*
-         * The given subject alternative name is not of type "othername".
-         */
+
         return MBEDTLS_ERR_X509_BAD_INPUT_DATA;
     }
 
@@ -1150,9 +986,6 @@ static int x509_get_other_name(const mbedtls_x509_buf *subject_alt_name,
     cur_oid.p = p;
     cur_oid.len = len;
 
-    /*
-     * Only HwModuleName is currently supported.
-     */
     if (MBEDTLS_OID_CMP(MBEDTLS_OID_ON_HW_MODULE_NAME, &cur_oid) != 0) {
         return MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE;
     }
@@ -1205,11 +1038,6 @@ static int x509_get_other_name(const mbedtls_x509_buf *subject_alt_name,
     return 0;
 }
 
-/* Check mbedtls_x509_get_subject_alt_name for detailed description.
- *
- * In some cases while parsing subject alternative names the sequence tag is optional
- * (e.g. CertSerialNumber). This function is designed to handle such case.
- */
 int mbedtls_x509_get_subject_alt_name_ext(unsigned char **p,
                                           const unsigned char *end,
                                           mbedtls_x509_sequence *subject_alt_name)
@@ -1239,15 +1067,8 @@ int mbedtls_x509_get_subject_alt_name_ext(unsigned char **p,
                                      MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
         }
 
-        /*
-         * Check that the SAN is structured correctly by parsing it.
-         * The SAN structure is discarded afterwards.
-         */
         ret = mbedtls_x509_parse_subject_alt_name(&tmp_san_buf, &tmp_san_name);
-        /*
-         * In case the extension is malformed, return an error,
-         * and clear the allocated sequences.
-         */
+
         if (ret != 0 && ret != MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE) {
             mbedtls_asn1_sequence_free(subject_alt_name->next);
             subject_alt_name->next = NULL;
@@ -1255,7 +1076,7 @@ int mbedtls_x509_get_subject_alt_name_ext(unsigned char **p,
         }
 
         mbedtls_x509_free_subject_alt_name(&tmp_san_name);
-        /* Allocate and assign next pointer */
+
         if (cur->buf.p != NULL) {
             if (cur->next != NULL) {
                 return MBEDTLS_ERR_X509_INVALID_EXTENSIONS;
@@ -1275,7 +1096,6 @@ int mbedtls_x509_get_subject_alt_name_ext(unsigned char **p,
         *p += tmp_san_buf.len;
     }
 
-    /* Set final sequence entry's next pointer to NULL */
     cur->next = NULL;
 
     if (*p != end) {
@@ -1286,34 +1106,6 @@ int mbedtls_x509_get_subject_alt_name_ext(unsigned char **p,
     return 0;
 }
 
-/*
- * SubjectAltName ::= GeneralNames
- *
- * GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
- *
- * GeneralName ::= CHOICE {
- *      otherName                       [0]     OtherName,
- *      rfc822Name                      [1]     IA5String,
- *      dNSName                         [2]     IA5String,
- *      x400Address                     [3]     ORAddress,
- *      directoryName                   [4]     Name,
- *      ediPartyName                    [5]     EDIPartyName,
- *      uniformResourceIdentifier       [6]     IA5String,
- *      iPAddress                       [7]     OCTET STRING,
- *      registeredID                    [8]     OBJECT IDENTIFIER }
- *
- * OtherName ::= SEQUENCE {
- *      type-id    OBJECT IDENTIFIER,
- *      value      [0] EXPLICIT ANY DEFINED BY type-id }
- *
- * EDIPartyName ::= SEQUENCE {
- *      nameAssigner            [0]     DirectoryString OPTIONAL,
- *      partyName               [1]     DirectoryString }
- *
- * We list all types, but use the following GeneralName types from RFC 5280:
- * "dnsName", "uniformResourceIdentifier" and "hardware_module_name"
- * of type "otherName", as defined in RFC 4108.
- */
 int mbedtls_x509_get_subject_alt_name(unsigned char **p,
                                       const unsigned char *end,
                                       mbedtls_x509_sequence *subject_alt_name)
@@ -1321,7 +1113,6 @@ int mbedtls_x509_get_subject_alt_name(unsigned char **p,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len;
 
-    /* Get main sequence tag */
     if ((ret = mbedtls_asn1_get_tag(p, end, &len,
                                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
@@ -1346,8 +1137,6 @@ int mbedtls_x509_get_ns_cert_type(unsigned char **p,
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
     }
 
-    /* A bitstring with no flags set is still technically valid, as it will mean
-       that the certificate has no designated purpose at the time of creation. */
     if (bs.len == 0) {
         *ns_cert_type = 0;
         return 0;
@@ -1358,7 +1147,6 @@ int mbedtls_x509_get_ns_cert_type(unsigned char **p,
                                  MBEDTLS_ERR_ASN1_INVALID_LENGTH);
     }
 
-    /* Get actual bitstring */
     *ns_cert_type = *bs.p;
     return 0;
 }
@@ -1375,14 +1163,11 @@ int mbedtls_x509_get_key_usage(unsigned char **p,
         return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
     }
 
-    /* A bitstring with no flags set is still technically valid, as it will mean
-       that the certificate has no designated purpose at the time of creation. */
     if (bs.len == 0) {
         *key_usage = 0;
         return 0;
     }
 
-    /* Get actual bitstring */
     *key_usage = 0;
     for (i = 0; i < bs.len && i < sizeof(unsigned int); i++) {
         *key_usage |= (unsigned int) bs.p[i] << (8*i);
@@ -1398,9 +1183,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
     switch (san_buf->tag &
             (MBEDTLS_ASN1_TAG_CLASS_MASK |
              MBEDTLS_ASN1_TAG_VALUE_MASK)) {
-        /*
-         * otherName
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_OTHER_NAME):
         {
             mbedtls_x509_san_other_name other_name;
@@ -1417,9 +1200,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
 
         }
         break;
-        /*
-         * uniformResourceIdentifier
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_UNIFORM_RESOURCE_IDENTIFIER):
         {
             memset(san, 0, sizeof(mbedtls_x509_subject_alternative_name));
@@ -1430,9 +1211,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
 
         }
         break;
-        /*
-         * dNSName
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_DNS_NAME):
         {
             memset(san, 0, sizeof(mbedtls_x509_subject_alternative_name));
@@ -1442,14 +1221,12 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
                    san_buf, sizeof(*san_buf));
         }
         break;
-        /*
-         * IP address
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_IP_ADDRESS):
         {
             memset(san, 0, sizeof(mbedtls_x509_subject_alternative_name));
             san->type = MBEDTLS_X509_SAN_IP_ADDRESS;
-            // Only IPv6 (16 bytes) and IPv4 (4 bytes) types are supported
+
             if (san_buf->len == 4 || san_buf->len == 16) {
                 memcpy(&san->san.unstructured_name,
                        san_buf, sizeof(*san_buf));
@@ -1458,9 +1235,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
             }
         }
         break;
-        /*
-         * rfc822Name
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_RFC822_NAME):
         {
             memset(san, 0, sizeof(mbedtls_x509_subject_alternative_name));
@@ -1468,9 +1243,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
             memcpy(&san->san.unstructured_name, san_buf, sizeof(*san_buf));
         }
         break;
-        /*
-         * directoryName
-         */
+
         case (MBEDTLS_ASN1_CONTEXT_SPECIFIC | MBEDTLS_X509_SAN_DIRECTORY_NAME):
         {
             size_t name_len;
@@ -1491,9 +1264,7 @@ int mbedtls_x509_parse_subject_alt_name(const mbedtls_x509_buf *san_buf,
             }
         }
         break;
-        /*
-         * Type not supported
-         */
+
         default:
             return MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE;
     }
@@ -1537,9 +1308,7 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
         }
 
         switch (san.type) {
-            /*
-             * otherName
-             */
+
             case MBEDTLS_X509_SAN_OTHER_NAME:
             {
                 mbedtls_x509_san_other_name *other_name = &san.san.other_name;
@@ -1571,12 +1340,10 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                                                other_name->value.hardware_module_name.val.p[i]);
                         MBEDTLS_X509_SAFE_SNPRINTF;
                     }
-                }/* MBEDTLS_OID_ON_HW_MODULE_NAME */
+                }
             }
             break;
-            /*
-             * uniformResourceIdentifier
-             */
+
             case MBEDTLS_X509_SAN_UNIFORM_RESOURCE_IDENTIFIER:
             {
                 ret = mbedtls_snprintf(p, n, "\n%s    uniformResourceIdentifier : ", prefix);
@@ -1593,10 +1360,7 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                 n -= san.san.unstructured_name.len;
             }
             break;
-            /*
-             * dNSName
-             * RFC822 Name
-             */
+
             case MBEDTLS_X509_SAN_DNS_NAME:
             case MBEDTLS_X509_SAN_RFC822_NAME:
             {
@@ -1621,9 +1385,7 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                 n -= san.san.unstructured_name.len;
             }
             break;
-            /*
-             * iPAddress
-             */
+
             case MBEDTLS_X509_SAN_IP_ADDRESS:
             {
                 ret = mbedtls_snprintf(p, n, "\n%s    %s : ",
@@ -1637,7 +1399,7 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                 }
 
                 unsigned char *ip = san.san.unstructured_name.p;
-                // Only IPv6 (16 bytes) and IPv4 (4 bytes) types are supported
+
                 if (san.san.unstructured_name.len == 4) {
                     ret = mbedtls_snprintf(p, n, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
                     MBEDTLS_X509_SAFE_SNPRINTF;
@@ -1656,9 +1418,7 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                 }
             }
             break;
-            /*
-             * directoryName
-             */
+
             case MBEDTLS_X509_SAN_DIRECTORY_NAME:
             {
                 ret = mbedtls_snprintf(p, n, "\n%s    directoryName : ", prefix);
@@ -1681,17 +1441,13 @@ int mbedtls_x509_info_subject_alt_name(char **buf, size_t *size,
                 n -= ret;
             }
             break;
-            /*
-             * Type not supported, skip item.
-             */
+
             default:
                 ret = mbedtls_snprintf(p, n, "\n%s    <unsupported>", prefix);
                 MBEDTLS_X509_SAFE_SNPRINTF;
                 break;
         }
 
-        /* So far memory is freed only in the case of directoryName
-         * parsing succeeding, as mbedtls_x509_get_name allocates memory. */
         mbedtls_x509_free_subject_alt_name(&san);
         cur = cur->next;
     }
@@ -1771,6 +1527,6 @@ int mbedtls_x509_info_key_usage(char **buf, size_t *size,
 
     return 0;
 }
-#endif /* MBEDTLS_X509_REMOVE_INFO */
-#endif /* MBEDTLS_X509_CRT_PARSE_C || MBEDTLS_X509_CSR_PARSE_C */
-#endif /* MBEDTLS_X509_USE_C */
+#endif
+#endif
+#endif

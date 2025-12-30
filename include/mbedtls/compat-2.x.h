@@ -1,10 +1,3 @@
-/**
- * \file compat-2.x.h
- *
- * \brief Compatibility definitions
- *
- * \deprecated Use the new names directly instead
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
@@ -17,9 +10,6 @@
 #ifndef MBEDTLS_COMPAT2X_H
 #define MBEDTLS_COMPAT2X_H
 
-/*
- * Macros for renamed functions
- */
 #define mbedtls_ctr_drbg_update_ret   mbedtls_ctr_drbg_update
 #define mbedtls_hmac_drbg_update_ret  mbedtls_hmac_drbg_update
 #define mbedtls_md5_starts_ret        mbedtls_md5_starts
@@ -43,4 +33,4 @@
 #define mbedtls_sha512_finish_ret     mbedtls_sha512_finish
 #define mbedtls_sha512_ret            mbedtls_sha512
 
-#endif /* MBEDTLS_COMPAT2X_H */
+#endif

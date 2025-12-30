@@ -1,13 +1,3 @@
-/**
- * \file mbedtls_config.h
- *
- * \brief Minimal configuration for NNG TLS (TLS 1.2 + 1.3, DTLS, modern ciphers)
- *
- *  Reduced from the full mbedtls 3.6.5 configuration to support:
- *  - TLS 1.2 and TLS 1.3
- *  - DTLS
- *  - Modern ciphers only: AES-GCM, ChaCha20-Poly1305, CCM
- */
 /*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
@@ -16,7 +6,6 @@
 #ifndef MBEDTLS_CONFIG_H
 #define MBEDTLS_CONFIG_H
 
-/* System support */
 #define MBEDTLS_HAVE_ASM
 #define MBEDTLS_HAVE_TIME
 #define MBEDTLS_HAVE_TIME_DATE
@@ -24,18 +13,15 @@
 #define MBEDTLS_THREADING_PTHREAD
 #define MBEDTLS_FS_IO
 
-/* Protocols */
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #define MBEDTLS_SSL_PROTO_TLS1_3
 #define MBEDTLS_SSL_PROTO_DTLS
 
-/* TLS 1.3 specific */
 #define MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
 #define MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_ENABLED
 #define MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED
 #define MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_EPHEMERAL_ENABLED
 
-/* Key exchanges */
 #define MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED
@@ -47,11 +33,9 @@
 #define MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
 
-/* Cipher modes (minimal for modern TLS) */
 #define MBEDTLS_CIPHER_MODE_CBC
 #define MBEDTLS_CIPHER_MODE_CTR
 
-/* ECC curves (standard ones) */
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP521R1_ENABLED
@@ -59,7 +43,6 @@
 #define MBEDTLS_ECP_DP_CURVE448_ENABLED
 #define MBEDTLS_ECP_NIST_OPTIM
 
-/* Core crypto modules */
 #define MBEDTLS_AES_C
 #define MBEDTLS_AESNI_C
 #define MBEDTLS_AESCE_C
@@ -76,12 +59,10 @@
 #define MBEDTLS_MD_C
 #define MBEDTLS_HKDF_C
 
-/* Legacy hashes (required for PEM/PKCS12/certificate compatibility) */
 #define MBEDTLS_MD5_C
 #define MBEDTLS_SHA1_C
 #define MBEDTLS_DES_C
 
-/* Public key */
 #define MBEDTLS_RSA_C
 #define MBEDTLS_ECDSA_C
 #define MBEDTLS_ECDH_C
@@ -94,7 +75,6 @@
 #define MBEDTLS_PKCS1_V15
 #define MBEDTLS_PKCS1_V21
 
-/* X.509 */
 #define MBEDTLS_X509_USE_C
 #define MBEDTLS_X509_CRT_PARSE_C
 #define MBEDTLS_X509_CRL_PARSE_C
@@ -103,7 +83,6 @@
 #define MBEDTLS_X509_CRT_WRITE_C
 #define MBEDTLS_X509_CSR_WRITE_C
 
-/* SSL/TLS */
 #define MBEDTLS_SSL_TLS_C
 #define MBEDTLS_SSL_CLI_C
 #define MBEDTLS_SSL_SRV_C
@@ -124,13 +103,11 @@
 #define MBEDTLS_SSL_DTLS_HELLO_VERIFY
 #define MBEDTLS_SSL_DTLS_CLIENT_PORT_REUSE
 
-/* PSA Crypto (required for TLS 1.3) */
 #define MBEDTLS_PSA_CRYPTO_C
 #define MBEDTLS_PSA_CRYPTO_STORAGE_C
 #define MBEDTLS_PSA_ITS_FILE_C
 #define MBEDTLS_PSA_KEY_STORE_DYNAMIC
 
-/* Utilities */
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
 #define MBEDTLS_BASE64_C
@@ -158,4 +135,4 @@
 #define MBEDTLS_ECDSA_DETERMINISTIC
 #define MBEDTLS_HMAC_DRBG_C
 
-#endif /* MBEDTLS_CONFIG_H */
+#endif

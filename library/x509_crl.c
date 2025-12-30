@@ -4,16 +4,6 @@
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
-/*
- *  The ITU-T X.509 standard defines a certificate format for PKI.
- *
- *  http://www.ietf.org/rfc/rfc5280.txt (Certificates and CRLs)
- *  http://www.ietf.org/rfc/rfc3279.txt (Alg IDs for CRLs)
- *  http://www.ietf.org/rfc/rfc2986.txt (CSRs, aka PKCS#10)
- *
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.680-0207.pdf
- *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
- */
 
 #include "common.h"
 
@@ -45,9 +35,6 @@
 #include <stdio.h>
 #endif
 
-/*
- *  Version  ::=  INTEGER  {  v1(0), v2(1)  }
- */
 static int x509_crl_get_version(unsigned char **p,
                                 const unsigned char *end,
                                 int *ver)
@@ -66,13 +53,6 @@ static int x509_crl_get_version(unsigned char **p,
     return 0;
 }
 
-/*
- * X.509 CRL v2 extensions
- *
- * We currently don't parse any extension's content, but we do check that the
- * list of extensions is well-formed and abort on critical extensions (that
- * are unsupported as we don't support any extension so far)
- */
 static int x509_get_crl_ext(unsigned char **p,
                             const unsigned char *end,
                             mbedtls_x509_buf *ext)
@@ -83,10 +63,6 @@ static int x509_get_crl_ext(unsigned char **p,
         return 0;
     }
 
-    /*
-     * crlExtensions           [0]  EXPLICIT Extensions OPTIONAL
-     *                              -- if present, version MUST be v2
-     */
     if ((ret = mbedtls_x509_get_ext(p, end, ext, 0)) != 0) {
         return ret;
     }
@@ -94,17 +70,11 @@ static int x509_get_crl_ext(unsigned char **p,
     end = ext->p + ext->len;
 
     while (*p < end) {
-        /*
-         * Extension  ::=  SEQUENCE  {
-         *      extnID      OBJECT IDENTIFIER,
-         *      critical    BOOLEAN DEFAULT FALSE,
-         *      extnValue   OCTET STRING  }
-         */
+
         int is_critical = 0;
         const unsigned char *end_ext_data;
         size_t len;
 
-        /* Get enclosing sequence tag */
         if ((ret = mbedtls_asn1_get_tag(p, end, &len,
                                         MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
@@ -112,34 +82,29 @@ static int x509_get_crl_ext(unsigned char **p,
 
         end_ext_data = *p + len;
 
-        /* Get OID (currently ignored) */
         if ((ret = mbedtls_asn1_get_tag(p, end_ext_data, &len,
                                         MBEDTLS_ASN1_OID)) != 0) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
         }
         *p += len;
 
-        /* Get optional critical */
         if ((ret = mbedtls_asn1_get_bool(p, end_ext_data,
                                          &is_critical)) != 0 &&
             (ret != MBEDTLS_ERR_ASN1_UNEXPECTED_TAG)) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
         }
 
-        /* Data should be octet string type */
         if ((ret = mbedtls_asn1_get_tag(p, end_ext_data, &len,
                                         MBEDTLS_ASN1_OCTET_STRING)) != 0) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS, ret);
         }
 
-        /* Ignore data so far and just check its length */
         *p += len;
         if (*p != end_ext_data) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS,
                                      MBEDTLS_ERR_ASN1_LENGTH_MISMATCH);
         }
 
-        /* Abort on (unsupported) critical extensions */
         if (is_critical) {
             return MBEDTLS_ERROR_ADD(MBEDTLS_ERR_X509_INVALID_EXTENSIONS,
                                      MBEDTLS_ERR_ASN1_UNEXPECTED_TAG);
@@ -154,9 +119,6 @@ static int x509_get_crl_ext(unsigned char **p,
     return 0;
 }
 
-/*
- * X.509 CRL v2 entry extensions (no extensions parsed yet.)
- */
 static int x509_get_crl_entry_ext(unsigned char **p,
                                   const unsigned char *end,
                                   mbedtls_x509_buf *ext)
@@ -164,7 +126,6 @@ static int x509_get_crl_entry_ext(unsigned char **p,
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len = 0;
 
-    /* OPTIONAL */
     if (end <= *p) {
         return 0;
     }
@@ -172,10 +133,6 @@ static int x509_get_crl_entry_ext(unsigned char **p,
     ext->tag = **p;
     ext->p = *p;
 
-    /*
-     * Get CRL-entry extension sequence header
-     * crlEntryExtensions      Extensions OPTIONAL  -- if present, MUST be v2
-     */
     if ((ret = mbedtls_asn1_get_tag(p, end, &ext->len,
                                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
         if (ret == MBEDTLS_ERR_ASN1_UNEXPECTED_TAG) {
@@ -209,9 +166,6 @@ static int x509_get_crl_entry_ext(unsigned char **p,
     return 0;
 }
 
-/*
- * X.509 CRL Entries
- */
 static int x509_get_entries(unsigned char **p,
                             const unsigned char *end,
                             mbedtls_x509_crl_entry *entry)
@@ -277,9 +231,6 @@ static int x509_get_entries(unsigned char **p,
     return 0;
 }
 
-/*
- * Parse one  CRLs in DER format and append it to the chained list
- */
 int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
                                const unsigned char *buf, size_t buflen)
 {
@@ -289,9 +240,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
     mbedtls_x509_buf sig_params1, sig_params2, sig_oid2;
     mbedtls_x509_crl *crl = chain;
 
-    /*
-     * Check for valid input
-     */
     if (crl == NULL || buf == NULL) {
         return MBEDTLS_ERR_X509_BAD_INPUT_DATA;
     }
@@ -300,9 +248,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
     memset(&sig_params2, 0, sizeof(mbedtls_x509_buf));
     memset(&sig_oid2, 0, sizeof(mbedtls_x509_buf));
 
-    /*
-     * Add new CRL on the end of the chain if needed.
-     */
     while (crl->version != 0 && crl->next != NULL) {
         crl = crl->next;
     }
@@ -319,9 +264,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
         crl = crl->next;
     }
 
-    /*
-     * Copy raw DER-encoded CRL
-     */
     if (buflen == 0) {
         return MBEDTLS_ERR_X509_INVALID_FORMAT;
     }
@@ -338,12 +280,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
 
     end = p + buflen;
 
-    /*
-     * CertificateList  ::=  SEQUENCE  {
-     *      tbsCertList          TBSCertList,
-     *      signatureAlgorithm   AlgorithmIdentifier,
-     *      signatureValue       BIT STRING  }
-     */
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
                                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0) {
         mbedtls_x509_crl_free(crl);
@@ -356,9 +292,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
                                  MBEDTLS_ERR_ASN1_LENGTH_MISMATCH);
     }
 
-    /*
-     * TBSCertList  ::=  SEQUENCE  {
-     */
     crl->tbs.p = p;
 
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
@@ -370,12 +303,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
     end = p + len;
     crl->tbs.len = (size_t) (end - crl->tbs.p);
 
-    /*
-     * Version  ::=  INTEGER  OPTIONAL {  v1(0), v2(1)  }
-     *               -- if present, MUST be v2
-     *
-     * signature            AlgorithmIdentifier
-     */
     if ((ret = x509_crl_get_version(&p, end, &crl->version)) != 0 ||
         (ret = mbedtls_x509_get_alg(&p, end, &crl->sig_oid, &sig_params1)) != 0) {
         mbedtls_x509_crl_free(crl);
@@ -396,9 +323,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
         return MBEDTLS_ERR_X509_UNKNOWN_SIG_ALG;
     }
 
-    /*
-     * issuer               Name
-     */
     crl->issuer_raw.p = p;
 
     if ((ret = mbedtls_asn1_get_tag(&p, end, &len,
@@ -414,10 +338,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
 
     crl->issuer_raw.len = (size_t) (p - crl->issuer_raw.p);
 
-    /*
-     * thisUpdate          Time
-     * nextUpdate          Time OPTIONAL
-     */
     if ((ret = mbedtls_x509_get_time(&p, end, &crl->this_update)) != 0) {
         mbedtls_x509_crl_free(crl);
         return ret;
@@ -433,23 +353,11 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
         }
     }
 
-    /*
-     * revokedCertificates    SEQUENCE OF SEQUENCE   {
-     *      userCertificate        CertificateSerialNumber,
-     *      revocationDate         Time,
-     *      crlEntryExtensions     Extensions OPTIONAL
-     *                                   -- if present, MUST be v2
-     *                        } OPTIONAL
-     */
     if ((ret = x509_get_entries(&p, end, &crl->entry)) != 0) {
         mbedtls_x509_crl_free(crl);
         return ret;
     }
 
-    /*
-     * crlExtensions          EXPLICIT Extensions OPTIONAL
-     *                              -- if present, MUST be v2
-     */
     if (crl->version == 2) {
         ret = x509_get_crl_ext(&p, end, &crl->crl_ext);
 
@@ -467,10 +375,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
 
     end = crl->raw.p + crl->raw.len;
 
-    /*
-     *  signatureAlgorithm   AlgorithmIdentifier,
-     *  signatureValue       BIT STRING
-     */
     if ((ret = mbedtls_x509_get_alg(&p, end, &sig_oid2, &sig_params2)) != 0) {
         mbedtls_x509_crl_free(crl);
         return ret;
@@ -499,9 +403,6 @@ int mbedtls_x509_crl_parse_der(mbedtls_x509_crl *chain,
     return 0;
 }
 
-/*
- * Parse one or more CRLs and add them to the chained list
- */
 int mbedtls_x509_crl_parse(mbedtls_x509_crl *chain, const unsigned char *buf, size_t buflen)
 {
 #if defined(MBEDTLS_PEM_PARSE_C)
@@ -517,8 +418,6 @@ int mbedtls_x509_crl_parse(mbedtls_x509_crl *chain, const unsigned char *buf, si
     do {
         mbedtls_pem_init(&pem);
 
-        // Avoid calling mbedtls_pem_read_buffer() on non-null-terminated
-        // string
         if (buflen == 0 || buf[buflen - 1] != '\0') {
             ret = MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT;
         } else {
@@ -529,9 +428,7 @@ int mbedtls_x509_crl_parse(mbedtls_x509_crl *chain, const unsigned char *buf, si
         }
 
         if (ret == 0) {
-            /*
-             * Was PEM encoded
-             */
+
             is_pem = 1;
 
             buflen -= use_len;
@@ -549,21 +446,18 @@ int mbedtls_x509_crl_parse(mbedtls_x509_crl *chain, const unsigned char *buf, si
 
         mbedtls_pem_free(&pem);
     }
-    /* In the PEM case, buflen is 1 at the end, for the terminated NULL byte.
-     * And a valid CRL cannot be less than 1 byte anyway. */
+
     while (is_pem && buflen > 1);
 
     if (is_pem) {
         return 0;
     } else
-#endif /* MBEDTLS_PEM_PARSE_C */
+#endif
     return mbedtls_x509_crl_parse_der(chain, buf, buflen);
 }
 
 #if defined(MBEDTLS_FS_IO)
-/*
- * Load one or more CRLs and add them to the chained list
- */
+
 int mbedtls_x509_crl_parse_file(mbedtls_x509_crl *chain, const char *path)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -580,17 +474,13 @@ int mbedtls_x509_crl_parse_file(mbedtls_x509_crl *chain, const char *path)
 
     return ret;
 }
-#endif /* MBEDTLS_FS_IO */
+#endif
 
 #if !defined(MBEDTLS_X509_REMOVE_INFO)
-/*
- * Return an informational string about the certificate.
- */
+
 #define BEFORE_COLON    14
 #define BC              "14"
-/*
- * Return an informational string about the CRL.
- */
+
 int mbedtls_x509_crl_info(char *buf, size_t size, const char *prefix,
                           const mbedtls_x509_crl *crl)
 {
@@ -661,19 +551,13 @@ int mbedtls_x509_crl_info(char *buf, size_t size, const char *prefix,
 
     return (int) (size - n);
 }
-#endif /* MBEDTLS_X509_REMOVE_INFO */
+#endif
 
-/*
- * Initialize a CRL chain
- */
 void mbedtls_x509_crl_init(mbedtls_x509_crl *crl)
 {
     memset(crl, 0, sizeof(mbedtls_x509_crl));
 }
 
-/*
- * Unallocate all CRL data
- */
 void mbedtls_x509_crl_free(mbedtls_x509_crl *crl)
 {
     mbedtls_x509_crl *crl_cur = crl;
@@ -710,4 +594,4 @@ void mbedtls_x509_crl_free(mbedtls_x509_crl *crl)
     }
 }
 
-#endif /* MBEDTLS_X509_CRL_PARSE_C */
+#endif

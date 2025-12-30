@@ -21,15 +21,13 @@
 #if defined(MBEDTLS_SELF_TEST)
 #include <string.h>
 #include "mbedtls/platform.h"
-#endif /* MBEDTLS_SELF_TEST */
+#endif
 
 MBEDTLS_STATIC_TESTABLE
 unsigned char mbedtls_ct_base64_enc_char(unsigned char value)
 {
     unsigned char digit = 0;
-    /* For each range of values, if value is in that range, mask digit with
-     * the corresponding value. Since value can only be in a single range,
-     * only at most one masking will change digit. */
+
     digit |= mbedtls_ct_uchar_in_range_if(0, 25, value, 'A' + value);
     digit |= mbedtls_ct_uchar_in_range_if(26, 51, value, 'a' + value - 26);
     digit |= mbedtls_ct_uchar_in_range_if(52, 61, value, '0' + value - 52);
@@ -42,23 +40,16 @@ MBEDTLS_STATIC_TESTABLE
 signed char mbedtls_ct_base64_dec_value(unsigned char c)
 {
     unsigned char val = 0;
-    /* For each range of digits, if c is in that range, mask val with
-     * the corresponding value. Since c can only be in a single range,
-     * only at most one masking will change val. Set val to one plus
-     * the desired value so that it stays 0 if c is in none of the ranges. */
+
     val |= mbedtls_ct_uchar_in_range_if('A', 'Z', c, c - 'A' +  0 + 1);
     val |= mbedtls_ct_uchar_in_range_if('a', 'z', c, c - 'a' + 26 + 1);
     val |= mbedtls_ct_uchar_in_range_if('0', '9', c, c - '0' + 52 + 1);
     val |= mbedtls_ct_uchar_in_range_if('+', '+', c, c - '+' + 62 + 1);
     val |= mbedtls_ct_uchar_in_range_if('/', '/', c, c - '/' + 63 + 1);
-    /* At this point, val is 0 if c is an invalid digit and v+1 if c is
-     * a digit with the value v. */
+
     return val - 1;
 }
 
-/*
- * Encode a buffer into base64 format
- */
 int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
                           const unsigned char *src, size_t slen)
 {
@@ -123,30 +114,25 @@ int mbedtls_base64_encode(unsigned char *dst, size_t dlen, size_t *olen,
     return 0;
 }
 
-/*
- * Decode a base64-formatted buffer
- */
 int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
                           const unsigned char *src, size_t slen)
 {
-    size_t i; /* index in source */
-    size_t n; /* number of digits or trailing = in source */
-    uint32_t x; /* value accumulator */
+    size_t i;
+    size_t n;
+    uint32_t x;
     unsigned accumulated_digits = 0;
     unsigned equals = 0;
     int spaces_present = 0;
     unsigned char *p;
 
-    /* First pass: check for validity and get output length */
     for (i = n = 0; i < slen; i++) {
-        /* Skip spaces before checking for EOL */
+
         spaces_present = 0;
         while (i < slen && src[i] == ' ') {
             ++i;
             spaces_present = 1;
         }
 
-        /* Spaces at end of buffer are OK */
         if (i == slen) {
             break;
         }
@@ -160,7 +146,6 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
             continue;
         }
 
-        /* Space inside a line is an error */
         if (spaces_present) {
             return MBEDTLS_ERR_BASE64_INVALID_CHARACTER;
         }
@@ -184,9 +169,6 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
         n++;
     }
 
-    /* In valid base64, the number of digits (n-equals) is always of the form
-     * 4*k, 4*k+2 or *4k+3. Also, the number n of digits plus the number of
-     * equal signs at the end is always a multiple of 4. */
     if ((n - equals) % 4 == 1) {
         return MBEDTLS_ERR_BASE64_INVALID_CHARACTER;
     }
@@ -194,29 +176,8 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
         return MBEDTLS_ERR_BASE64_INVALID_CHARACTER;
     }
 
-    /* We've determined that the input is valid, and that it contains
-     * exactly k blocks of digits-or-equals, with n = 4 * k,
-     * and equals only present at the end of the last block if at all.
-     * Now we can calculate the length of the output.
-     *
-     * Each block of 4 digits in the input map to 3 bytes of output.
-     * For the last block:
-     * - abcd (where abcd are digits) is a full 3-byte block;
-     * - abc= means 1 byte less than a full 3-byte block of output;
-     * - ab== means 2 bytes less than a full 3-byte block of output;
-     * - a==== and ==== is rejected above.
-     */
     *olen = (n / 4) * 3 - equals;
 
-    /* If the output buffer is too small, signal this and stop here.
-     * Also, as documented, stop here if `dst` is null, independently of
-     * `dlen`.
-     *
-     * There is an edge case when the output is empty: in this case,
-     * `dlen == 0` with `dst == NULL` is valid (on some platforms,
-     * `malloc(0)` returns `NULL`). Since the call is valid, we return
-     * 0 in this case.
-     */
     if ((*olen != 0 && dst == NULL) || dlen < *olen) {
         return MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL;
     }
@@ -226,8 +187,7 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
             continue;
         }
         if (*src == '=') {
-            /* We already know from the first loop that equal signs are
-             * only at the end. */
+
             break;
         }
         x = x << 6;
@@ -272,9 +232,6 @@ static const unsigned char base64_test_enc[] =
     "JEhuVodiWr2/F9mixBcaAZTtjx4Rs9cJDLbpEG8i7hPK"
     "swcFdsn6MWwINP+Nwmw4AEPpVJevUEvRQbqVMVoLlw==";
 
-/*
- * Checkup routine
- */
 int mbedtls_base64_self_test(int verbose)
 {
     size_t len;
@@ -318,6 +275,6 @@ int mbedtls_base64_self_test(int verbose)
     return 0;
 }
 
-#endif /* MBEDTLS_SELF_TEST */
+#endif
 
-#endif /* MBEDTLS_BASE64_C */
+#endif

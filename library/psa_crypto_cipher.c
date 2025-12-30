@@ -1,7 +1,4 @@
 /*
- *  PSA cipher driver entry points
- */
-/*
  *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
@@ -20,19 +17,11 @@
 
 #include <string.h>
 
-/* mbedtls_cipher_values_from_psa() below only checks if the proper build symbols
- * are enabled, but it does not provide any compatibility check between them
- * (i.e. if the specified key works with the specified algorithm). This helper
- * function is meant to provide this support.
- * mbedtls_cipher_info_from_psa() might be used for the same purpose, but it
- * requires CIPHER_C to be enabled.
- */
 static psa_status_t mbedtls_cipher_validate_values(
     psa_algorithm_t alg,
     psa_key_type_t key_type)
 {
-    /* Reduce code size - hinting to the compiler about what it can assume allows the compiler to
-       eliminate bits of the logic below. */
+
 #if !defined(PSA_WANT_KEY_TYPE_AES)
     MBEDTLS_ASSUME(key_type != PSA_KEY_TYPE_AES);
 #endif
@@ -129,7 +118,7 @@ psa_status_t mbedtls_cipher_values_from_psa(
     mbedtls_cipher_id_t *cipher_id)
 {
     mbedtls_cipher_id_t cipher_id_tmp;
-    /* Only DES modifies key_bits */
+
 #if !defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DES)
     (void) key_bits;
 #endif
@@ -217,16 +206,13 @@ psa_status_t mbedtls_cipher_values_from_psa(
 #endif
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DES)
         case PSA_KEY_TYPE_DES:
-            /* key_bits is 64 for Single-DES, 128 for two-key Triple-DES,
-             * and 192 for three-key Triple-DES. */
+
             if (*key_bits == 64) {
                 cipher_id_tmp = MBEDTLS_CIPHER_ID_DES;
             } else {
                 cipher_id_tmp = MBEDTLS_CIPHER_ID_3DES;
             }
-            /* mbedtls doesn't recognize two-key Triple-DES as an algorithm,
-             * but two-key Triple-DES is functionally three-key Triple-DES
-             * with K1=K3, so that's how we present it to mbedtls. */
+
             if (*key_bits == 128) {
                 *key_bits = 192;
             }
@@ -273,7 +259,7 @@ const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
 
     return mbedtls_cipher_info_from_values(cipher_id_tmp, (int) key_bits, mode);
 }
-#endif /* MBEDTLS_CIPHER_C */
+#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_CIPHER)
 
@@ -308,7 +294,7 @@ static psa_status_t psa_cipher_setup(
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DES)
     if (key_type == PSA_KEY_TYPE_DES && key_bits == 128) {
-        /* Two-key Triple-DES is 3-key Triple-DES with K1=K3 */
+
         uint8_t keys[24];
         memcpy(keys, key_buffer, 16);
         memcpy(keys + 16, key_buffer, 8);
@@ -337,15 +323,14 @@ static psa_status_t psa_cipher_setup(
                                                   MBEDTLS_PADDING_PKCS7);
             break;
         default:
-            /* The algorithm doesn't involve padding. */
+
             ret = 0;
             break;
     }
     if (ret != 0) {
         goto exit;
     }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_CBC_NO_PADDING ||
-          MBEDTLS_PSA_BUILTIN_ALG_CBC_PKCS7 */
+#endif
 
     operation->block_length = (PSA_ALG_IS_STREAM_CIPHER(alg) ? 1 :
                                PSA_BLOCK_CIPHER_BLOCK_LENGTH(key_type));
@@ -391,29 +376,7 @@ psa_status_t mbedtls_psa_cipher_set_iv(
 }
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_ECB_NO_PADDING)
-/** Process input for which the algorithm is set to ECB mode.
- *
- * This requires manual processing, since the PSA API is defined as being
- * able to process arbitrary-length calls to psa_cipher_update() with ECB mode,
- * but the underlying mbedtls_cipher_update only takes full blocks.
- *
- * \param ctx           The mbedtls cipher context to use. It must have been
- *                      set up for ECB.
- * \param[in] input     The input plaintext or ciphertext to process.
- * \param input_length  The number of bytes to process from \p input.
- *                      This does not need to be aligned to a block boundary.
- *                      If there is a partial block at the end of the input,
- *                      it is stored in \p ctx for future processing.
- * \param output        The buffer where the output is written. It must be
- *                      at least `BS * floor((p + input_length) / BS)` bytes
- *                      long, where `p` is the number of bytes in the
- *                      unprocessed partial block in \p ctx (with
- *                      `0 <= p <= BS - 1`) and `BS` is the block size.
- * \param output_length On success, the number of bytes written to \p output.
- *                      \c 0 on error.
- *
- * \return #PSA_SUCCESS or an error from a hardware accelerator
- */
+
 static psa_status_t psa_cipher_update_ecb(
     mbedtls_cipher_context_t *ctx,
     const uint8_t *input,
@@ -432,7 +395,7 @@ static psa_status_t psa_cipher_update_ecb(
     }
 
     if (ctx->unprocessed_len > 0) {
-        /* Fill up to block size, and run the block if there's a full one. */
+
         size_t bytes_to_copy = block_size - ctx->unprocessed_len;
 
         if (input_length < bytes_to_copy) {
@@ -463,7 +426,7 @@ static psa_status_t psa_cipher_update_ecb(
     }
 
     while (input_length >= block_size) {
-        /* Run all full blocks we have, one by one */
+
         status = mbedtls_to_psa_error(
             mbedtls_cipher_update(ctx, input,
                                   block_size,
@@ -481,7 +444,7 @@ static psa_status_t psa_cipher_update_ecb(
     }
 
     if (input_length > 0) {
-        /* Save unprocessed bytes for later processing */
+
         memcpy(&(ctx->unprocessed_data[ctx->unprocessed_len]),
                input, input_length);
         ctx->unprocessed_len += input_length;
@@ -492,7 +455,7 @@ static psa_status_t psa_cipher_update_ecb(
 exit:
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_ECB_NO_PADDING */
+#endif
 
 psa_status_t mbedtls_psa_cipher_update(
     mbedtls_psa_cipher_operation_t *operation,
@@ -503,10 +466,7 @@ psa_status_t mbedtls_psa_cipher_update(
     size_t expected_output_size;
 
     if (!PSA_ALG_IS_STREAM_CIPHER(operation->alg)) {
-        /* Take the unprocessed partial block left over from previous
-         * update calls, if any, plus the input to this call. Remove
-         * the last partial block, if any. You get the data that will be
-         * output in this call. */
+
         expected_output_size =
             (operation->ctx.cipher.unprocessed_len + input_length)
             / operation->block_length * operation->block_length;
@@ -520,18 +480,16 @@ psa_status_t mbedtls_psa_cipher_update(
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_ECB_NO_PADDING)
     if (operation->alg == PSA_ALG_ECB_NO_PADDING) {
-        /* mbedtls_cipher_update has an API inconsistency: it will only
-         * process a single block at a time in ECB mode. Abstract away that
-         * inconsistency here to match the PSA API behaviour. */
+
         status = psa_cipher_update_ecb(&operation->ctx.cipher,
                                        input,
                                        input_length,
                                        output,
                                        output_length);
     } else
-#endif /* MBEDTLS_PSA_BUILTIN_ALG_ECB_NO_PADDING */
+#endif
     if (input_length == 0) {
-        /* There is no input, nothing to be done */
+
         *output_length = 0;
         status = PSA_SUCCESS;
     } else {
@@ -554,13 +512,6 @@ psa_status_t mbedtls_psa_cipher_finish(
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
     size_t invalid_padding = 0;
 
-    /* We will copy output_size bytes from temp_output_buffer to the
-     * output buffer. We can't use *output_length to determine how
-     * much to copy because we must not leak that value through timing
-     * when doing decryption with unpadding. But the underlying function
-     * is not guaranteed to write beyond *output_length. To ensure we don't
-     * leak the former content of the stack to the caller, wipe that
-     * former content. */
     uint8_t temp_output_buffer[MBEDTLS_MAX_BLOCK_LENGTH] = { 0 };
     if (output_size > sizeof(temp_output_buffer)) {
         output_size = sizeof(temp_output_buffer);
@@ -584,11 +535,9 @@ psa_status_t mbedtls_psa_cipher_finish(
     }
 
     if (output_size == 0) {
-        ; /* Nothing to copy. Note that output may be NULL in this case. */
+        ;
     } else {
-        /* Do not use the value of *output_length to determine how much
-         * to copy. When decrypting a padded cipher, the output length is
-         * sensitive, and leaking it could allow a padding oracle attack. */
+
         memcpy(output, temp_output_buffer, output_size);
     }
 
@@ -609,8 +558,7 @@ exit:
 psa_status_t mbedtls_psa_cipher_abort(
     mbedtls_psa_cipher_operation_t *operation)
 {
-    /* Sanity check (shouldn't happen: operation->alg should
-     * always have been initialized to a valid value). */
+
     if (!PSA_ALG_IS_CIPHER(operation->alg)) {
         return PSA_ERROR_BAD_STATE;
     }
@@ -727,21 +675,15 @@ psa_status_t mbedtls_psa_cipher_decrypt(
     *output_length = accumulated_length + olength;
 
 exit:
-    /* C99 doesn't allow a declaration to follow a label */;
+    ;
     psa_status_t abort_status = mbedtls_psa_cipher_abort(&operation);
-    /* Normally abort shouldn't fail unless the operation is in a bad
-     * state, in which case we'd expect finish to fail with the same error.
-     * So it doesn't matter much which call's error code we pick when both
-     * fail. However, in unauthenticated decryption specifically, the
-     * distinction between PSA_SUCCESS and PSA_ERROR_INVALID_PADDING is
-     * security-sensitive (risk of a padding oracle attack), so here we
-     * must not have a code path that depends on the value of status. */
+
     if (abort_status != PSA_SUCCESS) {
         status = abort_status;
     }
 
     return status;
 }
-#endif /* MBEDTLS_PSA_BUILTIN_CIPHER */
+#endif
 
-#endif /* MBEDTLS_PSA_CRYPTO_C */
+#endif
