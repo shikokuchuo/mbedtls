@@ -33,8 +33,6 @@
 #include "mbedtls/platform_time.h"
 #endif
 
-#include "psa/crypto.h"
-
 #define MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS                -0x7000
 
 #define MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE               -0x7080
@@ -259,9 +257,9 @@
 #define MBEDTLS_SSL_SRV_CIPHERSUITE_ORDER_SERVER  0
 
 #if defined(MBEDTLS_SSL_PROTO_TLS1_3) && defined(MBEDTLS_SSL_SESSION_TICKETS)
-#if defined(PSA_WANT_ALG_SHA_384)
+#if defined(MBEDTLS_MD_CAN_SHA384)
 #define MBEDTLS_SSL_TLS1_3_TICKET_RESUMPTION_KEY_LEN        48
-#elif defined(PSA_WANT_ALG_SHA_256)
+#elif defined(MBEDTLS_MD_CAN_SHA256)
 #define MBEDTLS_SSL_TLS1_3_TICKET_RESUMPTION_KEY_LEN        32
 #endif
 #endif
@@ -515,7 +513,7 @@ union mbedtls_ssl_premaster_secret {
 
 #define MBEDTLS_PREMASTER_SIZE     sizeof(union mbedtls_ssl_premaster_secret)
 
-#define MBEDTLS_TLS1_3_MD_MAX_SIZE         PSA_HASH_MAX_SIZE
+#define MBEDTLS_TLS1_3_MD_MAX_SIZE         MBEDTLS_MD_MAX_SIZE
 
 #define MBEDTLS_SSL_SEQUENCE_NUMBER_LEN 8
 
@@ -975,10 +973,6 @@ struct mbedtls_ssl_config {
 #endif
 
 #if defined(MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED)
-
-#if defined(MBEDTLS_USE_PSA_CRYPTO)
-    mbedtls_svc_key_id_t MBEDTLS_PRIVATE(psk_opaque);
-#endif
     unsigned char *MBEDTLS_PRIVATE(psk);
     size_t         MBEDTLS_PRIVATE(psk_len);
 
@@ -1549,22 +1543,8 @@ int mbedtls_ssl_conf_psk(mbedtls_ssl_config *conf,
                          const unsigned char *psk, size_t psk_len,
                          const unsigned char *psk_identity, size_t psk_identity_len);
 
-#if defined(MBEDTLS_USE_PSA_CRYPTO)
-
-int mbedtls_ssl_conf_psk_opaque(mbedtls_ssl_config *conf,
-                                mbedtls_svc_key_id_t psk,
-                                const unsigned char *psk_identity,
-                                size_t psk_identity_len);
-#endif
-
 int mbedtls_ssl_set_hs_psk(mbedtls_ssl_context *ssl,
                            const unsigned char *psk, size_t psk_len);
-
-#if defined(MBEDTLS_USE_PSA_CRYPTO)
-
-int mbedtls_ssl_set_hs_psk_opaque(mbedtls_ssl_context *ssl,
-                                  mbedtls_svc_key_id_t psk);
-#endif
 
 #if defined(MBEDTLS_SSL_SRV_C)
 

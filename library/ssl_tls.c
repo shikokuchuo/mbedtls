@@ -5676,70 +5676,49 @@ int mbedtls_ssl_check_curve(const mbedtls_ssl_context *ssl, mbedtls_ecp_group_id
 static const struct {
     uint16_t tls_id;
     mbedtls_ecp_group_id ecp_group_id;
-    psa_ecc_family_t psa_family;
-    uint16_t bits;
 } tls_id_match_table[] =
 {
 #if defined(MBEDTLS_ECP_HAVE_SECP521R1)
-    { 25, MBEDTLS_ECP_DP_SECP521R1, PSA_ECC_FAMILY_SECP_R1, 521 },
+    { 25, MBEDTLS_ECP_DP_SECP521R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_BP512R1)
-    { 28, MBEDTLS_ECP_DP_BP512R1, PSA_ECC_FAMILY_BRAINPOOL_P_R1, 512 },
+    { 28, MBEDTLS_ECP_DP_BP512R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP384R1)
-    { 24, MBEDTLS_ECP_DP_SECP384R1, PSA_ECC_FAMILY_SECP_R1, 384 },
+    { 24, MBEDTLS_ECP_DP_SECP384R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_BP384R1)
-    { 27, MBEDTLS_ECP_DP_BP384R1, PSA_ECC_FAMILY_BRAINPOOL_P_R1, 384 },
+    { 27, MBEDTLS_ECP_DP_BP384R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP256R1)
-    { 23, MBEDTLS_ECP_DP_SECP256R1, PSA_ECC_FAMILY_SECP_R1, 256 },
+    { 23, MBEDTLS_ECP_DP_SECP256R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP256K1)
-    { 22, MBEDTLS_ECP_DP_SECP256K1, PSA_ECC_FAMILY_SECP_K1, 256 },
+    { 22, MBEDTLS_ECP_DP_SECP256K1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_BP256R1)
-    { 26, MBEDTLS_ECP_DP_BP256R1, PSA_ECC_FAMILY_BRAINPOOL_P_R1, 256 },
+    { 26, MBEDTLS_ECP_DP_BP256R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP224R1)
-    { 21, MBEDTLS_ECP_DP_SECP224R1, PSA_ECC_FAMILY_SECP_R1, 224 },
+    { 21, MBEDTLS_ECP_DP_SECP224R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP224K1)
-    { 20, MBEDTLS_ECP_DP_SECP224K1, PSA_ECC_FAMILY_SECP_K1, 224 },
+    { 20, MBEDTLS_ECP_DP_SECP224K1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP192R1)
-    { 19, MBEDTLS_ECP_DP_SECP192R1, PSA_ECC_FAMILY_SECP_R1, 192 },
+    { 19, MBEDTLS_ECP_DP_SECP192R1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_SECP192K1)
-    { 18, MBEDTLS_ECP_DP_SECP192K1, PSA_ECC_FAMILY_SECP_K1, 192 },
+    { 18, MBEDTLS_ECP_DP_SECP192K1 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_CURVE25519)
-    { 29, MBEDTLS_ECP_DP_CURVE25519, PSA_ECC_FAMILY_MONTGOMERY, 255 },
+    { 29, MBEDTLS_ECP_DP_CURVE25519 },
 #endif
 #if defined(MBEDTLS_ECP_HAVE_CURVE448)
-    { 30, MBEDTLS_ECP_DP_CURVE448, PSA_ECC_FAMILY_MONTGOMERY, 448 },
+    { 30, MBEDTLS_ECP_DP_CURVE448 },
 #endif
-    { 0, MBEDTLS_ECP_DP_NONE, 0, 0 },
+    { 0, MBEDTLS_ECP_DP_NONE },
 };
-
-int mbedtls_ssl_get_psa_curve_info_from_tls_id(uint16_t tls_id,
-                                               psa_key_type_t *type,
-                                               size_t *bits)
-{
-    for (int i = 0; tls_id_match_table[i].tls_id != 0; i++) {
-        if (tls_id_match_table[i].tls_id == tls_id) {
-            if (type != NULL) {
-                *type = PSA_KEY_TYPE_ECC_KEY_PAIR(tls_id_match_table[i].psa_family);
-            }
-            if (bits != NULL) {
-                *bits = tls_id_match_table[i].bits;
-            }
-            return PSA_SUCCESS;
-        }
-    }
-
-    return PSA_ERROR_NOT_SUPPORTED;
-}
 
 mbedtls_ecp_group_id mbedtls_ssl_get_ecp_group_id_from_tls_id(uint16_t tls_id)
 {

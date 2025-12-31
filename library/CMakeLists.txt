@@ -52,17 +52,6 @@ set(src_crypto
     platform.c
     platform_util.c
     poly1305.c
-    psa_crypto.c
-    psa_crypto_aead.c
-    psa_crypto_cipher.c
-    psa_crypto_client.c
-    psa_crypto_driver_wrappers_no_static.c
-    psa_crypto_ecp.c
-    psa_crypto_hash.c
-    psa_crypto_mac.c
-    psa_crypto_rsa.c
-    psa_crypto_slot_management.c
-    psa_util.c
     rsa.c
     rsa_alt_helpers.c
     sha1.c
@@ -96,10 +85,6 @@ set(src_tls
     ssl_tls.c
     ssl_tls12_client.c
     ssl_tls12_server.c
-    ssl_tls13_keys.c
-    ssl_tls13_server.c
-    ssl_tls13_client.c
-    ssl_tls13_generic.c
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
