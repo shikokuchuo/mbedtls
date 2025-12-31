@@ -29,7 +29,6 @@ set(src_crypto
     cmac.c
     ctr_drbg.c
     des.c
-    dhm.c
     ecdh.c
     ecdsa.c
     ecp.c
@@ -39,12 +38,9 @@ set(src_crypto
     error.c
     gcm.c
     hkdf.c
-    hmac_drbg.c
     md.c
     md5.c
-    nist_kw.c
     oid.c
-    padlock.c
     pem.c
     pk.c
     pk_ecc.c
@@ -62,15 +58,10 @@ set(src_crypto
     psa_crypto_client.c
     psa_crypto_driver_wrappers_no_static.c
     psa_crypto_ecp.c
-    psa_crypto_ffdh.c
     psa_crypto_hash.c
     psa_crypto_mac.c
-    psa_crypto_pake.c
     psa_crypto_rsa.c
-    psa_crypto_se.c
     psa_crypto_slot_management.c
-    psa_crypto_storage.c
-    psa_its_file.c
     psa_util.c
     rsa.c
     rsa_alt_helpers.c
@@ -80,11 +71,9 @@ set(src_crypto
     threading.c
     timing.c
     version.c
-    version_features.c
 )
 
 set(src_x509
-    pkcs7.c
     x509.c
     x509_create.c
     x509_crl.c

@@ -31,7 +31,7 @@ extern "C" {
 typedef struct mbedtls_aes_context {
     int MBEDTLS_PRIVATE(nr);
     size_t MBEDTLS_PRIVATE(rk_offset);
-#if defined(MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH) && !defined(MBEDTLS_PADLOCK_C)
+#if defined(MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH)
     uint32_t MBEDTLS_PRIVATE(buf)[44];
 #else
     uint32_t MBEDTLS_PRIVATE(buf)[68];

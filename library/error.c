@@ -22,10 +22,6 @@
 #include "mbedtls/aes.h"
 #endif
 
-#if defined(MBEDTLS_ARIA_C)
-#include "mbedtls/aria.h"
-#endif
-
 #if defined(MBEDTLS_ASN1_PARSE_C)
 #include "mbedtls/asn1.h"
 #endif
@@ -36,10 +32,6 @@
 
 #if defined(MBEDTLS_BIGNUM_C)
 #include "mbedtls/bignum.h"
-#endif
-
-#if defined(MBEDTLS_CAMELLIA_C)
-#include "mbedtls/camellia.h"
 #endif
 
 #if defined(MBEDTLS_CCM_C)
@@ -66,10 +58,6 @@
 #include "mbedtls/des.h"
 #endif
 
-#if defined(MBEDTLS_DHM_C)
-#include "mbedtls/dhm.h"
-#endif
-
 #if defined(MBEDTLS_ECP_C)
 #include "mbedtls/ecp.h"
 #endif
@@ -92,14 +80,6 @@
 
 #if defined(MBEDTLS_HKDF_C)
 #include "mbedtls/hkdf.h"
-#endif
-
-#if defined(MBEDTLS_HMAC_DRBG_C)
-#include "mbedtls/hmac_drbg.h"
-#endif
-
-#if defined(MBEDTLS_LMS_C)
-#include "mbedtls/lms.h"
 #endif
 
 #if defined(MBEDTLS_MD_C)
@@ -130,10 +110,6 @@
 #include "mbedtls/pkcs5.h"
 #endif
 
-#if defined(MBEDTLS_PKCS7_C)
-#include "mbedtls/pkcs7.h"
-#endif
-
 #if defined(MBEDTLS_POLY1305_C)
 #include "mbedtls/poly1305.h"
 #endif
@@ -148,10 +124,6 @@
 
 #if defined(MBEDTLS_SHA256_C)
 #include "mbedtls/sha256.h"
-#endif
-
-#if defined(MBEDTLS_SHA3_C)
-#include "mbedtls/sha3.h"
 #endif
 
 #if defined(MBEDTLS_SHA512_C)
@@ -197,29 +169,6 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "CIPHER - Authentication failed (for AEAD modes)" );
         case -(MBEDTLS_ERR_CIPHER_INVALID_CONTEXT):
             return( "CIPHER - The context is invalid. For example, because it was freed" );
-#endif
-
-#if defined(MBEDTLS_DHM_C)
-        case -(MBEDTLS_ERR_DHM_BAD_INPUT_DATA):
-            return( "DHM - Bad input parameters" );
-        case -(MBEDTLS_ERR_DHM_READ_PARAMS_FAILED):
-            return( "DHM - Reading of the DHM parameters failed" );
-        case -(MBEDTLS_ERR_DHM_MAKE_PARAMS_FAILED):
-            return( "DHM - Making of the DHM parameters failed" );
-        case -(MBEDTLS_ERR_DHM_READ_PUBLIC_FAILED):
-            return( "DHM - Reading of the public values failed" );
-        case -(MBEDTLS_ERR_DHM_MAKE_PUBLIC_FAILED):
-            return( "DHM - Making of the public value failed" );
-        case -(MBEDTLS_ERR_DHM_CALC_SECRET_FAILED):
-            return( "DHM - Calculation of the DHM secret failed" );
-        case -(MBEDTLS_ERR_DHM_INVALID_FORMAT):
-            return( "DHM - The ASN.1 data is not formatted correctly" );
-        case -(MBEDTLS_ERR_DHM_ALLOC_FAILED):
-            return( "DHM - Allocation of memory failed" );
-        case -(MBEDTLS_ERR_DHM_FILE_IO_ERROR):
-            return( "DHM - Read or write of file failed" );
-        case -(MBEDTLS_ERR_DHM_SET_GROUP_FAILED):
-            return( "DHM - Setting the modulus and generator failed" );
 #endif
 
 #if defined(MBEDTLS_ECP_C)
@@ -328,33 +277,6 @@ const char *mbedtls_high_level_strerr(int error_code)
             return( "PKCS5 - Requested encryption or digest alg not available" );
         case -(MBEDTLS_ERR_PKCS5_PASSWORD_MISMATCH):
             return( "PKCS5 - Given private key password does not allow for correct decryption" );
-#endif
-
-#if defined(MBEDTLS_PKCS7_C)
-        case -(MBEDTLS_ERR_PKCS7_INVALID_FORMAT):
-            return( "PKCS7 - The format is invalid, e.g. different type expected" );
-        case -(MBEDTLS_ERR_PKCS7_FEATURE_UNAVAILABLE):
-            return( "PKCS7 - Unavailable feature, e.g. anything other than signed data" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_VERSION):
-            return( "PKCS7 - The PKCS #7 version element is invalid or cannot be parsed" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_CONTENT_INFO):
-            return( "PKCS7 - The PKCS #7 content info is invalid or cannot be parsed" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_ALG):
-            return( "PKCS7 - The algorithm tag or value is invalid or cannot be parsed" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_CERT):
-            return( "PKCS7 - The certificate tag or value is invalid or cannot be parsed" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_SIGNATURE):
-            return( "PKCS7 - Error parsing the signature" );
-        case -(MBEDTLS_ERR_PKCS7_INVALID_SIGNER_INFO):
-            return( "PKCS7 - Error parsing the signer's info" );
-        case -(MBEDTLS_ERR_PKCS7_BAD_INPUT_DATA):
-            return( "PKCS7 - Input invalid" );
-        case -(MBEDTLS_ERR_PKCS7_ALLOC_FAILED):
-            return( "PKCS7 - Allocation of memory failed" );
-        case -(MBEDTLS_ERR_PKCS7_VERIFY_FAIL):
-            return( "PKCS7 - Verification Failed" );
-        case -(MBEDTLS_ERR_PKCS7_CERT_DATE_INVALID):
-            return( "PKCS7 - The PKCS #7 date issued/expired dates are invalid" );
 #endif
 
 #if defined(MBEDTLS_RSA_C)
@@ -552,13 +474,6 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "AES - Invalid input data" );
 #endif
 
-#if defined(MBEDTLS_ARIA_C)
-        case -(MBEDTLS_ERR_ARIA_BAD_INPUT_DATA):
-            return( "ARIA - Bad input data" );
-        case -(MBEDTLS_ERR_ARIA_INVALID_INPUT_LENGTH):
-            return( "ARIA - Invalid data input length" );
-#endif
-
 #if defined(MBEDTLS_ASN1_PARSE_C)
         case -(MBEDTLS_ERR_ASN1_OUT_OF_DATA):
             return( "ASN1 - Out of data when parsing an ASN1 data structure" );
@@ -600,13 +515,6 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "BIGNUM - The input arguments are not acceptable" );
         case -(MBEDTLS_ERR_MPI_ALLOC_FAILED):
             return( "BIGNUM - Memory allocation failed" );
-#endif
-
-#if defined(MBEDTLS_CAMELLIA_C)
-        case -(MBEDTLS_ERR_CAMELLIA_BAD_INPUT_DATA):
-            return( "CAMELLIA - Bad input data" );
-        case -(MBEDTLS_ERR_CAMELLIA_INVALID_INPUT_LENGTH):
-            return( "CAMELLIA - Invalid data input length" );
 #endif
 
 #if defined(MBEDTLS_CCM_C)
@@ -685,30 +593,6 @@ const char *mbedtls_low_level_strerr(int error_code)
             return( "HKDF - Bad input parameters to function" );
 #endif
 
-#if defined(MBEDTLS_HMAC_DRBG_C)
-        case -(MBEDTLS_ERR_HMAC_DRBG_REQUEST_TOO_BIG):
-            return( "HMAC_DRBG - Too many random requested in single call" );
-        case -(MBEDTLS_ERR_HMAC_DRBG_INPUT_TOO_BIG):
-            return( "HMAC_DRBG - Input too large (Entropy + additional)" );
-        case -(MBEDTLS_ERR_HMAC_DRBG_FILE_IO_ERROR):
-            return( "HMAC_DRBG - Read/write error in file" );
-        case -(MBEDTLS_ERR_HMAC_DRBG_ENTROPY_SOURCE_FAILED):
-            return( "HMAC_DRBG - The entropy source failed" );
-#endif
-
-#if defined(MBEDTLS_LMS_C)
-        case -(MBEDTLS_ERR_LMS_BAD_INPUT_DATA):
-            return( "LMS - Bad data has been input to an LMS function" );
-        case -(MBEDTLS_ERR_LMS_OUT_OF_PRIVATE_KEYS):
-            return( "LMS - Specified LMS key has utilised all of its private keys" );
-        case -(MBEDTLS_ERR_LMS_VERIFY_FAILED):
-            return( "LMS - LMS signature verification failed" );
-        case -(MBEDTLS_ERR_LMS_ALLOC_FAILED):
-            return( "LMS - LMS failed to allocate space for a private key" );
-        case -(MBEDTLS_ERR_LMS_BUFFER_TOO_SMALL):
-            return( "LMS - Input/output buffer is too small to contain requited data" );
-#endif
-
 #if defined(MBEDTLS_NET_C)
         case -(MBEDTLS_ERR_NET_SOCKET_FAILED):
             return( "NET - Failed to open a socket" );
@@ -758,11 +642,6 @@ const char *mbedtls_low_level_strerr(int error_code)
 #if defined(MBEDTLS_SHA256_C)
         case -(MBEDTLS_ERR_SHA256_BAD_INPUT_DATA):
             return( "SHA256 - SHA-256 input data was malformed" );
-#endif
-
-#if defined(MBEDTLS_SHA3_C)
-        case -(MBEDTLS_ERR_SHA3_BAD_INPUT_DATA):
-            return( "SHA3 - SHA-3 input data was malformed" );
 #endif
 
 #if defined(MBEDTLS_SHA512_C)

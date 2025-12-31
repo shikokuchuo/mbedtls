@@ -24,21 +24,6 @@
 #endif
 #endif
 
-#if defined(MBEDTLS_ARCH_IS_X86)
-#if defined(MBEDTLS_PADLOCK_C)
-#if !defined(MBEDTLS_HAVE_ASM)
-#error "MBEDTLS_PADLOCK_C defined, but not all prerequisites"
-#endif
-#if defined(MBEDTLS_AES_USE_HARDWARE_ONLY)
-#error "MBEDTLS_AES_USE_HARDWARE_ONLY cannot be defined when " \
-    "MBEDTLS_PADLOCK_C is set"
-#endif
-#endif
-#endif
-
-#if defined(MBEDTLS_PADLOCK_C)
-#include "padlock.h"
-#endif
 #if defined(MBEDTLS_AESNI_C)
 #include "aesni.h"
 #endif
@@ -56,10 +41,6 @@
 #endif
 
 #if !defined(MBEDTLS_AES_ALT)
-
-#if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
-static int aes_padlock_ace = -1;
-#endif
 
 #if defined(MBEDTLS_AES_ROM_TABLES)
 
@@ -472,8 +453,7 @@ void mbedtls_aes_xts_free(mbedtls_aes_xts_context *ctx)
 }
 #endif
 
-#if (defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)) ||        \
-    (defined(MBEDTLS_AESNI_C) && MBEDTLS_AESNI_HAVE_CODE == 2)
+#if defined(MBEDTLS_AESNI_C) && MBEDTLS_AESNI_HAVE_CODE == 2
 #define MAY_NEED_TO_ALIGN
 #endif
 
@@ -481,15 +461,6 @@ MBEDTLS_MAYBE_UNUSED static unsigned mbedtls_aes_rk_offset(uint32_t *buf)
 {
 #if defined(MAY_NEED_TO_ALIGN)
     int align_16_bytes = 0;
-
-#if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
-    if (aes_padlock_ace == -1) {
-        aes_padlock_ace = mbedtls_padlock_has_support(MBEDTLS_PADLOCK_ACE);
-    }
-    if (aes_padlock_ace) {
-        align_16_bytes = 1;
-    }
-#endif
 
 #if defined(MBEDTLS_AESNI_C) && MBEDTLS_AESNI_HAVE_CODE == 2
     if (mbedtls_aesni_has_support(MBEDTLS_AESNI_AES)) {
@@ -962,12 +933,6 @@ int mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
     }
 #endif
 
-#if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
-    if (aes_padlock_ace > 0) {
-        return mbedtls_padlock_xcryptecb(ctx, mode, input, output);
-    }
-#endif
-
 #if !defined(MBEDTLS_AES_USE_HARDWARE_ONLY)
 #if !defined(MBEDTLS_BLOCK_CIPHER_NO_DECRYPT)
     if (mode == MBEDTLS_AES_DECRYPT) {
@@ -1003,15 +968,6 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
     if (length % 16) {
         return MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH;
     }
-
-#if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
-    if (aes_padlock_ace > 0) {
-        if (mbedtls_padlock_xcryptcbc(ctx, mode, length, iv, input, output) == 0) {
-            return 0;
-        }
-
-    }
-#endif
 
     const unsigned char *ivp = iv;
 
@@ -1697,11 +1653,6 @@ int mbedtls_aes_self_test(int verbose)
 #endif
         if (mbedtls_aesni_has_support(MBEDTLS_AESNI_AES)) {
             mbedtls_printf("  AES note: using AESNI.\n");
-        } else
-#endif
-#if defined(MBEDTLS_VIA_PADLOCK_HAVE_CODE)
-        if (mbedtls_padlock_has_support(MBEDTLS_PADLOCK_ACE)) {
-            mbedtls_printf("  AES note: using VIA Padlock.\n");
         } else
 #endif
 #if defined(MBEDTLS_AESCE_HAVE_CODE)
